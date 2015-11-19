@@ -41,6 +41,9 @@ function [D,P, mpath] = match_ext(t1,ext1,d1,t2,ext2,d2)
                         jcurr = jb+1:2:j;
                         W = sqrt(sum(te1(icurr)-te1(icurr-1)))...
                             *sqrt(sum(te2(jcurr)-te2(jcurr-1)));
+                        if ~isreal(W)
+                            keyboard
+                        end
                         Dcurr = D(ib,jb) + W;
                         if Dcurr > D(i,j);
                             D(i,j) = Dcurr;

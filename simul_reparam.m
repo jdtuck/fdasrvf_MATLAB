@@ -10,7 +10,7 @@ function [g1, g2] = simul_reparam(te1, te2, mpath)
         g2 = [g2; 0];
     end
     
-    m = length(mpath);
+    m = size(mpath,1);
     for i=1:m-1
         [gg1,gg2] = simul_reparam_segment(mpath(i,:), mpath(i+1,:), te1, te2);
         

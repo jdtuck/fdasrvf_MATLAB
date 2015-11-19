@@ -25,8 +25,8 @@
 function gam = simul_gam(u,g1,g2,t,s1,s2,tt)
     
     ss = tt;
-    gs1 = interp1(u,g1,ss);
-    gs2 = interp1(u,g2,ss);
+    gs1 = interp1_flat(u,g1,ss);
+    gs2 = interp1_flat(u,g2,ss);
     
     gt1 = interp1_flat(s1,t,gs1);
     gt2 = interp1_flat(s2,t,gs2);
