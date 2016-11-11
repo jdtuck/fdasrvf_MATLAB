@@ -1,7 +1,6 @@
 function [fn,qn,q0,fmean,mqn,gam,psi,stats] = time_warping(f,t,lambda,option)
 % input:
 % f (M,N): matrix defining N functions of M samples
-% y : response vector of length N
 % t : time vector of length M
 % lambda: regularization parameter
 %
