@@ -38,7 +38,11 @@ for iter = 1:maxiter
     end
     vm = mean(vec);
     lvm(iter) = sqrt(sum(vm.*vm)*dT);
-    mu = cos(t*lvm(iter))*mu + (sin(t*lvm(iter))/lvm(iter))*vm;
+    if lvm(iter) == 0
+        mu = mu;
+    else
+        mu = cos(t*lvm(iter))*mu + (sin(t*lvm(iter))/lvm(iter))*vm;
+    end
     if lvm(iter) < 1e-6 || iter >= maxiter
         break
     end
