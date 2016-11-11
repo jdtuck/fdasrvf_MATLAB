@@ -1,4 +1,20 @@
 function samples = gauss_model(fn, time, qn, gam, n, sort_samples)
+% This function models the functional data using a Gaussian model extracted from
+% the principal components of the srvfs
+%
+% Inputs
+% fn matrix (\eqn{N} x \eqn{M}) of \eqn{M} aligned functions with \eqn{N} samples
+% time vector of size \eqn{N} describing the sample points
+% qn matrix (\eqn{N} x \eqn{M}) of \eqn{M} aligned srvfs
+% gam warping functions
+% n number of random samples (n = 1)
+% sort_samples sort samples (default = F)
+%
+% Return
+% Structure containing
+% \item{fs}{random aligned samples}
+% \item{gams}{random warping function samples}
+% \item{ft}{random function samples}
 
 if nargin < 5
     n = 1;
