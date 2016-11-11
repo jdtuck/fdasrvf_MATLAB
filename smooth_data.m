@@ -1,4 +1,4 @@
-function smooth_data(f, sparam)
+function f = smooth_data(f, sparam)
 [M,N] = size(f);
 for r = 1:sparam
     for i = 1:N
