@@ -6,6 +6,7 @@ addpath(genpath('mlogit_warp'))
 % Dynamic Programming
 fprintf('Compiling DP files...\n');
 mex -outdir DP/ DP/DynamicProgrammingQ2.c DP/dp_grid.c 
+mex -outdir DP/ DP/DynamicProgrammingQ.c
 
 % minFunc (lbfgs optimizer)
 fprintf('Compiling minFunc files...\n');
