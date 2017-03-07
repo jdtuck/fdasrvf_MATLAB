@@ -10,7 +10,8 @@ Nstd = length(coef);
 
 % FPCA
 mq_new = mean(qn,2);
-m_new = sign(fn(round(length(t)/2),:)).*sqrt(abs(fn(round(length(t)/2),:)));  % scaled version
+id = round(length(t)/2);
+m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  % scaled version
 mqn = [mq_new; mean(m_new)];
 K = cov([qn;m_new]');
 
@@ -30,8 +31,12 @@ end
 f_pca = zeros(length(mq_new),Nstd,no);
 for k = NP
     for i = 1:Nstd
-        f_pca(:,i,k) = cumtrapzmid(t,q_pca(1:end-1,i,k).*abs(q_pca(1:end-1,i,k)),sign(q_pca(end,i,k)).*(q_pca(end,i,k).^2));
+        f_pca(:,i,k) = cumtrapzmid(t,q_pca(1:end-1,i,k).*abs(q_pca(1:end-1,i,k)),sign(q_pca(end,i,k)).*(q_pca(end,i,k).^2), id);
     end
+    fbar = mean(fn,2);
+    fsbar = mean(f_pca(:,:,k),2);
+    err = repmat(fbar-fsbar,1,n);
+    f_pca(:,:,k) = f_pca(:,:,k) + err;
 end
 
 % coefficients
