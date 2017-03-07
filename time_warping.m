@@ -13,6 +13,7 @@ function [fn,qn,q0,fmean,mqn,gam,psi,stats] = time_warping(f,t,lambda,option)
 % option.showplot = 1; % turns on and off plotting
 % option.method = 'DP'; % optimization method (DP, DP2, SIMUL, RBFGS)
 % option.w = 0.0; % BFGS weight
+% option.MaxItr = 20;  % maximum iterations
 %
 % output
 % fn: aligned functions
@@ -34,6 +35,7 @@ if nargin < 3
     option.showplot = 1;
     option.method = 'DP';
     option.w = 0.0';
+    option.MaxItr = 20;
 elseif nargin < 4
     option.parallel = 0;
     option.closepool = 0;
@@ -42,6 +44,7 @@ elseif nargin < 4
     option.showplot = 1;
     option.method = 'DP';
     option.w = 0.0';
+    option.MaxItr = 20;
 end
 
 % time warping on a set of functions
@@ -105,7 +108,7 @@ mq = f_to_srvf(mf,t);
 %% Compute Mean
 fprintf('Computing Karcher mean of %d functions in SRVF space...\n',N);
 ds = inf;
-MaxItr = 20;
+MaxItr = option.MaxItr;
 qun = zeros(1,MaxItr);
 for r = 1:MaxItr
     fprintf('updating step: r=%d\n', r);
