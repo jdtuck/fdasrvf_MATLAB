@@ -1,6 +1,5 @@
-function fn = cumtrapzmid(x,y,c)
+function fn = cumtrapzmid(x,y,c,mid)
 a = length(x);
-mid = round(a/2);
 
 % case < mid
 fn = zeros(1,a);
