@@ -28,9 +28,10 @@ end
 binsize = mean(diff(time));
 
 % compute mean and covariance in q-domain
+id = round(length(time)/2);
 q_new = qn;
 mq_new = mean(qn,2);
-m_new = sign(fn(round(length(time)/2),:)).*sqrt(abs(fn(round(length(time)/2),:)));  
+m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  
 mqn2 = [mq_new; mean(m_new)];
 C = cov([q_new;m_new]');
 
@@ -39,8 +40,12 @@ q_s = mvnrnd(mqn2', C, n)';
 % compute the correspondence to the original function domain
 f_s = zeros(M,n);
 for k = 1:n
-    f_s(:,k) = cumtrapzmid(time,q_s(1:(end-1),k).*abs(q_s(1:(end-1),k)),sign(q_s(end,k))*(q_s(end,k)^2));
+    f_s(:,k) = cumtrapzmid(time,q_s(1:(end-1),k).*abs(q_s(1:(end-1),k)),sign(q_s(end,k))*(q_s(end,k)^2),id);
 end
+fbar = mean(fn,2);
+fsbar = mean(f_s,2);
+err = repmat(fbar-fsbar,1,n);
+f_s = f_s + err;
 
 % random warping generation
 rgam = randomGamma(gam.',n);
