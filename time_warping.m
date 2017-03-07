@@ -69,6 +69,12 @@ end
 
 fprintf('\n lambda = %5.1f \n', lambda);
 
+% check dimension of time
+a = size(t,1);
+if a == 1
+    t = t';
+end
+
 binsize = mean(diff(t));
 [M, N] = size(f);
 f0 = f;
