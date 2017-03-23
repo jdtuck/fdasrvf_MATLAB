@@ -1,6 +1,6 @@
-function [f1_align, f2_align] = pairwise_align(f1,f2,time)
-addpath(genpath('DP'))
-q1 = f_to_srvf(f1,time); 
+function [f2_align, gam] = pairwise_align(f1,f2,time)
+% aligns f2 to f1
+q1 = f_to_srvf(f1,time);
 q2 = f_to_srvf(f2,time);
 
 if iscolumn(time)
@@ -17,9 +17,6 @@ if iscolumn(f2);
     q2 = q2';
 end
 
-[G,T] = DynamicProgrammingQ2(q1/norm(q1),time,q2/norm(q2),time,time,time,0);
-gam0 = interp1(T,G,time);
-gam = (gam0-gam0(1))/(gam0(end)-gam0(1));  % slight change on scale
+gam = optimum_reparam(q1,q2,time,0,'DP',0.0,0.0,0.0);
 
-f1_align = f1;
-f2_align = interp1(time, f2, (time(end)-time(1)).*gam + time(1));
+f2_align = warp_f_gamma(f2,gam,t);
