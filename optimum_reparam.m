@@ -35,6 +35,8 @@ switch upper(method)
     case 'DP'
         [G,T] = DynamicProgrammingQ2(q1',t',q2',t',t',t',lambda);
         gam0 = interp1(T,G,t);
+    case 'DP1'
+        [gam0] = DynamicProgrammingQ(q2',q1',lambda,0);
     case 'SIMUL'
         [s1,s2, g1,g2,~,~,~]  = simul_align(c1,c2);
         u = linspace(0,1,length(g1));
