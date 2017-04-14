@@ -33,7 +33,7 @@ if nargin < 3
     option.smooth = 0;
     option.sparam = 25;
     option.showplot = 1;
-    option.method = 'DP';
+    option.method = 'DP1';
     option.w = 0.0;
     option.MaxItr = 20;
 elseif nargin < 4
@@ -42,7 +42,7 @@ elseif nargin < 4
     option.smooth = 0;
     option.sparam = 25;
     option.showplot = 1;
-    option.method = 'DP';
+    option.method = 'DP1';
     option.w = 0.0;
     option.MaxItr = 20;
 end
