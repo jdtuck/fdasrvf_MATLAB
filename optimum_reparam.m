@@ -47,7 +47,7 @@ switch upper(method)
         gam0 = simul_gam(u,g1,g2,t2,s1,s2,t2);
     case 'DP2'
         onlyDP = 1;
-        [opt,swap,tmp,tmp1] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
+        [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
             rotated, isclosed, skipm, 'DP', auto);
         gam0 = opt(1:end-2);
         
