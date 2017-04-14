@@ -116,6 +116,8 @@ fprintf('Computing Karcher mean of %d functions in SRVF space...\n',N);
 ds = inf;
 MaxItr = option.MaxItr;
 qun = zeros(1,MaxItr);
+f_temp = zeros(length(t),N);
+q_temp = zeros(length(t),N);
 for r = 1:MaxItr
     fprintf('updating step: r=%d\n', r);
     if r == MaxItr
