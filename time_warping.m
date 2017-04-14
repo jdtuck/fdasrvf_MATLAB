@@ -102,7 +102,7 @@ mq = q(:,min_ind);
 mf = f(:,min_ind);
 
 gam = zeros(N,size(q,1));
-for k = 1:N
+parfor k = 1:N
     q_c = q(:,k,1); mq_c = mq;
     gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
                                mf(1), f(1,k,1));
@@ -129,7 +129,7 @@ for r = 1:MaxItr
     % use DP to find the optimal warping for each function w.r.t. the mean
     gam = zeros(N,size(q,1));
     gam_dev = zeros(N,size(q,1));
-    for k = 1:N
+    parfor k = 1:N
         q_c = q(:,k,1); mq_c = mq(:,r);
         gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
                                    mf(1,r), f(1,k,1));
@@ -156,11 +156,10 @@ end
 
 % last step with centering of gam
 r = r+1;
-for k = 1:N
+parfor k = 1:N
     q_c = q(:,k,1); mq_c = mq(:,r);
     gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
                                mf(1,r), f(1,k,1));
-    gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
 end
 gamI = SqrtMeanInverse(gam);
 gamI_dev = gradient(gamI, 1/(M-1));
