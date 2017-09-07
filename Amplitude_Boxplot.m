@@ -43,7 +43,9 @@ Q3 = f_tilde(:,Q3_index);
 % identify amplitude quantiles
 [~, dy_ordering] = sort(dy);
 CR_alpha = dy_ordering(1:round(N*(1-alpha)));       % (1-alpha)% Central Region
-m = max(dy(CR_alpha));                     % Maximal amplitude distance within 50% Central Region
+m = max(dy(CR_alpha));                     % Maximal amplitude distance within (1-alpha)% Central Region
+angle = zeros(length(CR_alpha), length(CR_alpha));
+energy = zeros(length(CR_alpha), length(CR_alpha));
 for i = 1:(length(CR_alpha)-1)
     for j = (i+1):length(CR_alpha)
         q1 = q_tilde(:,CR_alpha(i)) - q_median;
