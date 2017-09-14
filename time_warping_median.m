@@ -151,13 +151,14 @@ for r = 1:MaxItr
         ds(r+1) = ds_tmp;
     else
         ds(r+1) = abs(ds_tmp);
+    end
 
 
     % Minimization Step
     % compute the mean of the matched function
     stp = .3;
     vbar = sum(vtil,2)*sum(dtil)^(-1);
-    mq(:,r+1) = mq(:,r) + stp*vbar
+    mq(:,r+1) = mq(:,r) + stp*vbar;
     mf(:,r+1) = median(f(1,:,1)) + cumtrapz(t, mq(:,r+1).*abs(mq(:,r+1)));
 
     qun(r) = norm(mq(:,r+1)-mq(:,r))/norm(mq(:,r));
@@ -195,7 +196,7 @@ fmedian = mean(f0(1,:))+cumtrapz(t,mqn.*abs(mqn));
 
 fgam = zeros(M,N);
 for ii = 1:N
-    fgam(:,ii) = interp1(t, fmean, (t(end)-t(1)).*gam(ii,:) + t(1));
+    fgam(:,ii) = interp1(t, fmedian, (t(end)-t(1)).*gam(ii,:) + t(1));
 end
 var_fgam = var(fgam,[],2);
 
@@ -230,7 +231,7 @@ if option.showplot == 1
     title(['Warped data, \lambda = ' num2str(lambda) ': Mean \pm STD'], 'fontsize', 16);
 
     figure(6); clf;
-    plot(t, fmean, 'g','LineWidth',1);
+    plot(t, fmedian, 'g','LineWidth',1);
     title(['f_{mean}, \lambda = ' num2str(lambda)], 'fontsize', 16);
 end
 
