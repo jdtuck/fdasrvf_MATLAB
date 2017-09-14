@@ -1,5 +1,8 @@
 function [exp_inv, theta] = inv_exp_map(Psi, psi)
 
+Psi = Psi(:);
+psi = psi(:);
+
 theta = acos(inner_product(Psi,psi));
 
 if (theta < 1e-10)
