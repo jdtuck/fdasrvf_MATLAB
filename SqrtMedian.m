@@ -13,12 +13,12 @@ psi = zeros(M,N);
 v = zeros(M,N);
 vtil = v;
 d = zeros(1,N);
-dtil = zeros(M,N);
+dtil = zeros(1,N);
 for k = 1:N
     psi(:,k) = sqrt(gradient(gam(:,k),binsize));
     [v(:,k), d(k)] = inv_exp_map(psi_median,psi(:,k));
     vtil(:,k)=v(:,k)/d(k);
-    dtil(:,k)=1/d(k);
+    dtil(k)=1/d(k);
 end
 vbar=sum(vtil,2)*sum(dtil)^(-1);
 vbar_norm(r) = L2norm(vbar);
@@ -31,7 +31,7 @@ while (vbar_norm(r) > 0.00000001 && r<501)
         v(:,k) = inv_exp_map(psi_median,psi(:,k));
         d(k) = acos(inner_product(psi_median,psi(:,k)));
         vtil(:,k)=v(:,k)/d(k);
-        dtil(:,k)=1/d(k);
+        dtil(k)=1/d(k);
     end
     vbar=sum(vtil,2)*sum(dtil)^(-1);
     vbar_norm(r) = L2norm(vbar);

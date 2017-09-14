@@ -4,6 +4,7 @@ function [median_x, Q1, Q3, Q1a, Q3a, minn, maxx, outlier_index] = Phase_Boxplot
 
 [M, N] = size(gam);
 t = linspace(0,1,M);
+lambda = 0.5;
 
 % compute phase median
 [median_x, psi_median, psi] = SqrtMedian(gam);
@@ -22,7 +23,7 @@ CR_50 = dx_ordering(1:ceil(N/2));   % 50% Central Region
 m = max(dx(CR_50));                 % Maximal phase distance within 50% Central Region
 
 % identify phase quartiles
-angle = zeros(legth(CR_50), length(CR_50));
+angle = zeros(length(CR_50), length(CR_50));
 energy = zeros(length(CR_50), length(CR_50));
 for i = 1:(length(CR_50)-1)
     for j = (i+1):length(CR_50)
@@ -49,7 +50,7 @@ Q3_psi = sqrt(gradient(Q3,1/(M-1)))';
 CR_alpha = dx_ordering(1:round(N*(1-alpha)));   % 50% Central Region
 m = max(dx(CR_alpha));                 % Maximal phase distance within 50% Central Regionles
 
-angle = zeros(legth(CR_alpha), length(CR_alpha));
+angle = zeros(length(CR_alpha), length(CR_alpha));
 energy = zeros(length(CR_alpha), length(CR_alpha));
 for i = 1:(length(CR_alpha)-1)
     for j = (i+1):length(CR_alpha)
@@ -114,8 +115,8 @@ for i = 1:length(out_50_CR)
 end
 [~, max_index] = min(distance_to_upper);
 [~, min_index] = min(distance_to_lower);
-minn = gam(min_index,:);
-maxx = gam(max_index,:);
+minn = gam(:,min_index);
+maxx = gam(:,max_index);
 min_psi = psi(:,min_index);
 max_psi = psi(:,max_index);
 
@@ -132,11 +133,10 @@ if (figs)
     plot(t,minn,'red','linewidth',2);
     axis square;
     axis([0,1,0,1]);
-    set(gca,'FontSize',19)
-    ti = get(gca,'TightInset');
-    set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
 
     s = linspace(0,1,100);
+    t = t(:);
+    median_x = median_x(:);
     Fs2 = zeros(length(t), 595);
     Fs2(:,1) = (1-s(1)) * (minn-t) + s(1) * (Q1-t);
     for j=2:100
@@ -147,6 +147,10 @@ if (figs)
         Fs2(:,396+j) = (1-s(j)) * (Q3-t) + s(j) * (Q3a-t);
         Fs2(:,495+j) = (1-s(j)) * (Q3a-t) + s(j) * (maxx-t);
     end
+    Q1_psi = Q1_psi(:);
+    Q1a_psi = Q1a_psi(:);
+    Q3_psi = Q3_psi(:);
+    Q3a_psi = Q3a_psi(:);
     d1=acos(trapz(t,psi_median.*Q1_psi));
     d1a=acos(trapz(t,Q1_psi.*Q1a_psi));
     dl=acos(trapz(t,Q1a_psi.*min_psi));
@@ -166,7 +170,6 @@ if (figs)
     surf(U',V',Fs2);
     hold on;
     shading flat;
-    light;
     plot3(t,zeros(1,M),median_x - t,'k','LineWidth',3)
     plot3(t,repmat(-d1,M,1),Q1 - t,'b','LineWidth',3)
     plot3(t,repmat(-d1-d1a,M,1),Q1a - t,'g','LineWidth',3)
@@ -175,7 +178,4 @@ if (figs)
     plot3(t,repmat(d3+d3a,M,1),Q3a - t,'g','LineWidth',3)
     plot3(t,repmat(d3+d3a+du,M,1),maxx - t,'r','LineWidth',3)
     axis square;
-    set(gca,'FontSize',19)
-    ti = get(gca,'TightInset');
-    set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
 end
