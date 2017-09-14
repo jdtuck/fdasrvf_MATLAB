@@ -117,9 +117,6 @@ if (figs)
     plot(t,maxx,'red', 'linewidth',2);
     xlim([t(1) t(end)]);
     ylim auto;
-    set(gca,'FontSize',18);
-    ti = get(gca,'TightInset');
-    set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
 
     s = linspace(0,1,100);
     Fs2 = zeros(length(t), 595);
@@ -152,7 +149,6 @@ if (figs)
     surf(U,V,Fs2);
     hold on;
     shading flat;
-    light;
     plot3(t,zeros(1,M),f_median,'k','LineWidth',3)
     plot3(t,repmat(-d1,M,1),Q1,'b','LineWidth',3)
     plot3(t,repmat(-d1-d1a,M,1),Q1a,'g','LineWidth',3)
@@ -160,7 +156,4 @@ if (figs)
     plot3(t,repmat(d3,M,1),Q3,'b','LineWidth',3)
     plot3(t,repmat(d3+d3a,M,1),Q3a,'g','LineWidth',3)
     plot3(t,repmat(d3+d3a+du,M,1),maxx,'r','LineWidth',3)
-    set(gca,'FontSize',18);
-    ti = get(gca,'TightInset');
-    set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
 end
