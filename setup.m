@@ -1,7 +1,4 @@
-addpath(genpath('minFunc'))
-addpath(genpath('DP'))
-addpath(genpath('gropt'))
-addpath(genpath('mlogit_warp'))
+setup_paths
 
 % Dynamic Programming
 fprintf('Compiling DP files...\n');
