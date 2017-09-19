@@ -1,4 +1,4 @@
-function [median_y, Q1, Q3, Q1a, Q3a, minn, maxx, outlier_index] = Amplitude_Boxplot(f_tilde, f_median, q_tilde, q_median, t, alpha, k_a, figs)
+function [median_y, Q1, Q3, Q1a, Q3a, minn, maxx, outlier_index, plt] = Amplitude_Boxplot(f_tilde, f_median, q_tilde, q_median, t, alpha, k_a, figs)
 % k_a: outlier cutoff constant for amplitude component
 % alpha: quantile value
 
@@ -105,6 +105,46 @@ max_q = q_tilde(:,max_index);
 minn = f_tilde(:,min_index);
 maxx = f_tilde(:,max_index);
 
+s = linspace(0,1,100);
+Fs2 = zeros(length(t), 595);
+Fs2(:,1) = (1-s(1)) * minn + s(1) * Q1;    % Final surface plot
+for j=2:100
+    Fs2(:,j) = (1-s(j)) * minn + s(j) * Q1a;
+    Fs2(:,99+j) = (1-s(j)) * Q1a + s(j) * Q1;
+    Fs2(:,198+j) = (1-s(j)) * Q1 + s(j) * f_median;
+    Fs2(:,297+j) = (1-s(j)) * f_median + s(j) * Q3;
+    Fs2(:,396+j) = (1-s(j)) * Q3 + s(j) * Q3a;
+    Fs2(:,495+j) = (1-s(j)) * Q3a + s(j) * maxx;
+end
+d1=sqrt(trapz(t,(q_median-Q1_q).^2));
+d1a=sqrt(trapz(t,(Q1_q-Q1a_q).^2));
+dl=sqrt(trapz(t,(Q1a_q-min_q).^2));
+d3=sqrt(trapz(t,(q_median-Q3_q).^2));
+d3a=sqrt(trapz(t,(Q3_q-Q3a_q).^2));
+du=sqrt(trapz(t,(Q3a_q-max_q).^2));
+part1=linspace(-d1-d1a-dl,-d1-d1a,100);
+part2=linspace(-d1-d1a,-d1,100);
+part3=linspace(-d1,0,100);
+part4=linspace(0,d3,100);
+part5=linspace(d3,d3+d3a,100);
+part6=linspace(d3+d3a,d3+d3a+du,100);
+allparts=[part1,part2(2:100),part3(2:100),part4(2:100),part5(2:100),part6(2:100)];
+[U,V]=meshgrid(t,allparts);
+U=U';
+V=V';
+
+plt.U=U;
+plt.V=V;
+plt.Fs2 = Fs2;
+plt.d1 = d1;
+plt.d1a = d1a;
+plt.dl = dl;
+plt.d3 = d3;
+plt.d3a = d3a;
+plt.du = du;
+plt.Q1q = Q1a_q;
+plt.Q3q = Q3a_q;
+
 if (figs)
     figure(310); clf;
     plot(t, f_median, 'black','linewidth', 2);
@@ -117,34 +157,8 @@ if (figs)
     plot(t,maxx,'red', 'linewidth',2);
     xlim([t(1) t(end)]);
     ylim auto;
-
-    s = linspace(0,1,100);
-    Fs2 = zeros(length(t), 595);
-    Fs2(:,1) = (1-s(1)) * minn + s(1) * Q1;    % Final surface plot
-    for j=2:100
-        Fs2(:,j) = (1-s(j)) * minn + s(j) * Q1a;
-        Fs2(:,99+j) = (1-s(j)) * Q1a + s(j) * Q1;
-        Fs2(:,198+j) = (1-s(j)) * Q1 + s(j) * f_median;
-        Fs2(:,297+j) = (1-s(j)) * f_median + s(j) * Q3;
-        Fs2(:,396+j) = (1-s(j)) * Q3 + s(j) * Q3a;
-        Fs2(:,495+j) = (1-s(j)) * Q3a + s(j) * maxx;
-    end
-    d1=sqrt(trapz(t,(q_median-Q1_q).^2));
-    d1a=sqrt(trapz(t,(Q1_q-Q1a_q).^2));
-    dl=sqrt(trapz(t,(Q1a_q-min_q).^2));
-    d3=sqrt(trapz(t,(q_median-Q3_q).^2));
-    d3a=sqrt(trapz(t,(Q3_q-Q3a_q).^2));
-    du=sqrt(trapz(t,(Q3a_q-max_q).^2));
-    part1=linspace(-d1-d1a-dl,-d1-d1a,100);
-    part2=linspace(-d1-d1a,-d1,100);
-    part3=linspace(-d1,0,100);
-    part4=linspace(0,d3,100);
-    part5=linspace(d3,d3+d3a,100);
-    part6=linspace(d3+d3a,d3+d3a+du,100);
-    allparts=[part1,part2(2:100),part3(2:100),part4(2:100),part5(2:100),part6(2:100)];
-    [U,V]=meshgrid(t,allparts);
-    U=U';
-    V=V';
+    
+    
     figure(311); clf;
     surf(U,V,Fs2);
     hold on;

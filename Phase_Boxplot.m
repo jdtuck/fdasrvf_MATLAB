@@ -1,4 +1,4 @@
-function [median_x, Q1, Q3, Q1a, Q3a, minn, maxx, outlier_index] = Phase_Boxplot(gam, k_p, alpha, figs)
+function [median_x, Q1, Q3, Q1a, Q3a, minn, maxx, outlier_index, psi_median, plt] = Phase_Boxplot(gam, k_p, alpha, figs)
 % k_p: outlier cutoff constant for phase component
 % alpha: quantile value
 
@@ -120,8 +120,54 @@ maxx = gam(:,max_index);
 min_psi = psi(:,min_index);
 max_psi = psi(:,max_index);
 
-if (figs)
+s = linspace(0,1,100);
+t = t(:);
+median_x = median_x(:);
+Fs2 = zeros(length(t), 595);
+Fs2(:,1) = (1-s(1)) * (minn-t) + s(1) * (Q1-t);
+for j=2:100
+    Fs2(:,j) = (1-s(j)) * (minn-t) + s(j) * (Q1a-t);
+    Fs2(:,99+j) = (1-s(j)) * (Q1a-t) + s(j) * (Q1-t);
+    Fs2(:,198+j) = (1-s(j)) * (Q1-t) + s(j) * (median_x-t);
+    Fs2(:,297+j) = (1-s(j)) * (median_x-t) + s(j) * (Q3-t);
+    Fs2(:,396+j) = (1-s(j)) * (Q3-t) + s(j) * (Q3a-t);
+    Fs2(:,495+j) = (1-s(j)) * (Q3a-t) + s(j) * (maxx-t);
+end
+Q1_psi = Q1_psi(:);
+Q1a_psi = Q1a_psi(:);
+Q3_psi = Q3_psi(:);
+Q3a_psi = Q3a_psi(:);
+d1=acos(trapz(t,psi_median.*Q1_psi));
+d1a=acos(trapz(t,Q1_psi.*Q1a_psi));
+dl=acos(trapz(t,Q1a_psi.*min_psi));
+d3=acos(trapz(t,psi_median.*Q3_psi));
+d3a=acos(trapz(t,Q3_psi.*Q3a_psi));
+du=acos(trapz(t,Q3a_psi.*max_psi));
+part1=linspace(-d1-d1a-dl,-d1-d1a,100);
+part2=linspace(-d1-d1a,-d1,100);
+part3=linspace(-d1,0,100);
+part4=linspace(0,d3,100);
+part5=linspace(d3,d3+d3a,100);
+part6=linspace(d3+d3a,d3+d3a+du,100);
+allparts=[part1,part2(2:100),part3(2:100),part4(2:100),part5(2:100),part6(2:100)];
+[U,V]=meshgrid(linspace(0,1,M),allparts);
+U=U.';
+V=V.';
 
+plt.U=U;
+plt.V=V;
+plt.Fs2 = Fs2;
+plt.d1 = d1;
+plt.d1a = d1a;
+plt.dl = dl;
+plt.d3 = d3;
+plt.d3a = d3a;
+plt.du = du;
+plt.Q1_psi = Q1a_psi;
+plt.Q3_psi = Q3a_psi;
+
+if (figs)
+    
     figure(410); clf;
     plot(t, median_x, 'black','linewidth', 2);
     hold on;
@@ -133,41 +179,9 @@ if (figs)
     plot(t,minn,'red','linewidth',2);
     axis square;
     axis([0,1,0,1]);
-
-    s = linspace(0,1,100);
-    t = t(:);
-    median_x = median_x(:);
-    Fs2 = zeros(length(t), 595);
-    Fs2(:,1) = (1-s(1)) * (minn-t) + s(1) * (Q1-t);
-    for j=2:100
-        Fs2(:,j) = (1-s(j)) * (minn-t) + s(j) * (Q1a-t);
-        Fs2(:,99+j) = (1-s(j)) * (Q1a-t) + s(j) * (Q1-t);
-        Fs2(:,198+j) = (1-s(j)) * (Q1-t) + s(j) * (median_x-t);
-        Fs2(:,297+j) = (1-s(j)) * (median_x-t) + s(j) * (Q3-t);
-        Fs2(:,396+j) = (1-s(j)) * (Q3-t) + s(j) * (Q3a-t);
-        Fs2(:,495+j) = (1-s(j)) * (Q3a-t) + s(j) * (maxx-t);
-    end
-    Q1_psi = Q1_psi(:);
-    Q1a_psi = Q1a_psi(:);
-    Q3_psi = Q3_psi(:);
-    Q3a_psi = Q3a_psi(:);
-    d1=acos(trapz(t,psi_median.*Q1_psi));
-    d1a=acos(trapz(t,Q1_psi.*Q1a_psi));
-    dl=acos(trapz(t,Q1a_psi.*min_psi));
-    d3=acos(trapz(t,psi_median.*Q3_psi));
-    d3a=acos(trapz(t,Q3_psi.*Q3a_psi));
-    du=acos(trapz(t,Q3a_psi.*max_psi));
-    part1=linspace(-d1-d1a-dl,-d1-d1a,100);
-    part2=linspace(-d1-d1a,-d1,100);
-    part3=linspace(-d1,0,100);
-    part4=linspace(0,d3,100);
-    part5=linspace(d3,d3+d3a,100);
-    part6=linspace(d3+d3a,d3+d3a+du,100);
-    allparts=[part1,part2(2:100),part3(2:100),part4(2:100),part5(2:100),part6(2:100)];
-    [U,V]=meshgrid(linspace(0,1,M),allparts);
-
+    
     figure(416); clf;
-    surf(U',V',Fs2);
+    surf(U,V,Fs2);
     hold on;
     shading flat;
     plot3(t,zeros(1,M),median_x - t,'k','LineWidth',3)
