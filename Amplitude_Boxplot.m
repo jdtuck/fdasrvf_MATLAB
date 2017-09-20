@@ -136,6 +136,7 @@ V=V';
 plt.U=U;
 plt.V=V;
 plt.Fs2 = Fs2;
+plt.allparts = allparts;
 plt.d1 = d1;
 plt.d1a = d1a;
 plt.dl = dl;
