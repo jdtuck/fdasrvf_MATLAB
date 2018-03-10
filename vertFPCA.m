@@ -1,5 +1,8 @@
-function vfpca = vertFPCA(fn,t,qn,no,option)
-if nargin<5
+function vfpca = vertFPCA(fn,t,qn,no,id,option)
+if nargin < 4
+    id = round(length(t)/2);
+    option.showplot = 1;
+elseif nargin < 5
     option.showplot = 1;
 end
 
@@ -10,7 +13,6 @@ Nstd = length(coef);
 
 % FPCA
 mq_new = mean(qn,2);
-id = round(length(t)/2);
 m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  % scaled version
 mqn = [mq_new; mean(m_new)];
 K = cov([qn;m_new]');
@@ -50,6 +52,10 @@ end
 vfpca.q_pca = q_pca;
 vfpca.f_pca = f_pca;
 vfpca.latent = s;
+vfpca.coef = c;
+vfpca.id = id;
+vfpca.mqn = mqn;
+vfpca.time = time;
 vfpca.c = c;
 vfpca.U = U;
 

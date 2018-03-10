@@ -37,6 +37,9 @@ hfpca.gam_pca = gam_pca;
 hfpca.psi_pca = psi_pca;
 hfpca.latent = Sig;
 hfpca.U = U;
+hfpca.coef = c;
+hfpca.vec = vec;
+hfpca.mu = mu;
 
 if option.showplot
     figure;
