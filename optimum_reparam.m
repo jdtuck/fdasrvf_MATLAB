@@ -3,12 +3,12 @@ addpath(genpath('DP'))
 addpath(genpath('gropt'))
 if nargin < 4
     lambda = 0.0;
-    method = 'DP';
+    method = 'DP1';
     w = 0.0;
     f1o = 0.0;
     f2o = 0.0;
 elseif nargin < 5
-    method = 'DP';
+    method = 'DP1';
     w = 0.0;
     f1o = 0.0;
     f2o = 0.0;
