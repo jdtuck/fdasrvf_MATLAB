@@ -102,11 +102,20 @@ mq = q(:,min_ind);
 mf = f(:,min_ind);
 
 gam = zeros(N,size(q,1));
-parfor k = 1:N
-    q_c = q(:,k,1); mq_c = mq;
-    gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
-                               mf(1), f(1,k,1));
+if option.parallel == 1
+    parfor k = 1:N
+        q_c = q(:,k,1); mq_c = mq;
+        gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+            mf(1), f(1,k,1));
+    end
+else
+    for k = 1:N
+        q_c = q(:,k,1); mq_c = mq;
+        gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+            mf(1), f(1,k,1));
+    end
 end
+
 gamI = SqrtMeanInverse(gam);
 mf = warp_f_gamma(mf,gamI,t);
 mq = f_to_srvf(mf,t);
@@ -131,17 +140,32 @@ for r = 1:MaxItr
     gam_dev = zeros(N,size(q,1));
     vtil = zeros(M,N);
     dtil = zeros(1,N);
-    parfor k = 1:N
-        q_c = q(:,k,1); mq_c = mq(:,r);
-        gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
-                                   mf(1,r), f(1,k,1));
-        gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
-        f_temp(:,k) = interp1(t, f(:,k,1), (t(end)-t(1)).*gam(k,:) + t(1))';
-        q_temp(:,k) = f_to_srvf(f_temp(:,k),t);
-        v = q_temp(:,k) - mq_c
-        d = sqrt(trapz(t, v.*v));
-        vtil(:,k) = v/d;
-        dtil(k) = 1/d;
+    if option.parallel == 1
+        parfor k = 1:N
+            q_c = q(:,k,1); mq_c = mq(:,r);
+            gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                mf(1,r), f(1,k,1));
+            gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
+            f_temp(:,k) = interp1(t, f(:,k,1), (t(end)-t(1)).*gam(k,:) + t(1))';
+            q_temp(:,k) = f_to_srvf(f_temp(:,k),t);
+            v = q_temp(:,k) - mq_c
+            d = sqrt(trapz(t, v.*v));
+            vtil(:,k) = v/d;
+            dtil(k) = 1/d;
+        end
+    else
+        for k = 1:N
+            q_c = q(:,k,1); mq_c = mq(:,r);
+            gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                mf(1,r), f(1,k,1));
+            gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
+            f_temp(:,k) = interp1(t, f(:,k,1), (t(end)-t(1)).*gam(k,:) + t(1))';
+            q_temp(:,k) = f_to_srvf(f_temp(:,k),t);
+            v = q_temp(:,k) - mq_c
+            d = sqrt(trapz(t, v.*v));
+            vtil(:,k) = v/d;
+            dtil(k) = 1/d;
+        end
     end
     q(:,:,r+1) = q_temp;
     f(:,:,r+1) = f_temp;
@@ -169,11 +193,20 @@ end
 
 % last step with centering of gam
 r = r+1;
-parfor k = 1:N
-    q_c = q(:,k,1); mq_c = mq(:,r);
-    gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
-                               mf(1,r), f(1,k,1));
+if option.parallel == 1
+    parfor k = 1:N
+        q_c = q(:,k,1); mq_c = mq(:,r);
+        gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+            mf(1,r), f(1,k,1));
+    end
+else
+    for k = 1:N
+        q_c = q(:,k,1); mq_c = mq(:,r);
+        gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+            mf(1,r), f(1,k,1));
+    end
 end
+
 gamI = SqrtMeanInverse(gam);
 gamI_dev = gradient(gamI, 1/(M-1));
 mq(:,r+1) = interp1(t, mq(:,r), (t(end)-t(1)).*gamI + t(1))'.*sqrt(gamI_dev');
@@ -255,4 +288,4 @@ out.qun = qun(1:r);
 out.lambda = lambda;
 out.method = option.method;
 out.gamI = gamI;
-out.rsamps = F;
+out.rsamps = false;
