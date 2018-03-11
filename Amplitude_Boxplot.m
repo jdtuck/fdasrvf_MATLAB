@@ -1,6 +1,12 @@
-function [median_y, Q1, Q3, Q1a, Q3a, minn, maxx, outlier_index, plt] = Amplitude_Boxplot(f_tilde, f_median, q_tilde, q_median, t, alpha, k_a, figs)
+function out = Amplitude_Boxplot(out_warp, alpha, k_a, figs)
 % k_a: outlier cutoff constant for amplitude component
 % alpha: quantile value
+
+f_tilde = out_warp.fn;
+f_median = out_warp.fmedian;
+q_tilde = out_warp.qn;
+q_median = out_warp.mqn;
+t = out_warp.time;
 
 [M, N] = size(f_tilde);
 lambda = 0.5;
@@ -158,8 +164,8 @@ if (figs)
     plot(t,maxx,'red', 'linewidth',2);
     xlim([t(1) t(end)]);
     ylim auto;
-    
-    
+
+
     figure(311); clf;
     surf(U,V,Fs2);
     hold on;
@@ -172,3 +178,14 @@ if (figs)
     plot3(t,repmat(d3+d3a,M,1),Q3a,'g','LineWidth',3)
     plot3(t,repmat(d3+d3a+du,M,1),maxx,'r','LineWidth',3)
 end
+
+out.f_median = median_y;
+out.q_median = q_median
+out.Q1 = Q1;
+out.Q3 = Q3;
+out.Q1a = Q1a;
+out.Q3a = Q3a;
+out.minn = minn;
+out.maxx = maxx;
+out.outlier_index = outlier_index;
+out.plt = plt;

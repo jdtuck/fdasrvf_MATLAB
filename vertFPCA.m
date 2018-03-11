@@ -1,4 +1,9 @@
-function vfpca = vertFPCA(fn,t,qn,no,id,option)
+function vfpca = vertFPCA(out_warp,no,id,option)
+
+fn = out_warp.fn;
+t = out_warp.time;
+qn = out_warp.qn;
+
 if nargin < 4
     id = round(length(t)/2);
     option.showplot = 1;

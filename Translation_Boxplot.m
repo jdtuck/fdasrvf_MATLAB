@@ -1,4 +1,4 @@
-function [median_t, Q1, Q3, minn, maxx, outlier_index] = Translation_Boxplot(f, t)
+function out = Translation_Boxplot(f, t)
 
 figure(100);clf;
     plot(t,f,'linewidth',2);
@@ -44,3 +44,12 @@ else
             set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
     end
 end
+
+out.time = t;
+out.f = f;
+out.median_t = median_t;
+out.Q1 = Q1;
+out.Q3 = Q3;
+out.minn = minn;
+out.maxx = maxx;
+out.outlier_index = outlier_index;

@@ -1,4 +1,4 @@
-function samples = gauss_model(fn, time, qn, gam, n, sort_samples)
+function samples = gauss_model(out_warp, n, sort_samples)
 % This function models the functional data using a Gaussian model extracted from
 % the principal components of the srvfs
 %
@@ -15,6 +15,11 @@ function samples = gauss_model(fn, time, qn, gam, n, sort_samples)
 % \item{fs}{random aligned samples}
 % \item{gams}{random warping function samples}
 % \item{ft}{random function samples}
+
+fn = out_warp.fn;
+time = out_warp.time;
+qn = out_warp.qn;
+gam = out_warp.gam;
 
 if nargin < 5
     n = 1;

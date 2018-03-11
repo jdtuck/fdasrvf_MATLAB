@@ -1,4 +1,6 @@
-function hfpca = horizFPCA(gam,no,option)
+function hfpca = horizFPCA(out_warp,no,option)
+
+gam = out_warp.gam;
 
 if nargin<3
     option.showplot = 1;

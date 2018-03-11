@@ -1,4 +1,4 @@
-function [fn,qn,q0,fmean,mqn,gam,psi,stats] = time_warping(f,t,lambda,option)
+function out = time_warping(f,t,lambda,option)
 % input:
 % f (M,N): matrix defining N functions of M samples
 % t : time vector of length M
@@ -15,7 +15,7 @@ function [fn,qn,q0,fmean,mqn,gam,psi,stats] = time_warping(f,t,lambda,option)
 % option.w = 0.0; % BFGS weight
 % option.MaxItr = 20;  % maximum iterations
 %
-% output
+% output structure containing
 % fn: aligned functions
 % qn: aligned srvfs
 % q0: original srvfs
@@ -254,3 +254,19 @@ if option.parallel == 1 && option.closepool == 1
         delete(gcp('nocreate'))
     end
 end
+
+out.f0 = f;
+out.time = t;
+out.fn = fn;
+out.qn = qn;
+out.q0 = q0;
+out.fmedian = fmedian;
+out.mqn = mqn;
+out.gam = gam;
+out.psi = psi;
+out.stats = stats;
+out.qun = qun(1:r);
+out.lambda = lambda;
+out.method = option.method;
+out.gamI = gamI;
+out.rsamps = F;

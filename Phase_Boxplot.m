@@ -1,6 +1,8 @@
-function [median_x, Q1, Q3, Q1a, Q3a, minn, maxx, outlier_index, psi_median, plt] = Phase_Boxplot(gam, k_p, alpha, figs)
+function out = Phase_Boxplot(out_warp, k_p, alpha, figs)
 % k_p: outlier cutoff constant for phase component
 % alpha: quantile value
+
+gam = out_warp.gam;
 
 [M, N] = size(gam);
 t = linspace(0,1,M);
@@ -168,7 +170,7 @@ plt.Q1_psi = Q1a_psi;
 plt.Q3_psi = Q3a_psi;
 
 if (figs)
-    
+
     figure(410); clf;
     plot(t, median_x, 'black','linewidth', 2);
     hold on;
@@ -180,7 +182,7 @@ if (figs)
     plot(t,minn,'red','linewidth',2);
     axis square;
     axis([0,1,0,1]);
-    
+
     figure(416); clf;
     surf(U,V,Fs2);
     hold on;
@@ -194,3 +196,14 @@ if (figs)
     plot3(t,repmat(d3+d3a+du,M,1),maxx - t,'r','LineWidth',3)
     axis square;
 end
+
+out.time = time;
+out.psi_median = psi_median;
+out.Q1 = Q1;
+out.Q3 = Q3;
+out.Q1a = Q1a;
+out.minn = minn;
+out.maxx = maxx;
+out.outlier_index = outlier_index;
+out.plt = plt;
+out.median_x = median_x;

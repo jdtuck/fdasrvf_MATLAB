@@ -1,4 +1,4 @@
-function bounds = bootstrap_tol(time, fn, qn, gam, quants, nboot, alpha)
+function bounds = bootstrap_tol(out_warp, quants, nboot, alpha)
 % This function models the functional data using a Gaussian model extracted from
 % the principal components of the srvfs
 %
@@ -20,6 +20,11 @@ function bounds = bootstrap_tol(time, fn, qn, gam, quants, nboot, alpha)
 % \item{lwrtol_gam}{lower tolerance gams}
 % \item{uprtol_gam}{upper tolerance gams}
 % \item{mn_gam}{tolerance of mean gams}
+
+time = out_warp.time;
+fn = out_warp.fn;
+qn = out_warp.qn;
+gam = out_warp.gam;
 
 % bootstrap CI's
 bootlwr = zeros(length(time),nboot);
