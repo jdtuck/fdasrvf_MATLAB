@@ -12,6 +12,7 @@ analysis
 
 1. Download zip or tar.gz of package or clone repository
 2. Run setup.m to setup paths and compile MEX functions
+  NOTE: Armadillo c++ library required for bayesian code.
 
 ------------------------------------------------------------------------------
 
@@ -52,9 +53,6 @@ Information Processing Systems (NIPS), 2011.
 Wen Huang, Kyle A. Gallivan, Anuj Srivastava, Pierre-Antoine Absil. "Riemannian
 Optimization for Elastic Shape Analysis", Short version, The 21st International
 Symposium on Mathematical Theory of Networks and Systems (MTNS 2014).
-
-Cheng, W., Dryden, I. L., and Huang, X. (2016). Bayesian registration of functions
-and curves. Bayesian Analysis, 11(2), 447-475.
 
 Xie, W., S. Kurtek, K. Bharath, and Y. Sun  (2016). "A Geometric Approach to Visualization of Variability in Functional Data." Journal of the American Statistical Association in press: 1-34.
 

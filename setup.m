@@ -5,6 +5,13 @@ fprintf('Compiling DP files...\n');
 mex -outdir DP/ DP/DynamicProgrammingQ2.c DP/dp_grid.c 
 mex -outdir DP/ DP/DynamicProgrammingQ.c
 
+% Bayesian
+fprintf('Compiling Bayesian files...\n');
+mex -outdir bayesian/ bayesian/bcalcY.cpp
+mex -outdir bayesian/ bayesian/bcuL2norm2.cpp 
+mex -outdir bayesian/ bayesian/trapzCpp.cpp
+mex -outdir bayesian/ bayesian/border_l2norm.cpp
+
 % minFunc (lbfgs optimizer)
 fprintf('Compiling minFunc files...\n');
 mex -outdir minFunc/compiled minFunc/mex/mcholC.c
