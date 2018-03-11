@@ -66,18 +66,24 @@ vfpca.U = U;
 
 if option.showplot
     cl = 'rbgmc';
-    figure
-    for k = NP
-        subplot(2,3,k);
-        for i = 1:length(coef)
-            plot(t, q_pca(1:end-1,i,k), cl(i), 'linewidth', 2); hold on;
+    [m1, n1, p1] = size(q_pca);
+    num_plot = ceil(p1/3);
+    cnt = 1;
+    for ii = 1:num_plot
+        figure;
+        for k1 = 1:3
+            k = k1+(ii-1)*3
+            subplot(2,3,k1);
+            for i = 1:length(coef)
+                plot(t, q_pca(1:end-1,i,k), cl(i), 'linewidth', 2); hold on;
+            end
+            title(['q domain: PD ' num2str(k)], 'fontsize', 14);
+            subplot(2,3,k1+3);
+            for i = 1:length(coef)
+                plot(t, f_pca(:,i,k), cl(i), 'linewidth', 2); hold on;
+            end
+            title(['f domain: PD ' num2str(k)], 'fontsize', 14);
         end
-        title(['q domain: PD ' num2str(k)], 'fontsize', 14);
-        subplot(2,3,k+3);
-        for i = 1:length(coef)
-            plot(t, f_pca(:,i,k), cl(i), 'linewidth', 2); hold on;
-        end
-        title(['f domain: PD ' num2str(k)], 'fontsize', 14);
     end
     cumm_coef = 100*cumsum(s)./sum(s);
     figure

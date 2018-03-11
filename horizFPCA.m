@@ -19,8 +19,8 @@ T = size(vec,2) + 1;
 tau = 1:5;
 
 % TFPCA
-psi_pca = zeros(5,length(mu),3);
-gam_pca = zeros(5,length(mu)+1,3);
+psi_pca = zeros(length(tau),length(mu),no);
+gam_pca = zeros(length(tau),length(mu)+1,no);
 v = zeros(5,length(mu),3);
 for j=1:no      % three components
     for k=tau   % -2, -1, 0, 1, 2 std from the mean
@@ -44,15 +44,21 @@ hfpca.vec = vec;
 hfpca.mu = mu;
 
 if option.showplot
-    figure;
     cl = 'rbgmc';
-    for j = 1:3
-        subplot(1,3,j);
-        for k = 1:5
-            plot(linspace(0,1,T), gam_pca(k,:,j), cl(j), 'linewidth', 2); hold on;
+    [m1, n1, p1] = size(q_pca);
+    num_plot = ceil(p1/3);
+    cnt = 1;
+    for ii = 1:num_plot
+        figure;
+        for j1 = 1:3
+            j = j1 + (ii-1)*3
+            subplot(1,3,j1);
+            for k = 1:length(tau)
+                plot(linspace(0,1,T), gam_pca(k,:,j), cl(j), 'linewidth', 2); hold on;
+            end
+            axis([0 1 0 1]);
+            title(['PD ' num2str(j)], 'fontsize', 14);
         end
-        axis([0 1 0 1]);
-        title(['PD ' num2str(j)], 'fontsize', 14);
     end
     cumm_coef = 100*cumsum(Sig)./sum(Sig);
     figure
