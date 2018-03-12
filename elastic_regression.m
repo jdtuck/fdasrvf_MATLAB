@@ -86,8 +86,6 @@ if option.smooth == 1
 end
 
 % create B-spline basis
-addpath(genpath('bspline_tools'))
-addpath(genpath('basis'))
 if isempty(option.B)
     B = create_basismatrix(t, option.df, 4);
 else

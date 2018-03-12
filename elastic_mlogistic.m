@@ -31,8 +31,6 @@ function out = elastic_mlogistic(f, y, t, option)
 % n_classes: number of classes
 % type: model type
 
-addpath(genpath('mlogit_warp'))
-
 if nargin < 4
     option.parallel = 0;
     option.closepool = 0;
@@ -82,7 +80,6 @@ if option.smooth == 1
 end
 
 % create B-spline basis
-addpath(genpath('bspline_tools'))
 if isempty(option.B)
     B = create_basismatrix(t, option.df, 4);
 else
@@ -115,7 +112,6 @@ while itr <= option.max_itr
     end
     
     % find alpha and beta using bfgs
-    addpath(genpath('minFunc'))
     options.Method = 'lbfgs';
     options.Display = 'off';
     b0 = zeros(m*(Nb+1), 1);

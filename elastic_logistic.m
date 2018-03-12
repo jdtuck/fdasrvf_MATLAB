@@ -74,8 +74,6 @@ if option.smooth == 1
 end
 
 % create B-spline basis
-addpath(genpath('bspline_tools'))
-addpath(genpath('basis'))
 if isempty(option.B)
     B = create_basismatrix(t, option.df, 4);
 else
@@ -108,7 +106,6 @@ while itr <= option.max_itr
     end
     
     % find alpha and beta using bfgs
-    addpath(genpath('minFunc'))
     options.Method = 'lbfgs';
     options.Display = 'off';
     b0 = zeros(Nb+1, 1);

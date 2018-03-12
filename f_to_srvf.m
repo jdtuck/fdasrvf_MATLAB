@@ -1,5 +1,4 @@
 function q = f_to_srvf(f,time)
-addpath(genpath('bspline_tools'))
 binsize = mean(diff(time));
 [M, N] = size(f);
 
