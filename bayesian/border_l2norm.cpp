@@ -1,9 +1,10 @@
 #include "armadillo/mex_interface/armaMex.hpp"
-#include "mex.h"
-#include "matrix.h"
+#include <mex.h>
+#include <mat.h>
 #include "pair_align_functions_expomap.hpp"
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    
   // Check the number of input arguments.
   if (nrhs != 2)
     mexErrMsgTxt("usage: out = order_l2norm(x, y)");
@@ -21,10 +22,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   vec y = armaGetPr(prhs[1]);
   
   double out = order_l2norm(x, y);
-  
+    
   // Create the output argument
+  plhs[0] = mxCreateDoubleScalar(1);
   *mxGetPr(plhs[0]) = out;
-  
-  return;
   
 }

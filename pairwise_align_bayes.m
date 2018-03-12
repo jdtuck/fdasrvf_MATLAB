@@ -1,4 +1,4 @@
-function out = pairwise_align_bayes(f1, f2, time, mcmcopts)
+function out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
 if nargin < 4
     mcmcopts.iter = 2e4;
     mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
@@ -8,15 +8,24 @@ if nargin < 4
     tmp.probs = [0.1,0.1,0.7,0.1];
     mcmcopts.zpcn = tmp;
     mcmcopts.propvar = 1;
-    mcmcopts.initcoef = repelem(0, 20);
+    mcmcopts.initcoef = repelem(0, 20).';
     mcmcopts.npoints = 200;
     mcmcopts.extrainfo = true;
 end
 
-if (length(f1) ~= length(f2))
+if (~iscolumn(f1i))
+    f1i = f1i.';
+end
+if (~iscolumn(f2i))
+    f2i = f2i.';
+end
+if (~iscolumn(time))
+    time = time.';
+end
+if (length(f1i) ~= length(f2i))
     error('Length of f1 and f2 must be equal')
 end
-if (length(f1) ~= length(time))
+if (length(f1i) ~= length(time))
     error('Length of f1 and time must be equal')
 end
 if (length(mcmcopts.zpcn.betas) ~= length(mcmcopts.zpcn.probs))
@@ -32,15 +41,14 @@ iter = mcmcopts.iter;
 
 % for now, back to struct format of Yi's software
 f1.x = time;
-f1.y = f1;
-f2.x = tie;
-f2.y = f2;
+f1.y = f1i;
+f2.x = time;
+f2.y = f2i;
 
 % normalize timet to [0,1]
 % ([a,b] - a) / (b-a) = [0,1]
-rangex = range(f1.x);
-f1.x = (f1.x-rangex(1))./(rangex(2)-rangex(1));
-f2.x = (f2.x-rangex(1))./(rangex(2)-rangex(1));
+f1.x = (f1.x-min(f1.x))./(max(f1.x)-min(f1.x));
+f2.x = (f2.x-min(f2.x))./(max(f2.x)-min(f2.x));
 
 % parameter settings
 pw_sim_global_burnin = mcmcopts.burnin;
@@ -48,7 +56,7 @@ valid_index = pw_sim_global_burnin:iter;
 pw_sim_global_Mg = length(mcmcopts.initcoef)/2;
 g_coef_ini = mcmcopts.initcoef;
 numSimPoints = mcmcopts.npoints;
-pw_sim_global_domain_par = linspace(0,1,numSimPoints);
+pw_sim_global_domain_par = linspace(0,1,numSimPoints).';
 g_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mg, 1);
 sigma1_ini = 1;
 pw_sim_global_sigma_g = mcmcopts.propvar;
@@ -83,17 +91,17 @@ end
 result.g_coef = zeros(iter,length(g_coef_ini));
 result.sigma1 = zeros(1,iter);
 result.logl = zeros(1,iter);
-result.SSE = rep(1,iter);
-result.accept = rep(1,iter);
-result.accept_betas = rep(1,iter);
+result.SSE = zeros(1,iter);
+result.accept = zeros(1,iter);
+result.accept_betas = zeros(1,iter);
 
 % init
 g_coef_curr = g_coef_ini;
 sigma1_curr = sigma1_ini;
 SSE_curr = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_ini,g_basis,false),q1,q2);
-logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_ini,g_basis,false),sigma1_ini^2,q1,q2,SSE_curr);
+logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_ini,g_basis,false),q1,q2,sigma1_ini^2,SSE_curr);
 
-result.g_coef(:,1) = g_coef_ini;
+result.g_coef(1,:) = g_coef_ini;
 result.sigma1(1) = sigma1_ini;
 result.SSE(1) = SSE_curr;
 result.logl(1) = logl_curr;
@@ -189,9 +197,9 @@ b = quantile(vec,0.975);
 out = [a,b];
 end
 
-function [x,y] = f_exp1(g)
-x = g.x;
-y = bcalcY(f_L2norm(g), g.y);
+function out = f_exp1(g)
+out.x = g.x;
+out.y = bcalcY(f_L2norm(g), g.y);
 end
 
 function [x,yy] = f_exp1inv(psi)
@@ -276,7 +284,7 @@ end
 function out = f_SSEg_pw(g, q1, q2)
 obs_domain = q1.x;
 exp1g_temp = f_predictfunction(f_exp1(g), obs_domain, 0);
-pt = [0, bcuL2norm2(obs_domain, exp1g_temp.y)];
+pt = [0; bcuL2norm2(obs_domain, exp1g_temp.y)];
 tmp = f_predictfunction(q2, pt, 0);
 vec = (q1.y - tmp.y .* exp1g_temp.y);
 out = sum(vec);
@@ -299,7 +307,7 @@ end
 function out = f_Q(f)
 d = f_predictfunction(f, f.x, 1);
 out.x = f.x;
-out.y = sign(d.y) * sqrt(abs(d.y));
+out.y = sign(d.y) .* sqrt(abs(d.y));
 end
 
 function out = f_Qinv(q, fini)
@@ -336,14 +344,14 @@ end
 
 if (deriv == 1)
     fmod = interp1(f.x,f.y,at,'linear','extrap');
-    diffy1 = [0, diff(fmod)];
-    diffy2 = [diff(fmod), 0];
-    diffx1 = [0, diff(at)];
-    diffx2 = [diff(at), 0];
+    diffy1 = [0; diff(fmod)];
+    diffy2 = [diff(fmod); 0];
+    diffx1 = [0; diff(at)];
+    diffx2 = [diff(at); 0];
     
     
     out.x = at;
-    out.y = (diffy2 + diffy1) / (diffx2 + diffx1);
+    out.y = (diffy2 + diffy1) ./ (diffx2 + diffx1);
 end
 end
 

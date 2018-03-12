@@ -93,7 +93,7 @@ double order_l2norm(vec x, vec y) {
   std::sort(vals.begin(), vals.end());
   int sInd;
   vec xSort(n);
-  vec ySortSq (n);
+  vec ySortSq(n);
   for(int i = 0; i < n; i++) {
     sInd = vals[i].second;
     xSort[i] = x[sInd];
@@ -105,7 +105,9 @@ double order_l2norm(vec x, vec y) {
   for (int i = 0; i<(n-1); i++) {
     area2 += (xSort[i+1] - xSort[i]) * (ySortSq[i+1] + ySortSq[i]);
   }
-  return (sqrt(area2 / 2.0));
+  
+  double out = sqrt(area2/2.0);
+  return (out);
 }
 
 #endif

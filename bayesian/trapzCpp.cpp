@@ -23,6 +23,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   double out = trapzCpp(x, y);
   
   // Create the output argument
+  plhs[0] = mxCreateDoubleScalar(1);
   *mxGetPr(plhs[0]) = out;
   
   return;
