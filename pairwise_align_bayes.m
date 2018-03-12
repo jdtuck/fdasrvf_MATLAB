@@ -134,7 +134,7 @@ obj.release();
 % calculate posterior mean of psi
 pw_sim_est_psi_matrix = zeros(length(pw_sim_global_domain_par), length(valid_index));
 for k = 1:length(valid_index)
-    g_temp = f_basistofunction(pw_sim_global_domain_par, 0, result.g_coef(:, valid_index(k)), g_basis, false);
+    g_temp = f_basistofunction(pw_sim_global_domain_par, 0, result.g_coef(valid_index(k),:).', g_basis, false);
     psi_temp = f_exp1(g_temp);
     pw_sim_est_psi_matrix(:,k) = psi_temp.y;
 end
@@ -142,11 +142,13 @@ end
 result_posterior_psi_simDomain = f_psimean(pw_sim_global_domain_par, pw_sim_est_psi_matrix);
 
 % resample to same number of points as the input f1 and f2
-result_posterior_psi = interp1(result_posterior_psi_simDomain.x, result_posterior_psi_simDomain.y, f1.x, 'linear', 'extrap');
+result = interp1(result_posterior_psi_simDomain.x, result_posterior_psi_simDomain.y, f1.x, 'linear', 'extrap');
+result_posterior_psi.x=f1.x;
+result_posterior_psi.y=result;
 
 % transform posterior mean of psi to gamma
 result_posterior_gamma = f_phiinv(result_posterior_psi);
-gam0 <- result_posterior_gamma.y;
+gam0 = result_posterior_gamma.y;
 result_posterior_gamma.y = norm_gam(gam0);
 
 % warped f2
@@ -154,20 +156,20 @@ f2_warped = warp_f_gamma(f2.y, result_posterior_gamma.y, result_posterior_gamma.
 
 if (mcmcopts.extrainfo)
     % matrix of posterior draws from gamma
-    gamma_mat = pw_sim_est_psi_matrix;
+    gamma_mat = zeros(length(q1.x),size(pw_sim_est_psi_matrix,2));
     one_v = ones(1,size(pw_sim_est_psi_matrix,1));
     Dx = zeros(1,size(pw_sim_est_psi_matrix,2));
     Dy = Dx;
     gamma_stats = zeros(2,size(pw_sim_est_psi_matrix,2));
     for ii = 1:size(pw_sim_est_psi_matrix,2)
-        tmp = interp1(pw_sim_global_domain_par, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
-        tmp1.x = pw_sim_global_domain_par;
+        tmp = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
+        tmp1.x = f1.x;
         tmp1.y = tmp;
         tmp = f_phiinv(tmp1);
         gamma_mat(:,ii) = round(norm_gam(tmp.y),SIG_GAM);
         v = inv_exp_map(one_v, pw_sim_est_psi_matrix(:,ii));
         Dx(ii) = sqrt(trapz(pw_sim_global_domain_par, v.^2));
-        q2warp = warp_q_gamma(q2.y, gamma_mat(:,ii), q2.x);
+        q2warp = warp_q_gamma(q2.y, gamma_mat(:,ii), q2.x).';
         Dy(ii) = sqrt(trapz(q2.x,(q1.y-q2warp).^2));
         gamma_stats(:,ii) = statsFun(gamma_mat(:,ii));
     end
@@ -505,7 +507,7 @@ end
 
 function out = f_phiinv(psi)
 f_domain = psi.x;
-result = [0, bcuL2norm2(f_domain, psi.y)];
+result = [0; bcuL2norm2(f_domain, psi.y)];
 out.x = f_domain;
 out.y = result;
 end
