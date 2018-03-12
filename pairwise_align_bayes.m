@@ -59,6 +59,7 @@ numSimPoints = mcmcopts.npoints;
 pw_sim_global_domain_par = linspace(0,1,numSimPoints).';
 g_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mg, 1);
 sigma1_ini = 1;
+zpcn = mcmcopts.zpcn;
 pw_sim_global_sigma_g = mcmcopts.propvar;
 
     function result = propose_g_coef(g_coef_curr)
@@ -68,7 +69,7 @@ pw_sim_global_sigma_g = mcmcopts.propvar;
         z = rand;
         for i = 1:length(pCN_beta)
             if (z <= probm(i+1) && z > probm(i))
-                g_coef_new = normrnd(0, pw_sim_global_sigma_g / repelem(1:pw_sim_global_Mg,2), 1, pw_sim_global_Mg * 2);
+                g_coef_new = normrnd(0, pw_sim_global_sigma_g ./ repelem(1:pw_sim_global_Mg,2), 1, pw_sim_global_Mg * 2);
                 result.prop = sqrt(1-pCN_beta(i)^2) * g_coef_curr + pCN_beta(i) * g_coef_new;
                 result.ind = i;
             end
