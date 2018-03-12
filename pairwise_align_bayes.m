@@ -177,9 +177,9 @@ end
 
 % return object
 out.f2_warped = f2_warped;
-out.gamma = result_posterior_gamma;
+out.gamma = result_posterior_gamma.y;
 out.g_coef = result.g_coef;
-out.psi = result_posterior_psi;
+out.psi = result_posterior_psi.y;
 out.sigma1 = result.sigma1;
 
 if (mcmcopts.extrainfo)
