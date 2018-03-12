@@ -105,7 +105,7 @@ result.SSE(1) = SSE_curr;
 result.logl(1) = logl_curr;
 
 % update the chain for iter-1 times
-obj = ProgressBar(iter, ...
+obj = ProgressBar(iter-1, ...
     'Title', 'Running MCMC' ...
     );
 for m = 2:iter
@@ -142,9 +142,9 @@ end
 result_posterior_psi_simDomain = f_psimean(pw_sim_global_domain_par, pw_sim_est_psi_matrix);
 
 % resample to same number of points as the input f1 and f2
-result = interp1(result_posterior_psi_simDomain.x, result_posterior_psi_simDomain.y, f1.x, 'linear', 'extrap');
+result_i = interp1(result_posterior_psi_simDomain.x, result_posterior_psi_simDomain.y, f1.x, 'linear', 'extrap');
 result_posterior_psi.x=f1.x;
-result_posterior_psi.y=result;
+result_posterior_psi.y=result_i;
 
 % transform posterior mean of psi to gamma
 result_posterior_gamma = f_phiinv(result_posterior_psi);
@@ -162,10 +162,10 @@ if (mcmcopts.extrainfo)
     Dy = Dx;
     gamma_stats = zeros(2,size(pw_sim_est_psi_matrix,2));
     for ii = 1:size(pw_sim_est_psi_matrix,2)
-        tmp = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
-        tmp1.x = f1.x;
-        tmp1.y = tmp;
-        tmp = f_phiinv(tmp1);
+        result_i = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
+        result_i2.y=result_i;
+        result_i2.x=f1.x;
+        tmp = f_phiinv(result_i2);
         gamma_mat(:,ii) = round(norm_gam(tmp.y),SIG_GAM);
         v = inv_exp_map(one_v, pw_sim_est_psi_matrix(:,ii));
         Dx(ii) = sqrt(trapz(pw_sim_global_domain_par, v.^2));
