@@ -70,7 +70,7 @@ pw_sim_global_sigma_g = mcmcopts.propvar;
         for i = 1:length(pCN_beta)
             if (z <= probm(i+1) && z > probm(i))
                 g_coef_new = normrnd(0, pw_sim_global_sigma_g ./ repelem(1:pw_sim_global_Mg,2), 1, pw_sim_global_Mg * 2);
-                result.prop = sqrt(1-pCN_beta(i)^2) * g_coef_curr + pCN_beta(i) * g_coef_new;
+                result.prop = sqrt(1-pCN_beta(i)^2) * g_coef_curr + pCN_beta(i) * g_coef_new.';
                 result.ind = i;
             end
         end
@@ -79,9 +79,6 @@ pw_sim_global_sigma_g = mcmcopts.propvar;
 % srsf transformation
 q1 = f_Q(f1);
 q2 = f_Q(f2);
-
-% init chain
-obs_domain = q1.x;
 
 tmp = f_exp1(f_basistofunction(g_basis.x,0,g_coef_ini,g_basis, false));
 if (min(tmp.y)<0)
@@ -108,29 +105,31 @@ result.SSE(1) = SSE_curr;
 result.logl(1) = logl_curr;
 
 % update the chain for iter-1 times
+obj = ProgressBar(iter, ...
+    'Title', 'Running MCMC' ...
+    );
 for m = 2:iter
     % update g
-    a = f_updateg_pw(g_coef_curr, g_basis, sigma1_curr^2, q1, q2, SSE_curr, propose_g_coef);
-    g_coef_curr = a.g_coef;
-    SSE_curr = a.SSE;
-    logl_curr = a.logl;
-    
+    [g_coef_curr, ~, SSE_curr, accept, zpcnInd] = f_updateg_pw(g_coef_curr, g_basis, sigma1_curr^2, q1, q2, SSE_curr, @propose_g_coef);
+
     % update sigma1
-    newshape = length(q1.x)/2 + alpha0;
-    newscale = 1/2 * SSE_curr + beta0;
+    newshape = length(q1.x)/2 + mcmcopts.alpha0;
+    newscale = 1/2 * SSE_curr + mcmcopts.beta0;
     sigma1_curr = sqrt(1/gamrnd(newshape,newscale));
-    logl_curr = f_logl_pw(f_basistofunction(g_basis.x, 0, g_coef_curr, g_basis, false), sigma1_curr^2, q1, q2, SSE_curr);
-    
+    logl_curr = f_logl_pw(f_basistofunction(g_basis.x, 0, g_coef_curr, g_basis, false), q1, q2, sigma1_curr^2, SSE_curr);
+
     % save update to results
-    result.g_coef(:,m) = g_coef_curr;
+    result.g_coef(m,:) = g_coef_curr;
     result.sigma1(m) = sigma1_curr;
     result.SSE(m) = SSE_curr;
     if (mcmcopts.extrainfo)
         result.logl(m) = logl_curr;
-        result.accept(m) = a.accept;
-        result.accept_betas(m) = a.zpcnInd;
+        result.accept(m) = accept;
+        result.accept_betas(m) = zpcnInd;
     end
+    obj.step([], [], []);
 end
+obj.release();
 
 % calculate posterior mean of psi
 pw_sim_est_psi_matrix = zeros(length(pw_sim_global_domain_par), length(valid_index));
@@ -237,7 +236,7 @@ function [g_coef, logl, SSE, accept, zpcnInd] = f_updateg_pw(g_coef_curr,g_basis
 g_coef_prop = propose_g_coef(g_coef_curr);
 
 tst = f_exp1(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis, false));
-while (min(tst.x)<0)
+while (min(tst.y)<0)
     g_coef_prop = propose_g_coef(g_coef_curr);
     tst = f_exp1(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis, false));
 end
@@ -246,11 +245,11 @@ if (SSE_curr == 0)
     SSE_curr = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis, false), q1, q2);
 end
 
-SSE_prop = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_prop,g_basis,false), q1, q2);
+SSE_prop = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis,false), q1, q2);
 
-logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), var1_curr, q1, q2, SSE_curr);
+logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), q1, q2, var1_curr, SSE_curr);
 
-logl_prop = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_prop,g_basis,false), var1_curr, q1, q2, SSE_prop);
+logl_prop = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis,false), q1, q2, var1_curr, SSE_prop);
 
 ratio = min(1, exp(logl_prop-logl_curr));
 
@@ -287,7 +286,7 @@ obs_domain = q1.x;
 exp1g_temp = f_predictfunction(f_exp1(g), obs_domain, 0);
 pt = [0; bcuL2norm2(obs_domain, exp1g_temp.y)];
 tmp = f_predictfunction(q2, pt, 0);
-vec = (q1.y - tmp.y .* exp1g_temp.y);
+vec = (q1.y - tmp.y .* exp1g_temp.y).^2;
 out = sum(vec);
 end
 
@@ -349,8 +348,8 @@ if (deriv == 1)
     diffy2 = [diff(fmod); 0];
     diffx1 = [0; diff(at)];
     diffx2 = [diff(at); 0];
-    
-    
+
+
     out.x = at;
     out.y = (diffy2 + diffy1) ./ (diffx2 + diffx1);
 end
