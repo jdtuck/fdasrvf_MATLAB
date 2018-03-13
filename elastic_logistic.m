@@ -1,12 +1,12 @@
 function out = elastic_logistic(f, y, t, option)
 % ELASTIC_LOGISTIC Elastic Logistic Functional Regression
 % -------------------------------------------------------------------------
-% This function identifies a logistic regression model with 
+% This function identifies a logistic regression model with
 % phase-variablity using elastic methods
 %
 % Usage:  out = elastic_logistic(f, y, t)
 %         out = elastic_logistic(f, y, t, option)
-% 
+%
 % Input:
 % f (M,N): matrix defining N functions of M samples
 % y : response vector of length N
@@ -34,8 +34,6 @@ function out = elastic_logistic(f, y, t, option)
 % b: coefficient vector
 % Loss: logistic loss
 % type: model type
-
-addpath(genpath('DP'))
 
 if nargin < 4
     option.parallel = 0;
@@ -102,26 +100,26 @@ while itr <= option.max_itr
         fn(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gamma(:,k) + t(1))';
         qn(:,k) = gradient(fn(:,k), binsize)./sqrt(abs(gradient(fn(:,k), binsize))+eps);
     end
-    
+
     Phi = ones(N, Nb+1);
     for ii = 1:N
         for jj = 2:Nb+1
             Phi(ii,jj) = trapz(t, qn(:,ii) .* B(:,jj-1));
         end
     end
-    
+
     % find alpha and beta using bfgs
     options.Method = 'lbfgs';
     options.Display = 'off';
     b0 = zeros(Nb+1, 1);
     b = minFunc(@logit_optim,b0,options,Phi,y);
-    
+
     alpha = b(1);
     beta = B * b(2:Nb+1);
-    
+
     % compute the lostic loss
     LL(itr) = logit_loss(b, Phi, y);
-        
+
     % find gamma
     gamma_new = zeros(M,N);
     if option.parallel == 1
@@ -133,13 +131,13 @@ while itr <= option.max_itr
             gamma_new(:,ii) = logistic_warp(beta, t, q(:,ii), y(ii));
         end
     end
-    
+
     if norm(gamma-gamma_new) < 1e-5
         break
     else
         gamma = gamma_new;
     end
-    
+
     itr = itr + 1;
 end
 gamma = gamma_new;
@@ -219,4 +217,3 @@ elseif y == -1
     gamma = optimum_reparam(-1.*beta',q,t,0);
 end
 end
-
