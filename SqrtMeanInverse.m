@@ -1,15 +1,27 @@
 function gamI = SqrtMeanInverse(gam)
+% SQRTMEANINVERSE SRVF transform of warping functions
+% -------------------------------------------------------------------------
+% This function calculates the srvf of warping functions with corresponding
+% shooting vectors and finds the inverse of the mean
+%
+% Usage: gamI = SqrtMeanInverse(gam)
+%
+% Input:
+% gam: matrix (\eqn{N} x \eqn{M}) of \eqn{M} warping functions with \eqn{N} samples
+%
+% Output
+% gamI: Inverse Karcher mean warping function
 
-  [n,T] = size(gam);
-  time = linspace(0,1,T);
+[n,T] = size(gam);
+time = linspace(0,1,T);
 
-  psi = zeros(n,T);
-  binsize = mean(diff(time));
-  for i=1:n
-      psi(i,:) = sqrt(gradient(gam(i,:),binsize));
-  end
+psi = zeros(n,T);
+binsize = mean(diff(time));
+for i=1:n
+    psi(i,:) = sqrt(gradient(gam(i,:),binsize));
+end
 
-%% Find direction
+% Find direction
 mnpsi = mean(psi);
 dqq = sqrt(sum((psi' - mnpsi'*ones(1,n)).^2,1));
 [~, min_ind] = min(dqq);

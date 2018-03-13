@@ -1,8 +1,22 @@
 function out = Translation_Boxplot(f, t)
-% Translation Boxplot
-%
+% TRANSLATION_BOXPLOT Translation Boxplot
+% -------------------------------------------------------------------------
 % This function constructs the translation boxplot
 %
+% Usage:  out = Translation_Boxplot(f, t)
+%
+% Input:
+% f (M,N): matrix defining N functions of M samples
+% t : time vector of length M
+%
+% Output: structure containing
+% median_t: median translation
+% Q1: First quartile
+% Q3: Second quartile
+% minn: minimum extreme function
+% maxx: maximum extreme function
+% outlier_index: indexes of outlier functions
+
 
 figure(100);clf;
     plot(t,f,'linewidth',2);

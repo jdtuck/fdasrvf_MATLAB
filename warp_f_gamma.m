@@ -1,13 +1,18 @@
 function fo = warp_f_gamma(f,gamma,t,spline)
-% Warp Function
-%
+% WARP_F_GAMMA Warp Function
+% -------------------------------------------------------------------------
 % This function warps function \eqn{f} by \eqn{\gamma}
 %
-% @param f vector function
-% @param time time
-% @param gamma vector warping function
-% @param spl.int use spline interpolation (default F)
-% @return fnew warped function
+% Usage: fo = warp_f_gamma(f,gamma,t,spline)
+%   
+% Input:
+% f: vector function
+% gamma: vector warping function
+% t: time
+% spline use spline interpolation (default false)
+%
+% Output
+% fo: warped function
 if nargin < 4
     spline = false;
 end

@@ -1,21 +1,27 @@
 function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
-% Align two functions
-%
+% OPTIMUM_REPARAM Calculates Warping for two SRVFs
+% -------------------------------------------------------------------------%
 % This function aligns two SRSF functions using Dynamic Programming
 %
-% @param q1 srsf of function 1
-% @param q2 srsf of function 2
-% @param t sample points of function 2
-% @param lambda controls amount of warping (default = 0)
-% @param method controls which optimization method (default="DP") options are
+% Usage:  gam = optimum_reparam(q1,q2,t)
+%         gam = optimum_reparam(q1,q2,t,lambda)
+%         gam = optimum_reparam(q1,q2,t,lambda,method)
+%         gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
+%
+% Input:
+% q1: srsf of function 1
+% q2: srsf of function 2
+% t: sample points of function 2
+% lambda: controls amount of warping (default = 0)
+% method: controls which optimization method (default="DP") options are
 % Dynamic Programming ("DP"), Coordinate Descent ("DP2"), and Riemannian BFGS
 % ("RBFGS")
-% @param w controls LRBFGS (default = 0.01)
-% @param f1o initial value of f1, vector or scalar depending on q1, defaults to zero
-% @param f2o initial value of f2, vector or scalar depending on q1, defaults to zero
-% @return gam warping function
-addpath(genpath('DP'))
-addpath(genpath('gropt'))
+% w: controls LRBFGS (default = 0.01)
+% f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
+% f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
+% 
+% Output:
+% gam: warping function
 if nargin < 4
     lambda = 0.0;
     method = 'DP1';

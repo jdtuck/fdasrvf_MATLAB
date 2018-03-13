@@ -1,15 +1,19 @@
 function [mu,gam_mu,psi,vec] = SqrtMean(gam)
-% SRVF transform of warping functions
-%
+% SQRTMEAN SRVF transform of warping functions
+% -------------------------------------------------------------------------
 % This function calculates the srvf of warping functions with corresponding
 % shooting vectors and finds the mean
 %
-% @param gam matrix (\eqn{N} x \eqn{M}) of \eqn{M} warping functions with \eqn{N} samples
-% @returns
-% \item{mu}{Karcher mean psi function}
-% \item{gam_mu}{Karcher mean warping function}
-% \item{psi}{srvf of warping functions}
-% \item{vec}{shooting vectors}
+% Usage: [mu,gam_mu,psi,vec] = SqrtMean(gam)
+%
+% Input:
+% gam: matrix (\eqn{N} x \eqn{M}) of \eqn{M} warping functions with \eqn{N} samples
+%
+% Output
+% mu: Karcher mean psi function
+% gam_mu: Karcher mean warping function
+% psi: srvf of warping functions
+% vec: shooting vectors
 
 [n,T] = size(gam);
 time = linspace(0,1,T);

@@ -1,21 +1,26 @@
 function out = Phase_Boxplot(out_warp, k_p, alpha, figs)
-% Phase Boxplot
+% PHASE_BOXPLOT Functional phase Boxplot
+% -------------------------------------------------------------------------
+% This function constructs the phase boxplot
 %
-% This function constructs the amplitude boxplot
+% Usage:  out = Phase_Boxplot(out_warp, k_p, alpha, figs)
 %
-% @param warp_median structure from \link{time_warping} of aligned data using the median
-% @param alpha quantile value (default=.05, i.e., 95\%)
-% @param kp scalar for outlier cutoff (default=1)
-% @param showplot shows plots of functions (default = T)
-% @return Returns a structure containing
-% \item{median_x}{median warping function}
-% \item{Q1}{First quartile}
-% \item{Q3}{Second quartile}
-% \item{Q1a}{First quantile based on alpha}
-% \item{Q3a}{Second quantile based on alpha}
-% \item{minn}{minimum extreme function}
-% \item{maxx}{maximum extreme function}
-% \item{outlier_index}{indexes of outlier functions}
+% Input:
+% warp_median: structure from time_warping_median of aligned data using the median
+% alpha quantile: value (e.g.,=.05, i.e., 95\%)
+% kp: scalar for outlier cutoff (e.g.,=1)
+% figs: shows plots of functions (e.g., = true)
+% 
+% Output:
+% Returns a structure containing
+% median_x: median warping function
+% Q1: First quartile
+% Q3: Second quartile
+% Q1a: First quantile based on alpha
+% Q3a: Second quantile based on alpha
+% minn: minimum extreme function
+% maxx: maximum extreme function
+% outlier_index: indexes of outlier functions
 
 gam = out_warp.gam;
 

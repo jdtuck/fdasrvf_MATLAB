@@ -1,13 +1,18 @@
 function qo = warp_q_gamma(q,gamma,t,spline)
-% Warp SRSF
+% WARP_F_GAMMA Warp SRVF
+% -------------------------------------------------------------------------
+% This function warps SRVF \eqn{q} by \eqn{\gamma}
 %
-% This function warps srsf \eqn{q} by \eqn{\gamma}
+% Usage: qo = warp_q_gamma(q,gamma,t,spline)
+%   
+% Input:
+% q: vector SRVF
+% gamma: vector warping function
+% t: time
+% spline use spline interpolation (default false)
 %
-% @param q vector
-% @param time time
-% @param gamma vector warping function
-% @param spl.int use spline interpolation (default F)
-% @return qnew warped function
+% Output
+% qo: warped SRVF
 M = length(gamma);
 gam_dev = gradient(gamma, 1/(M-1));
 

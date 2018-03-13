@@ -1,15 +1,19 @@
-function [gam_median, psi_median, psi] = SqrtMedian(gam)
-% SRVF transform of warping functions
-%
+function [gam_median, psi_median, psi, vec] = SqrtMedian(gam)
+% SQRTMEDIAN SRVF transform of warping functions
+% -------------------------------------------------------------------------
 % This function calculates the srvf of warping functions with corresponding
 % shooting vectors and finds the median
 %
-% @param gam matrix (\eqn{N} x \eqn{M}) of \eqn{M} warping functions with \eqn{N} samples
-% @return
-% \item{median}{Karcher median psi function}
-% \item{gam_median}{Karcher mean warping function}
-% \item{psi}{srvf of warping functions}
-% \item{vec}{shooting vectors}
+% Usage: [gam_median, psi_median, psi] = SqrtMedian(gam)
+%
+% Input
+% gam: matrix (\eqn{N} x \eqn{M}) of \eqn{M} warping functions with \eqn{N} samples
+% 
+% Output:
+% median: Karcher median psi function
+% gam_median: Karcher mean warping function
+% psi: srvf of warping functions
+% vec: shooting vectors
 [M, N] = size(gam);
 t = linspace(0,1,M);
 
@@ -47,4 +51,5 @@ while (vbar_norm(r) > 0.00000001 && r<501)
     vbar_norm(r) = L2norm(vbar);
 end
 
+vec = v;
 gam_median = cumtrapz(t,psi_median.^2)';

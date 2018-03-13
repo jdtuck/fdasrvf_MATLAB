@@ -1,10 +1,11 @@
-function hfpca = horizFPCA(out_warp,no,option)
+function hfpca = horizFPCA(out_warp,no,showplot)
 % HORIZFPCA Horizontal Functional Principal Component Analysis
 % -------------------------------------------------------------------------
 % This function calculates vertical functional principal component analysis
 % on aligned data
 %
-% Usage: hfpca = horizFPCA(out_warp,no,option)
+% Usage: hfpca = horizFPCA(out_warp,no)
+%        hfpca = horizFPCA(out_warp,no,showplot)
 % 
 % Inputs:
 % out_warp: structure from time_warping of aligned data
@@ -23,7 +24,7 @@ function hfpca = horizFPCA(out_warp,no,option)
 gam = out_warp.gam;
 
 if nargin<3
-    option.showplot = 1;
+    showplot = 1;
 end
 
 % option.showplot = 1;
@@ -63,15 +64,14 @@ hfpca.coef = c;
 hfpca.vec = vec;
 hfpca.mu = mu;
 
-if option.showplot
+if showplot
     cl = 'rbgmc';
-    [m1, n1, p1] = size(q_pca);
+    [~, ~, p1] = size(q_pca);
     num_plot = ceil(p1/3);
-    cnt = 1;
     for ii = 1:num_plot
         figure;
         for j1 = 1:3
-            j = j1 + (ii-1)*3
+            j = j1 + (ii-1)*3;
             subplot(1,3,j1);
             for k = 1:length(tau)
                 plot(linspace(0,1,T), gam_pca(k,:,j), cl(j), 'linewidth', 2); hold on;

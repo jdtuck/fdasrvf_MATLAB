@@ -1,29 +1,36 @@
-function vfpca = vertFPCA(out_warp,no,id,option)
-% Vertical Functional Principal Component Analysis
-%
+function vfpca = vertFPCA(out_warp,no,id,showplot)
+% VERTFPCA Vertical Functional Principal Component Analysis
+% -------------------------------------------------------------------------
 % This function calculates vertical functional principal component analysis
 % on aligned data
 %
-% @param warp_data struct from \link{time_warping} of aligned data
-% @param no number of principal components to extract
-% @param id point to use for f(0) (default = midpoint)
-% @param showplot show plots of principal directions (default = T)
-% @return Returns a struct containing
-% \item{q_pca}{srvf principal directions}
-% \item{f_pca}{f principal directions}
-% \item{latent}{latent values}
-% \item{coef}{coefficients}
-% \item{U}{eigenvectors}
-% \item{id}{point used for f(0)}
+% Usage: vfpca = vertFPCA(out_warp,no)
+%        vfpca = vertFPCA(out_warp,no,id)
+%        vfpca = vertFPCA(out_warp,no,id,showplot)
+%
+% Inputs:
+% warp_data: struct from time_warping of aligned data
+% no: number of principal components to extract
+% id: point to use for f(0) (default = midpoint)
+% showplot: show plots of principal directions (default = true)
+% 
+% Output
+% Returns a struct containing
+% q_pca: srvf principal directions
+% f_pca: f principal directions
+% latent: latent values
+% coef: coefficients
+% U: eigenvectors
+% id: point used for f(0)
 fn = out_warp.fn;
 t = out_warp.time;
 qn = out_warp.qn;
 
 if nargin < 4
     id = round(length(t)/2);
-    option.showplot = 1;
+    showplot = 1;
 elseif nargin < 5
-    option.showplot = 1;
+    showplot = 1;
 end
 
 % Parameters
@@ -79,15 +86,14 @@ vfpca.time = time;
 vfpca.c = c;
 vfpca.U = U;
 
-if option.showplot
+if showplot
     cl = 'rbgmc';
-    [m1, n1, p1] = size(q_pca);
+    [~, ~, p1] = size(q_pca);
     num_plot = ceil(p1/3);
-    cnt = 1;
     for ii = 1:num_plot
         figure;
         for k1 = 1:3
-            k = k1+(ii-1)*3
+            k = k1+(ii-1)*3;
             subplot(2,3,k1);
             for i = 1:length(coef)
                 plot(t, q_pca(1:end-1,i,k), cl(i), 'linewidth', 2); hold on;

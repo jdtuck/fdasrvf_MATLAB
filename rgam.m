@@ -1,12 +1,17 @@
 function gam = rgam(N, sigma, num)
-% Random Warping
-%
+% RGAM Random Warping
+% -------------------------------------------------------------------------
 % Generates random warping functions
 %
-% @param N length of warping function
-% @param sigma variance of warping functions
-% @param num number of warping functions
-% @return gam warping functions
+% Usage: gam = rgam(N, sigma, num)
+% 
+% Input:
+% N: length of warping function
+% sigma: variance of warping functions
+% num: number of warping functions
+% 
+% Output:
+% gam: matrix of warping functions
 
 gam = zeros(num,N);
 TT = N - 1;

@@ -7,7 +7,7 @@ function out = Amplitude_Boxplot(out_warp, alpha, k_a, figs)
 % Usage:  out = Amplitude_Boxplot(out_warp, alpha, k_a, figs)
 %
 % Input:
-% out_warp: struct from TIME_WARPING of aligned data using the median
+% out_warp: struct from time_warping_median of aligned data using the median
 % alpha: quantile value (e.g.,=.05, i.e., 95\%)
 % ka: scalar for outlier cutoff (e.g.,=1)
 % figs: shows plots of functions (e.g., = true)

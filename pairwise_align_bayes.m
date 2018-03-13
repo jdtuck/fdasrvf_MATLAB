@@ -1,6 +1,6 @@
 function out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
-%Align two functions using geometric properties of warping functions
-%
+% PAIRWISE_ALIGN Align two functions using Bayesian method
+% -------------------------------------------------------------------------
 % This function aligns two functions using Bayesian framework. It will align
 % f2 to f1. It is based on mapping warping functions to a hypersphere, and a
 % subsequent exponential mapping to a tangent space. In the tangent space,
@@ -13,10 +13,13 @@ function out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
 % larger coefficients corresponding to larger shifts in parameter space. The
 % zpcn$probs give the probability of each shift size.
 %
-% input:
+% Usage:  out = pairwise_align_bayes(f1i, f2i, time)
+%         out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
+%
+% Input:
 % f1i: vector defining M samples of function 1
 % f2i: vector defining M samples of function 2
-% time : time vector of length M
+% time: time vector of length M
 %
 % default mcmc options
 % mcmcopts.iter = 2e4; % number of iterations
@@ -31,21 +34,22 @@ function out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
 % mcmcopts.npoints = 200; % number of sample interpolation points
 % mcmcopts.extrainfo = true; % return extra info about mcmc
 %
-% output structure containing
-% out.f2_warped % aligned f2
-% out.gamma % warping function
-% out.g_coef % final g _coef
-% out.psi % final psi
-% out.sigma1 % final sigma
+% Output:
+% structure containing
+% out.f2_warped: aligned f2
+% out.gamma: warping function
+% out.g_coef: final g _coef
+% out.psi: final psi
+% out.sigma1: final sigma
 %
 % if extrainfo
-% out.accept % accept of psi samples
+% out.accept: accept of psi samples
 % out.betas_ind
-% out.logl % log likelihood
-% out.gamma_mat % posterior gammas
-% out.gamma_stats % posterior gamma stats
-% out.xdist  % phase distance posterior
-% out.ydist % amplitude distance posterior
+% out.logl: log likelihood
+% out.gamma_mat: posterior gammas
+% out.gamma_stats: posterior gamma stats
+% out.xdist: phase distance posterior
+% out.ydist: amplitude distance posterior
 
 if nargin < 4
     mcmcopts.iter = 2e4;
