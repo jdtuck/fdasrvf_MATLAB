@@ -77,9 +77,7 @@ if a == 1
     time = time.';
 end
 
-binsize = mean(diff(t));
 [M, N] = size(f);
-f0 = f;
 
 if option.smooth == 1
     f = smooth_data(f, option.sparam);
@@ -98,58 +96,46 @@ q = f_to_srvf(f,time);
 %% Compute the q-function of the plot
 mq = f_to_srvf(mu,time);
 
-f_temp = zeros(M,N);
-q_temp = zeros(M,N);
+fn = zeros(M,N);
+qn = zeros(M,N);
 gam = zeros(N,size(q,1));
 gam_dev = zeros(N,size(q,1));
+mcmcopts.iter = option.MaxItr;
+mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
+mcmcopts.alpha0 = 0.1;
+mcmcopts.beta0 = 0.1;
+tmp.betas = [0.5,0.5,0.005,0.0001];
+tmp.probs = [0.1,0.1,0.7,0.1];
+mcmcopts.zpcn = tmp;
+mcmcopts.propvar = 1;
+mcmcopts.initcoef = repelem(0, 20).';
+mcmcopts.npoints = 200;
+mcmcopts.extrainfo = true;
 if option.parallel == 1
     parfor k = 1:N
-      if (option.method=='expBayes')
-        mcmcopts.iter = option.MaxItr;
-        mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
-        mcmcopts.alpha0 = 0.1;
-        mcmcopts.beta0 = 0.1;
-        tmp.betas = [0.5,0.5,0.005,0.0001];
-        tmp.probs = [0.1,0.1,0.7,0.1];
-        mcmcopts.zpcn = tmp;
-        mcmcopts.propvar = 1;
-        mcmcopts.initcoef = repelem(0, 20).';
-        mcmcopts.npoints = 200;
-        mcmcopts.extrainfo = true;
-        out_e = pairwise_align_bayes(mu, f(:,k), time, mcmcopts);
-        gam(k,:) = out_e.gamma;
-      else
-        gam(k,:) = optimum_reparam(mq,q(:,k),time,lambda,option.method,option.w, ...
-                                   mf(1,r), f(1,k,1));
-      end
-      gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
-      fn(:,k) = interp1(t, f(:,k,1), (time(end)-time(1)).*gam(k,:) + time(1))';
-      qn(:,k) = f_to_srvf(fn(:,k),time);
+        if (option.method=='expBayes')
+            out_e = pairwise_align_bayes(mu, f(:,k), time, mcmcopts);
+            gam(k,:) = out_e.gamma;
+        else
+            gam(k,:) = optimum_reparam(mq,q(:,k),time,lambda,option.method,option.w, ...
+                mf(1,r), f(1,k,1));
+        end
+        gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
+        fn(:,k) = interp1(t, f(:,k,1), (time(end)-time(1)).*gam(k,:) + time(1))';
+        qn(:,k) = f_to_srvf(fn(:,k),time);
     end
 else
     for k = 1:N
-      if (option.method=='expBayes')
-        mcmcopts.iter = option.MaxItr;
-        mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
-        mcmcopts.alpha0 = 0.1;
-        mcmcopts.beta0 = 0.1;
-        tmp.betas = [0.5,0.5,0.005,0.0001];
-        tmp.probs = [0.1,0.1,0.7,0.1];
-        mcmcopts.zpcn = tmp;
-        mcmcopts.propvar = 1;
-        mcmcopts.initcoef = repelem(0, 20).';
-        mcmcopts.npoints = 200;
-        mcmcopts.extrainfo = true;
-        out_e = pairwise_align_bayes(mu, f(:,k), time, mcmcopts);
-        gam(k,:) = out_e.gamma;
-      else
-        gam(k,:) = optimum_reparam(mq,q(:,k),time,lambda,option.method,option.w, ...
-                                   mf(1,r), f(1,k,1));
-      end
-      gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
-      fn(:,k) = interp1(t, f(:,k,1), (time(end)-time(1)).*gam(k,:) + time(1))';
-      qn(:,k) = f_to_srvf(fn(:,k),time);
-    end
+        if (option.method=='expBayes')
+            out_e = pairwise_align_bayes(mu, f(:,k), time, mcmcopts);
+            gam(k,:) = out_e.gamma;
+        else
+            gam(k,:) = optimum_reparam(mq,q(:,k),time,lambda,option.method,option.w, ...
+                mf(1,r), f(1,k,1));
+        end
+        gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
+        fn(:,k) = interp1(t, f(:,k,1), (time(end)-time(1)).*gam(k,:) + time(1))';
+        qn(:,k) = f_to_srvf(fn(:,k),time);
     end
 end
 
@@ -158,11 +144,11 @@ gamI = SqrtMeanInverse(gam);
 %% Aligned data & stats
 q0 = q;
 mean_f0 = mean(f, 2);
-std_f0 = std(ff0, 0, 2);
+std_f0 = std(f, 0, 2);
 mean_fn = mean(fn, 2);
 std_fn = std(fn, 0, 2);
 mqn = mq;
-fmean = mean(f0(1,:))+cumtrapz(time,mqn.*abs(mqn));
+fmean = mean(f(1,:))+cumtrapz(time,mqn.*abs(mqn));
 
 fgam = zeros(M,N);
 for ii = 1:N
@@ -170,9 +156,42 @@ for ii = 1:N
 end
 var_fgam = var(fgam,[],2);
 
-stats.orig_var = trapz(t,std_f0.^2);
-stats.amp_var = trapz(t,std_fn.^2);
-stats.phase_var = trapz(t,var_fgam);
+stats.orig_var = trapz(time,std_f0.^2);
+stats.amp_var = trapz(time,std_fn.^2);
+stats.phase_var = trapz(time,var_fgam);
+
+if option.showplot == 1
+    figure(2); clf;
+    plot((0:M-1)/(M-1), gam, 'linewidth', 1);
+    axis square;
+    title('Warping functions', 'fontsize', 16);
+    
+    figure(3); clf;
+    plot(time, fn, 'LineWidth',1);
+    title(['Warped data, \lambda = ' num2str(lambda)], 'fontsize', 16);
+    
+    figure(4); clf;
+    plot(time, mean_f0, 'b-', 'linewidth', 1); hold on;
+    plot(time, mean_f0+std_f0, 'r-', 'linewidth', 1);
+    plot(time, mean_f0-std_f0, 'g-', 'linewidth', 1);
+    title('Original data: Mean \pm STD', 'fontsize', 16);
+    
+    figure(5); clf;
+    plot(time, mean_fn, 'b-', 'linewidth', 1); hold on;
+    plot(time, mean_fn+std_fn, 'r-', 'linewidth', 1);
+    plot(time, mean_fn-std_fn, 'g-', 'linewidth', 1);
+    title(['Warped data, \lambda = ' num2str(lambda) ': Mean \pm STD'], 'fontsize', 16);
+    
+    figure(6); clf;
+    plot(time, fmean, 'g','LineWidth',1);
+    title(['f_{mean}, \lambda = ' num2str(lambda)], 'fontsize', 16);
+end
+
+if option.parallel == 1 && option.closepool == 1
+    if isempty(gcp('nocreate'))
+        delete(gcp('nocreate'))
+    end
+end
 
 out.f0 = f;
 out.time = time;
