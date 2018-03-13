@@ -24,6 +24,7 @@
 
 %   multiple_align_functions - Group-wise function alignment to specified mean
 %   optimum_reparam          - Calculates Warping for two SRVFs
+%   outlier_detection        - Outlier Detection
 %   pairwise_align           - Align two functions
 %   pairwise_align_bayes     - PAIRWISE_ALIGN Align two functions using Bayesian method
 %   Phase_Boxplot            - Functional phase Boxplot
@@ -54,5 +55,8 @@
 
 
 
+
+
+%   outlier_detection        - Outlier Detection
 
 
