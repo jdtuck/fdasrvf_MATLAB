@@ -245,7 +245,7 @@ end
 
 if option.showplot == 1
     K = length(fn);
-    colors = distinguishable_colors(K);
+    colors = varycolor(K);
     figure(2); clf; hold all
     for k=1:K
         plot(t, templates(:,k), 'Color', colors(k,:));
