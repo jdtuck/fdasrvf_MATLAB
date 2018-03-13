@@ -5,7 +5,7 @@ function out = time_warping_median(f,t,lambda,option)
 % This function aligns a collection of functions using the elastic square-root
 % slope (srsf) framework to the median
 %
-% input:
+% Input:
 % f (M,N): matrix defining N functions of M samples
 % t : time vector of length M
 % lambda: regularization parameter
@@ -21,7 +21,8 @@ function out = time_warping_median(f,t,lambda,option)
 % option.w = 0.0; % BFGS weight
 % option.MaxItr = 20;  % maximum iterations
 %
-% output structure containing
+% Output:
+%  structure containing
 % fn: aligned functions
 % qn: aligned srvfs
 % q0: original srvfs

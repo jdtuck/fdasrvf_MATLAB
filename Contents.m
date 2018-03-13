@@ -1,6 +1,7 @@
 % FDASRVF_MATLAB
 %
 % Files
+%   align_fPCA               - Group-wise function alignment and PCA Extractions
 %   Amplitude_Boxplot        - Functional Amplitude Boxplot
 %   bootstrap_tol            - Boostrapped tolerance bounds
 %   create_basismatrix       - Create Basis Matrix
