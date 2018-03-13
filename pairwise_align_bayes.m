@@ -14,8 +14,8 @@ function out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
 % zpcn$probs give the probability of each shift size.
 %
 % input:
-% f1i: vecotr defining M samples of function 1
-% f2i: vecotr defining M samples of function 2
+% f1i: vector defining M samples of function 1
+% f2i: vector defining M samples of function 2
 % time : time vector of length M
 %
 % default mcmc options

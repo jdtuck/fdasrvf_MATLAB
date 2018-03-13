@@ -3,7 +3,7 @@ function out = time_warping(f,t,lambda,option)
 %
 % This function aligns a collection of functions using the elastic square-root
 % slope (srsf) framework.
-% 
+%
 % input:
 % f (M,N): matrix defining N functions of M samples
 % t : time vector of length M
@@ -29,7 +29,6 @@ function out = time_warping(f,t,lambda,option)
 % gam: warping functions
 % psi: srvf of gam
 % stats: structure of statistics of alignment
-addpath(genpath('DP'))
 
 if nargin < 3
     lambda = 0;
