@@ -1,3 +1,4 @@
+% setup paths
 addpath(genpath('minFunc'))
 addpath(genpath('DP'))
 addpath(genpath('bayesian'))

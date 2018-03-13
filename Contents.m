@@ -31,8 +31,8 @@
 %   ProgressBar              - A class to provide a convenient and useful progress bar
 %   randomGamma              - 
 %   rgam                     - Random Warping
-%   setup                    - Dynamic Programming
-%   setup_paths              - 
+%   setup                    - setup environment
+%   setup_paths              - setup paths
 %   simps                    - Simpson's numerical integration.
 %   simul_align              - simul_align -- align two functions by simultaneous reparameterization
 %   simul_gam                - simul_gam -- align one function to another given two simultaneous
@@ -50,5 +50,6 @@
 %   vertFPCA                 - Vertical Functional Principal Component Analysis
 %   warp_f_gamma             - Warp Function
 %   warp_q_gamma             - Warp SRSF
+
 
 

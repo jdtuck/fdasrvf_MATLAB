@@ -1,3 +1,4 @@
+% setup environment
 setup_paths
 
 % Dynamic Programming
