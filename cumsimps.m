@@ -1,5 +1,4 @@
 function z = cumsimps(x,y,dim)
-
 %CUMSIMPS Cumulative Simpson's numerical integration.
 %   Z = CUMSIMPS(Y) computes an approximation of the cumulative integral of
 %   Y via the Simpson's method (with unit spacing). To compute the integral

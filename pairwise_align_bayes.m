@@ -1,4 +1,52 @@
 function out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
+%Align two functions using geometric properties of warping functions
+%
+% This function aligns two functions using Bayesian framework. It will align
+% f2 to f1. It is based on mapping warping functions to a hypersphere, and a
+% subsequent exponential mapping to a tangent space. In the tangent space,
+% the Z-mixture pCN algorithm is used to explore both local and global
+% structure in the posterior distribution.
+%
+% The Z-mixture pCN algorithm uses a mixture distribution for the proposal
+% distribution, controlled by input parameter zpcn. The zpcn$betas must be
+% between 0 and 1, and are the coefficients of the mixture components, with
+% larger coefficients corresponding to larger shifts in parameter space. The
+% zpcn$probs give the probability of each shift size.
+%
+% input:
+% f1i: vecotr defining M samples of function 1
+% f2i: vecotr defining M samples of function 2
+% time : time vector of length M
+%
+% default mcmc options
+% mcmcopts.iter = 2e4; % number of iterations
+% mcmcopts.burnin = min(5e3,mcmcopts.iter/2); % number of burnin
+% mcmcopts.alpha0 = 0.1; # inverse gamma prior parameters
+% mcmcopts.beta0 = 0.1; # inverse gamma prior parameters
+% tmp.betas = [0.5,0.5,0.005,0.0001]; %pczn paramaters
+% tmp.probs = [0.1,0.1,0.7,0.1];
+% mcmcopts.zpcn = tmp;
+% mcmcopts.propvar = 1; % proposal vairance
+% mcmcopts.initcoef = repelem(0, 20).'; % init coef
+% mcmcopts.npoints = 200; % number of sample interpolation points
+% mcmcopts.extrainfo = true; % return extra info about mcmc
+%
+% output structure containing
+% out.f2_warped % aligned f2
+% out.gamma % warping function
+% out.g_coef % final g _coef
+% out.psi % final psi
+% out.sigma1 % final sigma
+%
+% if extrainfo
+% out.accept % accept of psi samples
+% out.betas_ind
+% out.logl % log likelihood
+% out.gamma_mat % posterior gammas
+% out.gamma_stats % posterior gamma stats
+% out.xdist  % phase distance posterior
+% out.ydist % amplitude distance posterior
+
 if nargin < 4
     mcmcopts.iter = 2e4;
     mcmcopts.burnin = min(5e3,mcmcopts.iter/2);

@@ -1,6 +1,21 @@
 function out = Phase_Boxplot(out_warp, k_p, alpha, figs)
-% k_p: outlier cutoff constant for phase component
-% alpha: quantile value
+% Phase Boxplot
+%
+% This function constructs the amplitude boxplot
+%
+% @param warp_median structure from \link{time_warping} of aligned data using the median
+% @param alpha quantile value (default=.05, i.e., 95\%)
+% @param kp scalar for outlier cutoff (default=1)
+% @param showplot shows plots of functions (default = T)
+% @return Returns a structure containing
+% \item{median_x}{median warping function}
+% \item{Q1}{First quartile}
+% \item{Q3}{Second quartile}
+% \item{Q1a}{First quantile based on alpha}
+% \item{Q3a}{Second quantile based on alpha}
+% \item{minn}{minimum extreme function}
+% \item{maxx}{maximum extreme function}
+% \item{outlier_index}{indexes of outlier functions}
 
 gam = out_warp.gam;
 

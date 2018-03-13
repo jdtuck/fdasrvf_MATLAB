@@ -1,10 +1,12 @@
-% subroutine for generating random time warping
-
 function gam = rgam(N, sigma, num)
-
-% N: number of discretized bins
-% sigma: weight on the covariance
-% num: number of warping functions
+% Random Warping
+%
+% Generates random warping functions
+%
+% @param N length of warping function
+% @param sigma variance of warping functions
+% @param num number of warping functions
+% @return gam warping functions
 
 gam = zeros(num,N);
 TT = N - 1;

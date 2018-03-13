@@ -1,4 +1,19 @@
 function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
+% Align two functions
+%
+% This function aligns two SRSF functions using Dynamic Programming
+%
+% @param q1 srsf of function 1
+% @param q2 srsf of function 2
+% @param t sample points of function 2
+% @param lambda controls amount of warping (default = 0)
+% @param method controls which optimization method (default="DP") options are
+% Dynamic Programming ("DP"), Coordinate Descent ("DP2"), and Riemannian BFGS
+% ("RBFGS")
+% @param w controls LRBFGS (default = 0.01)
+% @param f1o initial value of f1, vector or scalar depending on q1, defaults to zero
+% @param f2o initial value of f2, vector or scalar depending on q1, defaults to zero
+% @return gam warping function
 addpath(genpath('DP'))
 addpath(genpath('gropt'))
 if nargin < 4
@@ -50,7 +65,7 @@ switch upper(method)
         [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
             rotated, isclosed, skipm, 'DP', auto);
         gam0 = opt(1:end-2);
-        
+
         if swap
             gam0 = invertGamma(gam0);
         end
@@ -58,16 +73,16 @@ switch upper(method)
         onlyDP = 0;
         [opt,swap,fopts,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
             rotated, isclosed, skipm, method, auto);
-        
-        
+
+
         if (fopts(1) == 1000)
             onlyDP = 1;
             [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
                 rotated, isclosed, skipm, method, auto);
         end
-        
+
         gam0 = opt(1:end-2);
-        
+
         if swap
             gam0 = invertGamma(gam0);
         end

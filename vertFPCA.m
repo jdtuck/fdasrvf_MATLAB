@@ -1,5 +1,20 @@
 function vfpca = vertFPCA(out_warp,no,id,option)
-
+% Vertical Functional Principal Component Analysis
+%
+% This function calculates vertical functional principal component analysis
+% on aligned data
+%
+% @param warp_data struct from \link{time_warping} of aligned data
+% @param no number of principal components to extract
+% @param id point to use for f(0) (default = midpoint)
+% @param showplot show plots of principal directions (default = T)
+% @return Returns a struct containing
+% \item{q_pca}{srvf principal directions}
+% \item{f_pca}{f principal directions}
+% \item{latent}{latent values}
+% \item{coef}{coefficients}
+% \item{U}{eigenvectors}
+% \item{id}{point used for f(0)}
 fn = out_warp.fn;
 t = out_warp.time;
 qn = out_warp.qn;

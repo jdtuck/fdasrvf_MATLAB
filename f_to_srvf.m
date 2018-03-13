@@ -1,4 +1,11 @@
 function q = f_to_srvf(f,time)
+% Convert to SRSF
+%
+% This function converts functions to srsf
+%
+% @param f matrix of functions
+% @param time time
+% @return q matrix of SRSFs
 binsize = mean(diff(time));
 [M, N] = size(f);
 

@@ -1,4 +1,8 @@
 function out = Translation_Boxplot(f, t)
+% Translation Boxplot
+%
+% This function constructs the translation boxplot
+%
 
 figure(100);clf;
     plot(t,f,'linewidth',2);
@@ -32,7 +36,7 @@ if isnan(outlier)
 else
     for i = 1:length(outlier)
         outlier_index(i) = find(translation == outlier(i));
-        
+
         figure(200+i);clf;
             plot(t,f,'green','linewidth',2);
             hold on;

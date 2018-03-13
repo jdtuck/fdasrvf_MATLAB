@@ -1,6 +1,23 @@
 function out = Amplitude_Boxplot(out_warp, alpha, k_a, figs)
-% k_a: outlier cutoff constant for amplitude component
-% alpha: quantile value
+% Amplitude Boxplot
+%
+% This function constructs the amplitude boxplot
+%
+% @param out_warp struct from \link{time_warping} of aligned data using the median
+% @param alpha quantile value (default=.05, i.e., 95\%)
+% @param ka scalar for outlier cutoff (default=1)
+% @param showplot shows plots of functions (default = T)
+%
+% output structure containing
+% \item{median_y}{median function}
+% \item{Q1}{First quartile}
+% \item{Q3}{Second quartile}
+% \item{Q1a}{First quantile based on alpha}
+% \item{Q3a}{Second quantile based on alpha}
+% \item{minn}{minimum extreme function}
+% \item{maxx}{maximum extreme function}
+% \item{outlier_index}{indexes of outlier functions}
+% \item{fmedian}{median function}
 
 f_tilde = out_warp.fn;
 f_median = out_warp.fmedian;
