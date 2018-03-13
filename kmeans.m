@@ -43,7 +43,7 @@ function out = kmeans(f,t,K,seeds,lambda,option)
 % qun: cost function
 
 if nargin < 4
-    seeds = []
+    seeds = [];
     lambda = 0;
     option.parallel = 0;
     option.alignment = true;
@@ -100,9 +100,6 @@ if option.parallel == 1
 end
 %% Parameters
 
-w = 0.0;
-k = 1;
-
 fprintf('\n lambda = %5.1f \n', lambda);
 
 % check dimension of time
@@ -111,9 +108,7 @@ if a == 1
     t = t';
 end
 
-binsize = mean(diff(t));
 [M, N] = size(f);
-f0 = f;
 
 if (isempty(seeds))
     template_ind = randsample(N,K);
@@ -149,66 +144,71 @@ end
 fprintf('\nInitializing...\n');
 f_temp = zeros(length(t),N);
 q_temp = zeros(length(t),N);
-for r = 1:MaxItr
+for r = 1:option.MaxItr
     gam = {};
     Dy = zeros(K,N);
     qn = {};
     fn = {};
     fprintf('updating step: r=%d\n', r);
-    if r == MaxItr
+    if r == option.MaxItr
         fprintf('maximal number of iterations is reached. \n');
     end
     for i=1:K
-        gam = zeros(N,size(q,1));
-        gam_dev = zeros(N,size(q,1));
+        gamt = zeros(N,size(q,1));
         if option.parallel == 1
             parfor k = 1:N
                 q_c = q(:,k); mq_c = templates_q(:,i);
-                gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
-                    templates(1,i), f(1,k));
-                gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
-                f_temp(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gam(k,:) + t(1))';
+                if (option.alignment)
+                    gamt(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                        templates(1,i), f(1,k));
+                else
+                    gamt(k,:) = linspace(0,1,M);
+                end
+                f_temp(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gamt(k,:) + t(1))';
                 q_temp(:,k) = f_to_srvf(f_temp(:,k),t);
-                Dy(i,k) = sqrt(sum(trapz(time,(q_temp(:,k)-templates_q(:,i)).^2)));
+                Dy(i,k) = sqrt(sum(trapz(t,(q_temp(:,k)-templates_q(:,i)).^2)));
             end
         else
             for k = 1:N
                 q_c = q(:,k); mq_c = templates_q(:,i);
-                gam(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
-                    templates(1,i), f(1,k,1));
-                gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
-                f_temp(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gam(k,:) + t(1))';
+                if (option.alignment)
+                    gamt(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                        templates(1,i), f(1,k));
+                else
+                    gamt(k,:) = linspace(0,1,M);
+                end
+                f_temp(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gamt(k,:) + t(1))';
                 q_temp(:,k) = f_to_srvf(f_temp(:,k),t);
-                Dy(i,k) = sqrt(sum(trapz(time,(q_temp(:,k)-templates_q(:,i)).^2)));
+                Dy(i,k) = sqrt(sum(trapz(t,(q_temp(:,k)-templates_q(:,i)).^2)));
             end
         end
-        gam{i} = gam;
+        gam{i} = gamt;
         qn{i} = q_temp;
         fn{i} = f_temp;
     end
-    [~,cluster_id] = min(Dy,[],2);
+    [~,cluster_id] = min(Dy,[],1);
     
     %% Normalization
     for i=1:K
         id = cluster_id == i;
         ftmp = fn{i}(:,id);
-        gamtmp = gam{i}(id,:).';
+        gamtmp = gam{i}(id,:);
         gamI = SqrtMeanInverse(gamtmp);
-        N1 = length(id);
+        N1 = size(ftmp,2);
         f_temp1 = zeros(M,N1);
         q_temp1 = zeros(M,N1);
-        gam1 = zeros(M,N1);
+        gam1 = zeros(N1,M);
         if option.parallel == 1
             parfor k = 1:N1
                 f_temp1(:,k) = interp1(t, ftmp(:,k), (t(end)-t(1)).*gamI + t(1))';
                 q_temp1(:,k) = f_to_srvf(f_temp1(:,k),t);
-                gam1(:,k) = interp1(t, gamtmp(:,k), (t(end)-t(1)).*gamI + t(1))';
+                gam1(k,:) = interp1(t, gamtmp(k,:), (t(end)-t(1)).*gamI + t(1))';
             end
         else
             for k = 1:N1
                 f_temp1(:,k) = interp1(t, ftmp(:,k), (t(end)-t(1)).*gamI + t(1))';
                 q_temp1(:,k) = f_to_srvf(f_temp1(:,k),t);
-                gam1(:,k) = interp1(t, gamtmp(:,k), (t(end)-t(1)).*gamI + t(1))';
+                gam1(k,:) = interp1(t, gamtmp(k,:), (t(end)-t(1)).*gamI + t(1))';
             end
         end
         gam{i}(id,:) = gam1;
@@ -221,13 +221,13 @@ for r = 1:MaxItr
     for i = 1:K
         id = cluster_id == i;
         old_templates_q = templates_q;
-        tempaltes_q(:,i) = mean(qn{i}(:,id),2);
+        templates_q(:,i) = mean(qn{i}(:,id),2);
         templates(:,i) = mean(fn{i}(:,id),2);
         qun_t(i) = norm(templates_q(:,i)-old_templates_q(:,i))/norm(old_templates_q(:,i));
     end
     qun(r) = mean(qun_t);
     
-    if qun(r) < option.thresh || r >= MaxItr
+    if qun(r) < option.thresh || r >= option.MaxItr
         break;
     end
 end
@@ -246,29 +246,31 @@ end
 if option.showplot == 1
     K = length(fn);
     colors = distinguishable_colors(K);
-    figure(2); clf;
-    plot(t, templates);
+    figure(2); clf; hold all
+    for k=1:K
+        plot(t, templates(:,k), 'Color', colors(k,:));
+    end
     title('Cluster Mean Functions');
     
     figure(3); clf;
-    plot(t, ftmp{1}, colors(1,:));
+    plot(t, ftmp{1}, 'Color', colors(1,:));
     hold all
     for k = 2:K
-        plot(t, ftmp{k}, colors(k,:));
+        plot(t, ftmp{k}, 'Color', colors(k,:));
     end
     for k = 1:K
-        plot(t, templates(:,k), colors(k,:));
+        plot(t, templates(:,k), 'Color', colors(k,:));
     end
     title('Clustered Functions');
     
     figure(4); clf;
-    plot(t, qtmp{1}, colors(1,:));
+    plot(t, qtmp{1}, 'Color', colors(1,:));
     hold all
     for k = 2:K
-        plot(t, qtmp{k}, colors(k,:));
+        plot(t, qtmp{k}, 'Color', colors(k,:));
     end
     for k = 1:K
-        plot(t, templates_q(:,k), colors(k,:));
+        plot(t, templates_q(:,k), 'Color', colors(k,:));
     end
     title('Clustered Functions');
 end
@@ -286,7 +288,7 @@ out.qn = qtmp;
 out.q0 = q;
 out.labels = cluster_id;
 out.templates = templates;
-out.tempaltes_q = tempaltes_q;
+out.tempaltes_q = templates_q;
 out.lambda = lambda;
 out.method = option.method;
 out.gamI = gamI;
