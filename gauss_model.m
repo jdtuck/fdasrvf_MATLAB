@@ -1,20 +1,24 @@
 function samples = gauss_model(out_warp, n, sort_samples)
-% This function models the functional data using a Gaussian model extracted from
-% the principal components of the srvfs
+% GAUSS_MODEL Gaussian gnerative model
+% -------------------------------------------------------------------------
+% This function models the functional data using a Gaussian model extracted 
+% from the principal components of the srvfs
 %
-% Inputs
-% fn matrix (\eqn{N} x \eqn{M}) of \eqn{M} aligned functions with \eqn{N} samples
-% time vector of size \eqn{N} describing the sample points
-% qn matrix (\eqn{N} x \eqn{M}) of \eqn{M} aligned srvfs
-% gam warping functions
-% n number of random samples (n = 1)
-% sort_samples sort samples (default = F)
+% Usage: samples = gauss_model(out_warp, n, sort_samples)
 %
-% Return
+% Inputs:
+% fn: matrix (\eqn{N} x \eqn{M}) of \eqn{M} aligned functions with \eqn{N} samples
+% time: vector of size \eqn{N} describing the sample points
+% qn: matrix (\eqn{N} x \eqn{M}) of \eqn{M} aligned srvfs
+% gam: warping functions
+% n: number of random samples (n = 1)
+% sort_samples: sort samples (e.g., = F)
+%
+% Output:
 % Structure containing
-% \item{fs}{random aligned samples}
-% \item{gams}{random warping function samples}
-% \item{ft}{random function samples}
+% fs: random aligned samples
+% gams: random warping function samples
+% ft: random function samples
 
 fn = out_warp.fn;
 time = out_warp.time;

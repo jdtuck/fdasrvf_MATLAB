@@ -1,20 +1,24 @@
 function hfpca = horizFPCA(out_warp,no,option)
-% Horizontal Functional Principal Component Analysis
-%
+% HORIZFPCA Horizontal Functional Principal Component Analysis
+% -------------------------------------------------------------------------
 % This function calculates vertical functional principal component analysis
 % on aligned data
+%
+% Usage: hfpca = horizFPCA(out_warp,no,option)
 % 
 % Inputs:
-% out_warp structure from \link{time_warping} of aligned data
-% @param no number of principal components to extract
-% @param showplot show plots of principal directions (default = T)
-% @return Returns a structure containing
-% \item{gam_pca}{warping functions principal directions}
-% \item{psi_pca}{srvf principal directions}
-% \item{latent}{latent values}
-% \item{U}{eigenvectors}
-% \item{vec}{shooting vectors}
-% \item{mu}{Karcher Mean}
+% out_warp: structure from time_warping of aligned data
+% no: number of principal components to extract
+% showplot: show plots of principal directions (e.g, true)
+%
+% Outputs:
+% Returns a structure containing
+% gam_pca: warping functions principal directions
+% psi_pca: srvf principal directions
+% latent: latent values
+% U: eigenvectors
+% vec: shooting vectors
+% mu: Karcher Mean
 
 gam = out_warp.gam;
 

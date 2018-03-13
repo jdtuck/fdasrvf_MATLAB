@@ -1,5 +1,5 @@
 function [exp_inv, theta] = inv_exp_map(Psi, psi)
-
+% INV_EXP_MAP Inverse Exponential Map
 Psi = Psi(:);
 psi = psi(:);
 

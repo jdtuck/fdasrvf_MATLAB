@@ -1,10 +1,15 @@
 function gamI = invertGamma(gam)
-% Invert Warping Function
-%
+% INVERTGAMMA Invert Warping Function
+% -------------------------------------------------------------------------
 % This function calculates the inverse of gamma
+% 
+% Usage: gamI = invertGamma(gam)
 %
-% @param gam vector of \eqn{N} samples
-% @return Returns gamI inverted vector
+% Input:
+% gam: vector of \eqn{N} samples
+%
+% Output:
+% gamI: inverted vector
 
 N = length(gam);
 x = (0:N-1)/(N-1);

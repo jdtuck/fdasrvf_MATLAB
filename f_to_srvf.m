@@ -1,11 +1,18 @@
 function q = f_to_srvf(f,time)
+% F_TO_SRVF Convert function to Square-Root Velocity Function
+% -------------------------------------------------------------------------
 % Convert to SRSF
+% 
+% Usage: q = f_to_srvf(f,time)
 %
 % This function converts functions to srsf
 %
-% @param f matrix of functions
-% @param time time
-% @return q matrix of SRSFs
+% Input:
+% f: matrix of functions
+% time: vector of time samples
+% 
+% Output:
+% q: matrix of SRSFs
 binsize = mean(diff(time));
 [M, N] = size(f);
 

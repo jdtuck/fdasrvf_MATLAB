@@ -1,4 +1,5 @@
 function fn = cumtrapzmid(x,y,c,mid)
+% CUMTRAPZMID Cummulative Trapezodial Integration from mid point
 a = length(x);
 
 % case < mid

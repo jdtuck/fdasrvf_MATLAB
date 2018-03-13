@@ -2,25 +2,25 @@
 %
 % Files
 %   Amplitude_Boxplot        - Functional Amplitude Boxplot
-%   arclength                - 
+%   arclength                - Calculate arclength
 %   bootstrap_tol            - Boostrapped tolerance bounds
-%   create_basismatrix       - 
+%   create_basismatrix       - Create Basis Matrix
 %   cumsimps                 - Cumulative Simpson's numerical integration.
-%   cumtrapzmid              - 
+%   cumtrapzmid              - Cummulative Trapezodial Integration from mid point
 %   elastic_logistic         - Elastic Logistic Functional Regression
 %   elastic_mlogistic        - Elastic Multinomial Logistic Functional Regression
 %   elastic_prediction       - Elastic Functional Regression Prediction
 %   elastic_regression       - Elastic Functional Regression
-%   exp_map                  - 
-%   extrema_1s               - 
-%   f_to_srvf                - Convert to SRSF
-%   gauss_model              - This function models the functional data using a Gaussian model extracted from
+%   exp_map                  - Exponential Map
+%   extrema_1s               - EXTREMA_1s Finds extrema in SIMUL Warping
+%   f_to_srvf                - Convert function to Square-Root Velocity Function
+%   gauss_model              - Gaussian gnerative model
 %   horizFPCA                - Horizontal Functional Principal Component Analysis
-%   inner_product            - 
-%   interp1_flat             - 
-%   inv_exp_map              - 
+%   inner_product            - Functional inner product
+%   interp1_flat             - Flat linear interpolation
+%   inv_exp_map              - Inverse Exponential Map
 %   invertGamma              - Invert Warping Function
-%   L2norm                   - 
+%   L2norm                   - L2 Functional Norm
 %   match_ext                - 
 %   multiple_align_functions - Group-wise function alignment to specified mean
 %   optimum_reparam          - Align two functions
@@ -50,6 +50,7 @@
 %   vertFPCA                 - Vertical Functional Principal Component Analysis
 %   warp_f_gamma             - Warp Function
 %   warp_q_gamma             - Warp SRSF
+
 
 
 
