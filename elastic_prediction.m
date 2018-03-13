@@ -1,8 +1,13 @@
 function out = elastic_prediction(f, t, model, option)
+% ELASTIC_PREDICTION Elastic Functional Regression Prediction
+% -------------------------------------------------------------------------
 % This function identifies a logistic regression model with
 % phase-variablity using elastic methods
 %
-% input:
+% Usage:  out = elastic_prediction(f, t, model)
+%         out = elastic_prediction(f, t, model, option)
+%
+% Input:
 % f (M,N): matrix defining N functions of M samples
 % t : time vector of length M
 % model: model structure from elastic_regression, elastic_logistic, or
@@ -13,7 +18,7 @@ function out = elastic_prediction(f, t, model, option)
 % option.smooth = 0; % smooth data using standard box filter
 % option.sparam = 25; % number of times to run filter
 %
-% output:
+% Output:
 % structure with fields:
 % y_pred: predicted value or probability (depends on model type)
 % SSE: if linear regression

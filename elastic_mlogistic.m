@@ -1,8 +1,13 @@
 function out = elastic_mlogistic(f, y, t, option)
+% ELASTIC_MLOGISTIC Elastic Multinomial Logistic Functional Regression
+% -------------------------------------------------------------------------
 % This function identifies a multinomial regression model with 
 % phase-variablity using elastic methods
 %
-% input:
+% Usage:  out = elastic_mlogistic(f, y, t)
+%         out = elastic_mlogistic(f, y, t, option)
+%
+% Input:
 % f (M,N): matrix defining N functions of M samples
 % y : response vector of length N
 % t : time vector of length M
@@ -17,7 +22,7 @@ function out = elastic_mlogistic(f, y, t, option)
 % option.sparam = 25; % number of times to run filter
 % option.max_itr = 20; % maximum number of iterations
 %
-% output:
+% Output:
 % structure with fields:
 % alpha: intercept
 % beta: regression function

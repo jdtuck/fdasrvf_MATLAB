@@ -1,6 +1,12 @@
 function out = elastic_regression(f, y, t, lambda, option)
+% ELASTIC_REGRESSION Elastic Functional Regression
+% -------------------------------------------------------------------------
 % This function identifies a regression model with phase-variablity using
 % elastic methods
+%
+% Usage:  out = elastic_regression(f, y, t)
+%         out = elastic_regression(f, y, t, lambda)
+%         out = elastic_regression(f, y, t, lambda, option)
 %
 % input:
 % f (M,N): matrix defining N functions of M samples

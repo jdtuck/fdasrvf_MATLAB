@@ -1,8 +1,13 @@
 function out = time_warping(f,t,lambda,option)
-% Group-wise function alignment
+% TIME_WARPING Group-wise function alignment
+% -------------------------------------------------------------------------
 %
 % This function aligns a collection of functions using the elastic square-root
 % slope (srsf) framework.
+%
+% Usage:  out = time_warping(f,t)
+%         out = time_warping(f,t,lambda)
+%         out = time_warping(f,t,lambda,option)
 %
 % input:
 % f (M,N): matrix defining N functions of M samples

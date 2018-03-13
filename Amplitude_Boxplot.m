@@ -1,23 +1,27 @@
 function out = Amplitude_Boxplot(out_warp, alpha, k_a, figs)
-% Amplitude Boxplot
+% AMPLITUDE_BOXPLOT Functional Amplitude Boxplot
+% -------------------------------------------------------------------------
 %
 % This function constructs the amplitude boxplot
 %
-% @param out_warp struct from \link{time_warping} of aligned data using the median
-% @param alpha quantile value (default=.05, i.e., 95\%)
-% @param ka scalar for outlier cutoff (default=1)
-% @param showplot shows plots of functions (default = T)
+% Usage:  out = Amplitude_Boxplot(out_warp, alpha, k_a, figs)
 %
-% output structure containing
-% \item{median_y}{median function}
-% \item{Q1}{First quartile}
-% \item{Q3}{Second quartile}
-% \item{Q1a}{First quantile based on alpha}
-% \item{Q3a}{Second quantile based on alpha}
-% \item{minn}{minimum extreme function}
-% \item{maxx}{maximum extreme function}
-% \item{outlier_index}{indexes of outlier functions}
-% \item{fmedian}{median function}
+% Input:
+% out_warp: struct from TIME_WARPING of aligned data using the median
+% alpha: quantile value (e.g.,=.05, i.e., 95\%)
+% ka: scalar for outlier cutoff (e.g.,=1)
+% figs: shows plots of functions (e.g., = true)
+%
+% Output: structure containing
+% median_y: median function
+% Q1: First quartile
+% Q3: Second quartile
+% Q1a: First quantile based on alpha
+% Q3a: Second quantile based on alpha
+% minn: minimum extreme function
+% maxx: maximum extreme function
+% outlier_index: indexes of outlier functions
+% fmedian: median function
 
 f_tilde = out_warp.fn;
 f_median = out_warp.fmedian;
@@ -95,8 +99,6 @@ v1 = Q1_q - q_median;
 v3 = Q3_q - q_median;
 upper_q = Q3_q + k_a * IQR * v3 / sqrt(trapz(t,v3.^2));
 lower_q = Q1_q + k_a * IQR * v1 / sqrt(trapz(t,v1.^2));
-upper = cumtrapz(t,upper_q.*abs(upper_q));
-lower = cumtrapz(t,lower_q.*abs(lower_q));
 
 upper_dis = sqrt(trapz(t,(upper_q - q_median).^2));
 lower_dis = sqrt(trapz(t,(lower_q - q_median).^2));
@@ -197,7 +199,7 @@ if (figs)
 end
 
 out.f_median = median_y;
-out.q_median = q_median
+out.q_median = q_median;
 out.Q1 = Q1;
 out.Q3 = Q3;
 out.Q1a = Q1a;

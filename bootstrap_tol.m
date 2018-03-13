@@ -1,25 +1,26 @@
 function bounds = bootstrap_tol(out_warp, quants, nboot, alpha)
-% This function models the functional data using a Gaussian model extracted from
-% the principal components of the srvfs
+% BOOTSTRAP_TOL Boostrapped tolerance bounds
+% -------------------------------------------------------------------------
+% 
+% This function models the functional data using a Gaussian model extracted 
+% from the principal components of the srvfs
+% 
+% Usage:  bounds = bootstrap_tol(out_warp, quants, nboot, alpha)
 %
-% Inputs
-% time vector of size \eqn{N} describing the sample points
-% fn matrix (\eqn{N} x \eqn{M}) of \eqn{M} aligned functions with \eqn{N} samples
-% qn matrix (\eqn{N} x \eqn{M}) of \eqn{M} aligned srvfs
-% gam warping functions
-% quant array of quantiles of normal - example [.0275, 0.975]
-% nboot number of bootstraps
-% alpha significance level - example .05
-% sort_samples sort samples (default = F)
+% Inputs:
+% out_warp: structure from \link{time_warping} of aligned data
+% quant: array of quantiles of normal - example [.0275, 0.975]
+% nboot: number of bootstraps
+% alpha: significance level - example .05
 %
-% Return
+% Output:
 % Structure containing
-% \item{lwrtol}{lower tolerance fs}
-% \item{uprtol}{upper tolerance fs}
-% \item{mn}{tolerance of mean fs}
-% \item{lwrtol_gam}{lower tolerance gams}
-% \item{uprtol_gam}{upper tolerance gams}
-% \item{mn_gam}{tolerance of mean gams}
+% lwrtol: lower tolerance fs
+% uprtol: upper tolerance fs
+% mn: tolerance of mean fs
+% lwrtol_gam: lower tolerance gams
+% uprtol_gam: upper tolerance gams
+% mn_gam: tolerance of mean gams
 
 time = out_warp.time;
 fn = out_warp.fn;

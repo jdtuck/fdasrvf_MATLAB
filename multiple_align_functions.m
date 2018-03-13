@@ -1,10 +1,14 @@
 function out = multiple_align_functions(f, time, mu, lambda, option)
-% Group-wise function alignment to specified mean
-%
+% MULTIPLE_ALIGN_FUNCTIONS Group-wise function alignment to specified mean
+% -------------------------------------------------------------------------
 % This function aligns a collection of functions using the elastic square-root
 % slope (srsf) framework.
 %
-% input:
+% Usage:  out = multiple_align_functions(f, time, mu)
+%         out = multiple_align_functions(f, time, mu, lambda)
+%         out = multiple_align_functions(f, time, mu, lambda, option)
+%
+% Input:
 % f (M,N): matrix defining N functions of M samples
 % t : time vector of length M
 % lambda: regularization parameter
@@ -20,7 +24,7 @@ function out = multiple_align_functions(f, time, mu, lambda, option)
 % option.w = 0.0; % BFGS weight
 % option.MaxItr = 20;  % maximum iterations
 %
-% output structure containing
+% Output: structure containing
 % fn: aligned functions
 % qn: aligned srvfs
 % q0: original srvfs
