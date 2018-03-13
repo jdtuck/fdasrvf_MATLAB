@@ -107,6 +107,7 @@ end
 binsize = mean(diff(t));
 [M, N] = size(f);
 coef = -2:2;
+Nstd = length(coef);
 NP = 1:num_comp;  % number of principal components
 f0 = f;
 
@@ -139,7 +140,7 @@ s = diag(S);
 alpha_i = zeros(num_comp,N);
 for ii = 1:num_comp
     for jj = 1:N
-        alpha_i(ii,jj) = trapz(time,qhat_cent(:,jj).*U(:,ii));
+        alpha_i(ii,jj) = trapz(t,qhat_cent(:,jj).*U(:,ii));
     end
 end
 
@@ -162,7 +163,7 @@ if option.parallel == 1
     end
 else
     for k = 1:N
-        gam(k,:) = optimum_reparam(qhat(:,k),q(:,k),lambda,option.method,option.w, ...
+        gam(k,:) = optimum_reparam(qhat(:,k),q(:,k),t,lambda,option.method,option.w, ...
             mf(1), f(1,k));
     end
 end
@@ -197,7 +198,7 @@ for r = 1:MaxItr
     alpha_i = zeros(num_comp,N);
     for ii = 1:num_comp
         for jj = 1:N
-            alpha_i(ii,jj) = trapz(time,qhat_cent(:,jj).*U(:,ii));
+            alpha_i(ii,jj) = trapz(t,qhat_cent(:,jj).*U(:,ii));
         end
     end
     
@@ -235,11 +236,11 @@ for r = 1:MaxItr
     mu = ones(1,M-1);
     Dx1 = zeros(1,N);
     for ii=1:N
-        Dx1(ii) = real(acos(sum(mu.*psi(:,ii)./(M-1))));
+        Dx1(ii) = real(acos(sum(mu.'.*psi(:,ii)./(M-1))));
     end
     Dx(r+1) = max(Dx1);
     
-    if abs(Dx(r)-Dx(r-1)) < 1e-4 || r >= MaxItr
+    if abs(Dx(r+1)-Dx(r)) < 1e-4 || r >= MaxItr
         break;
     end
 end
@@ -282,7 +283,7 @@ psi = sqrt(fy+eps);
 
 % Compte final PCA in the q domain
 mq_new = mean(qn,2);
-id = round(length(time)/2);
+id = round(length(t)/2);
 m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  % scaled version
 mqn = [mq_new; mean(m_new)];
 K = cov([qn;m_new]');
@@ -292,7 +293,7 @@ s = diag(S);
 stdS = sqrt(s);
 
 % compute the PCA in the q domain
-q_pca = zeros(length(mq_new)+1,Nstd,no);
+q_pca = zeros(length(mq_new)+1,Nstd,num_comp);
 for k = NP
     for i = 1:Nstd
         q_pca(:,i,k) = [mq_new; mean(m_new)] + coef(i)*stdS(k)*U(:,k);
@@ -300,19 +301,19 @@ for k = NP
 end
 
 % compute the correspondence to the original function domain
-f_pca = zeros(length(mq_new),Nstd,no);
+f_pca = zeros(length(mq_new),Nstd,num_comp);
 for k = NP
     for i = 1:Nstd
         f_pca(:,i,k) = cumtrapzmid(t,q_pca(1:end-1,i,k).*abs(q_pca(1:end-1,i,k)),sign(q_pca(end,i,k)).*(q_pca(end,i,k).^2), id);
     end
     fbar = mean(fn,2);
     fsbar = mean(f_pca(:,:,k),2);
-    err = repmat(fbar-fsbar,1,n);
+    err = repmat(fbar-fsbar,1,Nstd);
     f_pca(:,:,k) = f_pca(:,:,k) + err;
 end
 
 % coefficients
-c = zeros(size(qn,2),no);
+c = zeros(size(qn,2),num_comp);
 for jj = NP
     for ii = 1:size(qn,2)
         c(ii,jj) = dot([qn(:,ii);m_new(ii)]-mqn,U(:,jj));
@@ -325,7 +326,7 @@ vfpca.latent = s;
 vfpca.coef = c;
 vfpca.id = id;
 vfpca.mqn = mqn;
-vfpca.time = time;
+vfpca.time = t;
 vfpca.c = c;
 vfpca.U = U;
 

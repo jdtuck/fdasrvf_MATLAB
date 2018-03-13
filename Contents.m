@@ -7,7 +7,6 @@
 %   create_basismatrix       - Create Basis Matrix
 %   cumsimps                 - Cumulative Simpson's numerical integration.
 %   cumtrapzmid              - Cummulative Trapezodial Integration from mid point
-%   distinguishable_colors   - DISTINGUISHABLE_COLORS: pick colors that are maximally perceptually distinct
 %   elastic_distance         - Calculates two elastic distances
 %   elastic_logistic         - Elastic Logistic Functional Regression
 %   elastic_mlogistic        - Elastic Multinomial Logistic Functional Regression
@@ -45,6 +44,7 @@
 %   time_warping_median      - Group-wise function alignment to median
 %   Translation_Boxplot      - Translation Boxplot
 %   updateParallel           - Update function when ProgressBar is used in parallel setup
+%   varycolor                - Produces colors with maximum variation on plots with multiple
 %   vertFPCA                 - Vertical Functional Principal Component Analysis
 %   warp_f_gamma             - Warp Function
 %   warp_q_gamma             - WARP_F_GAMMA Warp SRVF
