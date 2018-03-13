@@ -1,7 +1,6 @@
 function out = time_warping_median(f,t,lambda,option)
 % TIME_WARPING_MEDIAN Group-wise function alignment to median
 % -------------------------------------------------------------------------
-%
 % This function aligns a collection of functions using the elastic square-root
 % slope (srsf) framework to the median
 %

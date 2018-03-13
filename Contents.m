@@ -7,6 +7,7 @@
 %   create_basismatrix       - Create Basis Matrix
 %   cumsimps                 - Cumulative Simpson's numerical integration.
 %   cumtrapzmid              - Cummulative Trapezodial Integration from mid point
+%   distinguishable_colors   - DISTINGUISHABLE_COLORS: pick colors that are maximally perceptually distinct
 %   elastic_distance         - Calculates two elastic distances
 %   elastic_logistic         - Elastic Logistic Functional Regression
 %   elastic_mlogistic        - Elastic Multinomial Logistic Functional Regression
@@ -19,6 +20,7 @@
 %   inner_product            - Functional inner product
 %   inv_exp_map              - Inverse Exponential Map
 %   invertGamma              - Invert Warping Function
+%   kmeans                   - K-Means clustering and alignment
 %   L2norm                   - L2 Functional Norm
 %   multiple_align_functions - Group-wise function alignment to specified mean
 %   optimum_reparam          - Calculates Warping for two SRVFs
