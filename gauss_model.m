@@ -1,7 +1,7 @@
-function samples = gauss_model(out_warp, n, sort_samples)
+function out_warp = gauss_model(out_warp, n, sort_samples)
 % GAUSS_MODEL Gaussian gnerative model
 % -------------------------------------------------------------------------
-% This function models the functional data using a Gaussian model extracted 
+% This function models the functional data using a Gaussian model extracted
 % from the principal components of the srvfs
 %
 % Usage: samples = gauss_model(out_warp, n, sort_samples)
@@ -40,7 +40,7 @@ binsize = mean(diff(time));
 id = round(length(time)/2);
 q_new = qn;
 mq_new = mean(qn,2);
-m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  
+m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));
 mqn2 = [mq_new; mean(m_new)];
 C = cov([q_new;m_new]');
 
@@ -64,7 +64,7 @@ if sort_samples
     %%%% sort functions and warpings
     mx = max(f_s);
     [~, seq1] = sort(mx);
-
+    
     % compute the psi-function
     psi = zeros(n,size(rgam,2));
     len = zeros(1,n);
@@ -75,7 +75,7 @@ if sort_samples
         len(i) = acos(ones(1,M)*psi(i,:)'/M);
     end
     [~, seq2] = sort(len);
-
+    
     % combine x-variability and y-variability
     f_c = zeros(size(fn,1),n);
     for k = 1:n
@@ -95,7 +95,7 @@ else
         ip(i) = ones(1,M)*psi(i,:)'/M;
         len(i) = acos(ones(1,M)*psi(i,:)'/M);
     end
-
+    
     % combine x-variability and y-variability
     f_c = zeros(size(fn,1),n);
     for k = 1:n
@@ -107,9 +107,11 @@ else
     end
 end
 
-samples.fs = f_s;
-samples.gams = rgam;
-samples.ft = f_c;
+out_warp.fs = f_s;
+out_warp.gams = rgam;
+out_warp.ft = rgam;
+out_warp.qs = q_s(1:M,:);
+out_warp.rsamps = true;
 end
 
 function rgam = randomGamma(gam,num)
@@ -127,15 +129,16 @@ time = time(:);
 vm = mean(vec);
 rgam = zeros(num, length(gam));
 for k=1:num
-
+    
     a = randn(1,n);
     v = zeros(size(vm));
     for i=1:n
         v = v + a(i)*sqrt(Sig(i))*U(:,i)';
     end
     psi = exp_map(mu, v);
-
+    
     gam0 = cumtrapz(time,psi.^2);
     rgam(k,:) = (gam0-gam0(1))/(gam0(end)-gam0(1));  % slight change on scale
-
+    
+end
 end

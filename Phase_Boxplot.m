@@ -1,4 +1,4 @@
-function out = Phase_Boxplot(out_warp, k_p, alpha, figs)
+function out = Phase_Boxplot(out_warp, alpha, k_p, figs)
 % PHASE_BOXPLOT Functional phase Boxplot
 % -------------------------------------------------------------------------
 % This function constructs the phase boxplot
