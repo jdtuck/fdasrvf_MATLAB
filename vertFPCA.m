@@ -13,7 +13,7 @@ function vfpca = vertFPCA(out_warp,no,id,showplot)
 % no: number of principal components to extract
 % id: point to use for f(0) (default = midpoint)
 % showplot: show plots of principal directions (default = true)
-% 
+%
 % Output
 % Returns a struct containing
 % q_pca: srvf principal directions
@@ -26,10 +26,10 @@ fn = out_warp.fn;
 t = out_warp.time;
 qn = out_warp.qn;
 
-if nargin < 4
+if nargin < 3
     id = round(length(t)/2);
     showplot = 1;
-elseif nargin < 5
+elseif nargin < 4
     showplot = 1;
 end
 
@@ -64,7 +64,7 @@ for k = NP
     end
     fbar = mean(fn,2);
     fsbar = mean(f_pca(:,:,k),2);
-    err = repmat(fbar-fsbar,1,n);
+    err = repmat(fbar-fsbar,1,Nstd);
     f_pca(:,:,k) = f_pca(:,:,k) + err;
 end
 
@@ -82,7 +82,7 @@ vfpca.latent = s;
 vfpca.coef = c;
 vfpca.id = id;
 vfpca.mqn = mqn;
-vfpca.time = time;
+vfpca.time = t;
 vfpca.c = c;
 vfpca.U = U;
 
@@ -91,10 +91,16 @@ if showplot
     [~, ~, p1] = size(q_pca);
     num_plot = ceil(p1/3);
     for ii = 1:num_plot
+        if (k > size(q_pca,3))
+            break
+        end
         figure;
         for k1 = 1:3
             k = k1+(ii-1)*3;
             subplot(2,3,k1);
+            if (k > size(q_pca,3))
+                break
+            end
             for i = 1:length(coef)
                 plot(t, q_pca(1:end-1,i,k), cl(i), 'linewidth', 2); hold on;
             end
