@@ -23,11 +23,19 @@ function out = Amplitude_Boxplot(out_warp, alpha, k_a, figs)
 % outlier_index: indexes of outlier functions
 % fmedian: median function
 
-f_tilde = out_warp.fn;
-f_median = out_warp.fmedian;
-q_tilde = out_warp.qn;
-q_median = out_warp.mqn;
-t = out_warp.time;
+if out_warp.rsamps
+    f_tilde = out_warp.fs;
+    f_median = out_warp.fmedian;
+    q_tilde = out_warp.qs;
+    q_median = out_warp.mqn;
+    t = out_warp.time;
+else
+    f_tilde = out_warp.fn;
+    f_median = out_warp.fmedian;
+    q_tilde = out_warp.qn;
+    q_median = out_warp.mqn;
+    t = out_warp.time; 
+end
 
 [M, N] = size(f_tilde);
 lambda = 0.5;
@@ -183,8 +191,8 @@ if (figs)
     plot(t,maxx,'red', 'linewidth',2);
     xlim([t(1) t(end)]);
     ylim auto;
-
-
+    
+    
     figure(311); clf;
     surf(U,V,Fs2);
     hold on;

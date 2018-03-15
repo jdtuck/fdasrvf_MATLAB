@@ -22,7 +22,11 @@ function out = Phase_Boxplot(out_warp, alpha, k_p, figs)
 % maxx: maximum extreme function
 % outlier_index: indexes of outlier functions
 
-gam = out_warp.gam;
+if out_warp.rsamps
+    gam = out_warp.gams;
+else
+    gam = out_warp.gam;
+end
 
 [M, N] = size(gam);
 t = linspace(0,1,M);
