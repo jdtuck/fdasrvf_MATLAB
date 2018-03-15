@@ -1,4 +1,4 @@
-% FDASRVF_MATLAB
+% FDASRVF
 %
 % Files
 %   align_fPCA               - Group-wise function alignment and PCA Extractions
@@ -14,6 +14,9 @@
 %   elastic_regression       - Elastic Functional Regression
 %   exp_map                  - Exponential Map
 %   f_to_srvf                - Convert function to Square-Root Velocity Function
+%   fdahpca                  - fdahpca Elastic horizontal fpca class
+%   fdavpca                  - fdavpca Elastic vertical fpca class
+%   fdawarp                  - fdawarp elastic fda functional class
 %   gauss_model              - Gaussian gnerative model
 %   horizFPCA                - Horizontal Functional Principal Component Analysis
 %   inner_product            - Functional inner product
