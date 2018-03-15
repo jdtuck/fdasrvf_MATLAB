@@ -44,7 +44,11 @@ classdef fdavpca
             t = obj.warp_data.time;
             qn = obj.warp_data.qn;
             
-            if nargin < 3
+            if nargin < 2
+                no = 3;
+                id = round(length(t)/2);
+                obj.id = id;
+            elseif nargin < 3
                 id = round(length(t)/2);
                 obj.id = id;
             else
