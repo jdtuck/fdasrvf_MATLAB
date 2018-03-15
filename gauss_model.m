@@ -82,7 +82,7 @@ if sort_samples
         f_c(:,k) = interp1((0:M-1)/(M-1), f_s(:,seq1(k)), invertGamma(rgam(seq2(k),:)')');
         while sum(isnan(f_c(:,k))) >= 1
             rgam2 = randomGamma(gam.',1);
-            f_c(:,k) = interp1((0:M-1)/(M-1), f_s(:,k), invertGamma(rgam2'));
+            f_c(:,k) = warp_f_gamma(f_s(:,k), invertGamma(rgam2.'), (0:M-1)/(M-1));
         end
     end
 else
@@ -102,14 +102,14 @@ else
         f_c(:,k) = interp1((0:M-1)/(M-1), f_s(:,k), invertGamma(rgam(k,:)')');
         while sum(isnan(f_c(:,k))) >= 1
             rgam2 = randomGamma(gam.',1);
-            f_c(:,k) = interp1((0:M-1)/(M-1), f_s(:,k), invertGamma(rgam2'));
+            f_c(:,k) = warp_f_gamma(f_s(:,k), invertGamma(rgam2.'), (0:M-1)/(M-1));
         end
     end
 end
 
 out_warp.fs = f_s;
 out_warp.gams = rgam;
-out_warp.ft = rgam;
+out_warp.ft = f_c;
 out_warp.qs = q_s(1:M,:);
 out_warp.rsamps = true;
 end
