@@ -23,7 +23,7 @@ classdef fdawarp
     
     methods
         function obj = fdawarp(f,time)
-            %fdawarp Construct an instance of this fdawarp
+            %fdawarp Construct an instance of this class
             % Input:
             %   f: (M,N): matrix defining N functions of M samples
             %   time: time vector of length M
@@ -39,7 +39,7 @@ classdef fdawarp
         end
         
         function obj = time_warping(obj,lambda,option)
-            % time_warping Group-wise function alignment
+            % TIME_WARPING Group-wise function alignment
             % -------------------------------------------------------------------------
             % This function aligns a collection of functions using the elastic square-root
             % slope (srsf) framework.
@@ -260,8 +260,6 @@ classdef fdawarp
         function plot(obj)
             % plot plot functional alignment results
             % -------------------------------------------------------------------------
-            % This function aligns a collection of functions using the elastic square-root
-            % slope (srsf) framework.
             figure(1); clf;
             plot(obj.time, obj.f, 'linewidth', 1);
             title('Original data', 'fontsize', 16);

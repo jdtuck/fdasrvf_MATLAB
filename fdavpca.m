@@ -1,29 +1,45 @@
 classdef fdavpca
-    %UNTITLED4 Summary of this class goes here
-    %   Detailed explanation goes here
+    %fdavpca Elastic vertical fpca class
     
     properties
-        warp_data
-        q_pca
-        f_pca
-        latent
-        coef
-        id
-        mqn
-        U
-        stds
+        warp_data % fdawarp class with alignment data
+        q_pca     % srvf principal directions
+        f_pca     % f principal directions
+        latent    % latent values
+        coef      % prinicapl coefficients
+        id        % point used for f(0)
+        mqn       % mean srvf
+        U         % eigenvectors
+        stds      % geodesic directions
     end
     
     methods
         function obj = fdavpca(fdawarp)
-            %UNTITLED4 Construct an instance of this class
-            %   Detailed explanation goes here
+            %fdavpca Construct an instance of this class
+            % Input:
+            %   fdawarp: fdawarp class
+            if (isempty(fdawarp.fn))
+                error('Please align fdawarp class using time_warping!');
+            end
             obj.warp_data = fdawarp;
         end
         
         function obj = calc_fpca(obj,no,id)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
+            % CALC_FPCA Vertical Functional Principal Component Analysis
+            % -------------------------------------------------------------------------
+            % This function calculates vertical functional principal component analysis
+            % on aligned data
+            %
+            % Usage: vfpca = calc_fpca(obj,no,id)
+            %        vfpca = calc_fpca(obj,no)
+            %
+            % Inputs:
+            % warp_data: struct from time_warping of aligned data
+            % no: number of principal components to extract
+            % id: point to use for f(0) (default = midpoint)
+            %
+            % Output:
+            % fdavpca object
             fn = obj.warp_data.fn;
             t = obj.warp_data.time;
             qn = obj.warp_data.qn;
@@ -84,6 +100,8 @@ classdef fdavpca
         end
         
         function plot(obj)
+            % plot plot elastic vertical fPCA results
+            % -------------------------------------------------------------------------
             cl = 'rbgmc';
             [~, ~, p1] = size(obj.q_pca);
             num_plot = ceil(p1/3);
@@ -116,4 +134,3 @@ classdef fdavpca
         end
     end
 end
-
