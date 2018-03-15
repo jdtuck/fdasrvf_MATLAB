@@ -221,6 +221,7 @@ out.time = t;
 out.psi_median = psi_median;
 out.Q1 = Q1;
 out.Q3 = Q3;
+out.Q3a = Q3a;
 out.Q1a = Q1a;
 out.minn = minn;
 out.maxx = maxx;
