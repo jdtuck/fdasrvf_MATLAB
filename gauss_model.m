@@ -25,10 +25,10 @@ time = out_warp.time;
 qn = out_warp.qn;
 gam = out_warp.gam;
 
-if nargin < 5
+if nargin < 2
     n = 1;
     sort_samples = false;
-elseif nargin <6
+elseif nargin < 3
     sort_samples = false;
 end
 %% Separated and Warped Data
