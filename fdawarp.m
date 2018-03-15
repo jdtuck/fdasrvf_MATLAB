@@ -1,4 +1,4 @@
-classdef fdawarp < handle
+classdef fdawarp
     % fdawarp elastic fda functional class
     %   fdawarp object contains the ability to align and plot functional
     %   data and is required for follow on analysis
@@ -38,7 +38,7 @@ classdef fdawarp < handle
             obj.time = time;
         end
         
-        function time_warping(obj,lambda,option)
+        function obj = time_warping(obj,lambda,option)
             % time_warping Group-wise function alignment
             % -------------------------------------------------------------------------
             % This function aligns a collection of functions using the elastic square-root
@@ -65,15 +65,7 @@ classdef fdawarp < handle
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output:
-            % structure containing
-            % fn: aligned functions
-            % qn: aligned srvfs
-            % q0: original srvfs
-            % fmean: function mean
-            % mqn: mean srvf
-            % gam: warping functions
-            % psi: srvf of gam
-            % stats: structure of statistics of alignment
+            % fdawarp object
             if nargin < 2
                 lambda = 0;
                 option.parallel = 0;
@@ -176,7 +168,7 @@ classdef fdawarp < handle
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method,option.w, ...
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
-                        f_temp(:,k) = interp1(obj.time, f1(:,k,1), (obj.time(end)-obj.time(1)).*gam_o(k,:) + obj.time(1))';
+                        f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time);
                     end
                 else
@@ -185,7 +177,7 @@ classdef fdawarp < handle
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method,option.w, ...
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
-                        f_temp(:,k) = interp1(obj.time, f1(:,k,1), (obj.time(end)-obj.time(1)).*gam_o(k,:) + obj.time(1))';
+                        f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time);
                     end
                 end
@@ -222,11 +214,10 @@ classdef fdawarp < handle
                 end
             end
             gamI_o = SqrtMeanInverse(gam_o);
-            gamI_dev = gradient(gamI_o, 1/(M-1));
-            mq(:,r+1) = interp1(obj.time, mq(:,r), (obj.time(end)-obj.time(1)).*gamI_o + obj.time(1))'.*sqrt(gamI_dev');
+            mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,obj.time);
             for k = 1:N
-                q(:,k,r+1) = interp1(obj.time, q(:,k,r), (obj.time(end)-obj.time(1)).*gamI_o + obj.time(1))'.*sqrt(gamI_dev');
-                f1(:,k,r+1) = interp1(obj.time, f1(:,k,r), (obj.time(end)-obj.time(1)).*gamI_o + obj.time(1))';
+                q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,obj.time);
+                f1(:,k,r+1) = warp_f_gamma(f1(:,k,r),gamI_o,obj.time);
                 gam_o(k,:) = interp1(obj.time, gam_o(k,:), (obj.time(end)-obj.time(1)).*gamI_o + obj.time(1));
             end
             
@@ -241,7 +232,7 @@ classdef fdawarp < handle
             
             fgam = zeros(M,N);
             for ii = 1:N
-                fgam(:,ii) = interp1(obj.time, obj.fmean, (obj.time(end)-obj.time(1)).*gam_o(ii,:) + obj.time(1));
+                fgam(:,ii) = warp_f_gamma(obj.fmean,gam_o(ii,:),obj.time);
             end
             var_fgam = var(fgam,[],2);
             
@@ -267,39 +258,45 @@ classdef fdawarp < handle
         end
         
         function plot(obj)
+            % plot plot functional alignment results
+            % -------------------------------------------------------------------------
+            % This function aligns a collection of functions using the elastic square-root
+            % slope (srsf) framework.
             figure(1); clf;
             plot(obj.time, obj.f, 'linewidth', 1);
             title('Original data', 'fontsize', 16);
             
-            mean_f0 = mean(obj.f, 2);
-            std_f0 = std(obj.f, 0, 2);
-            mean_fn = mean(obj.fn, 2);
-            std_fn = std(obj.fn, 0, 2);
-            figure(2); clf;
-            M = length(obj.time);
-            plot((0:M-1)/(M-1), obj.gam, 'linewidth', 1);
-            axis square;
-            title('Warping functions', 'fontsize', 16);
-            
-            figure(3); clf;
-            plot(obj.time, obj.fn, 'LineWidth',1);
-            title(['Warped data, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
-            
-            figure(4); clf;
-            plot(obj.time, mean_f0, 'b-', 'linewidth', 1); hold on;
-            plot(obj.time, mean_f0+std_f0, 'r-', 'linewidth', 1);
-            plot(obj.time, mean_f0-std_f0, 'g-', 'linewidth', 1);
-            title('Original data: Mean \pm STD', 'fontsize', 16);
-            
-            figure(5); clf;
-            plot(obj.time, mean_fn, 'b-', 'linewidth', 1); hold on;
-            plot(obj.time, mean_fn+std_fn, 'r-', 'linewidth', 1);
-            plot(obj.time, mean_fn-std_fn, 'g-', 'linewidth', 1);
-            title(['Warped data, \lambda = ' num2str(obj.lambda) ': Mean \pm STD'], 'fontsize', 16);
-            
-            figure(6); clf;
-            plot(obj.time, obj.fmean, 'g','LineWidth',1);
-            title(['f_{mean}, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
+            if (~isempty(obj.gam))
+                mean_f0 = mean(obj.f, 2);
+                std_f0 = std(obj.f, 0, 2);
+                mean_fn = mean(obj.fn, 2);
+                std_fn = std(obj.fn, 0, 2);
+                figure(2); clf;
+                M = length(obj.time);
+                plot((0:M-1)/(M-1), obj.gam, 'linewidth', 1);
+                axis square;
+                title('Warping functions', 'fontsize', 16);
+                
+                figure(3); clf;
+                plot(obj.time, obj.fn, 'LineWidth',1);
+                title(['Warped data, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
+                
+                figure(4); clf;
+                plot(obj.time, mean_f0, 'b-', 'linewidth', 1); hold on;
+                plot(obj.time, mean_f0+std_f0, 'r-', 'linewidth', 1);
+                plot(obj.time, mean_f0-std_f0, 'g-', 'linewidth', 1);
+                title('Original data: Mean \pm STD', 'fontsize', 16);
+                
+                figure(5); clf;
+                plot(obj.time, mean_fn, 'b-', 'linewidth', 1); hold on;
+                plot(obj.time, mean_fn+std_fn, 'r-', 'linewidth', 1);
+                plot(obj.time, mean_fn-std_fn, 'g-', 'linewidth', 1);
+                title(['Warped data, \lambda = ' num2str(obj.lambda) ': Mean \pm STD'], 'fontsize', 16);
+                
+                figure(6); clf;
+                plot(obj.time, obj.fmean, 'g','LineWidth',1);
+                title(['f_{mean}, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
+            end
         end
         
     end
