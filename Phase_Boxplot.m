@@ -217,7 +217,7 @@ if (figs)
     axis square;
 end
 
-out.time = time;
+out.time = t;
 out.psi_median = psi_median;
 out.Q1 = Q1;
 out.Q3 = Q3;
