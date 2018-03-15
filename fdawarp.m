@@ -24,7 +24,7 @@ classdef fdawarp
         ft     % random warped functions
         qs     % random aligned srvfs
         type   % alignment type
-
+        
     end
     
     methods
@@ -524,7 +524,7 @@ classdef fdawarp
             %
             % Output:
             % fdawarp object
-          
+            
             
             if nargin < 2
                 n = 1;
@@ -618,40 +618,60 @@ classdef fdawarp
         function plot(obj)
             % plot plot functional alignment results
             % -------------------------------------------------------------------------
-            figure(1); clf;
-            plot(obj.time, obj.f, 'linewidth', 1);
-            title('Original data', 'fontsize', 16);
             
-            if (~isempty(obj.gam))
-                mean_f0 = mean(obj.f, 2);
-                std_f0 = std(obj.f, 0, 2);
-                mean_fn = mean(obj.fn, 2);
-                std_fn = std(obj.fn, 0, 2);
-                figure(2); clf;
+            if obj.rsamps
+                
+                figure(1); clf
                 M = length(obj.time);
-                plot((0:M-1)/(M-1), obj.gam, 'linewidth', 1);
+                plot(obj.time, obj.ft, 'linewidth', 1);
+                title('Random Functions', 'fontsize', 16);
+                
+                figure(2); clf;
+                plot((0:M-1)/(M-1), obj.gams, 'linewidth', 1);
                 axis square;
-                title('Warping functions', 'fontsize', 16);
+                title('Random Warping functions', 'fontsize', 16);
                 
                 figure(3); clf;
-                plot(obj.time, obj.fn, 'LineWidth',1);
-                title(['Warped data, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
+                plot(obj.time, obj.fs, 'LineWidth',1);
+                title('Random Aligned Functions', 'fontsize', 16);
                 
-                figure(4); clf;
-                plot(obj.time, mean_f0, 'b-', 'linewidth', 1); hold on;
-                plot(obj.time, mean_f0+std_f0, 'r-', 'linewidth', 1);
-                plot(obj.time, mean_f0-std_f0, 'g-', 'linewidth', 1);
-                title('Original data: Mean \pm STD', 'fontsize', 16);
+            else
                 
-                figure(5); clf;
-                plot(obj.time, mean_fn, 'b-', 'linewidth', 1); hold on;
-                plot(obj.time, mean_fn+std_fn, 'r-', 'linewidth', 1);
-                plot(obj.time, mean_fn-std_fn, 'g-', 'linewidth', 1);
-                title(['Warped data, \lambda = ' num2str(obj.lambda) ': Mean \pm STD'], 'fontsize', 16);
+                figure(1); clf;
+                plot(obj.time, obj.f, 'linewidth', 1);
+                title('Original data', 'fontsize', 16);
                 
-                figure(6); clf;
-                plot(obj.time, obj.fmean, 'g','LineWidth',1);
-                title(['f_{mean}, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
+                if (~isempty(obj.gam))
+                    mean_f0 = mean(obj.f, 2);
+                    std_f0 = std(obj.f, 0, 2);
+                    mean_fn = mean(obj.fn, 2);
+                    std_fn = std(obj.fn, 0, 2);
+                    figure(2); clf;
+                    M = length(obj.time);
+                    plot((0:M-1)/(M-1), obj.gam, 'linewidth', 1);
+                    axis square;
+                    title('Warping functions', 'fontsize', 16);
+                    
+                    figure(3); clf;
+                    plot(obj.time, obj.fn, 'LineWidth',1);
+                    title(['Warped data, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
+                    
+                    figure(4); clf;
+                    plot(obj.time, mean_f0, 'b-', 'linewidth', 1); hold on;
+                    plot(obj.time, mean_f0+std_f0, 'r-', 'linewidth', 1);
+                    plot(obj.time, mean_f0-std_f0, 'g-', 'linewidth', 1);
+                    title('Original data: Mean \pm STD', 'fontsize', 16);
+                    
+                    figure(5); clf;
+                    plot(obj.time, mean_fn, 'b-', 'linewidth', 1); hold on;
+                    plot(obj.time, mean_fn+std_fn, 'r-', 'linewidth', 1);
+                    plot(obj.time, mean_fn-std_fn, 'g-', 'linewidth', 1);
+                    title(['Warped data, \lambda = ' num2str(obj.lambda) ': Mean \pm STD'], 'fontsize', 16);
+                    
+                    figure(6); clf;
+                    plot(obj.time, obj.fmean, 'g','LineWidth',1);
+                    title(['f_{mean}, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
+                end
             end
         end
         
