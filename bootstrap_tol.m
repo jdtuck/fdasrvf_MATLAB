@@ -17,10 +17,10 @@ function bounds = bootstrap_tol(out_warp, quants, nboot, alpha)
 % Structure containing
 % lwrtol: lower tolerance fs
 % uprtol: upper tolerance fs
-% mn: tolerance of mean fs
+% mnCI: tolerance of mean fs
 % lwrtol_gam: lower tolerance gams
 % uprtol_gam: upper tolerance gams
-% mn_gam: tolerance of mean gams
+% mnCI_gam: tolerance of mean gams
 
 if (~isa(a,'fdawarp'))
     error('Require input of class fdawarp');
