@@ -64,3 +64,5 @@ Association in press: 1-34.
 Y. Lu, R. Herbei and S. Kurtek (2017). "Bayesian Registration of Functions 
 with a Gaussian Process Prior." Journal of Computational and Graphical 
 Statistics: in press: 1-34
+
+  [fex]:            https://www.mathworks.com/matlabcentral/fileexchange/66494-fdasrvf
