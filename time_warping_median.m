@@ -30,8 +30,6 @@ function out = time_warping_median(f,t,lambda,option)
 % gam: warping functions
 % psi: srvf of gam
 % stats: structure of statistics of alignment
-addpath(genpath('DP'))
-
 if nargin < 3
     lambda = 0;
     option.parallel = 0;
@@ -154,7 +152,7 @@ for r = 1:MaxItr
             gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
             f_temp(:,k) = interp1(t, f(:,k,1), (t(end)-t(1)).*gam(k,:) + t(1))';
             q_temp(:,k) = f_to_srvf(f_temp(:,k),t);
-            v = q_temp(:,k) - mq_c
+            v = q_temp(:,k) - mq_c;
             d = sqrt(trapz(t, v.*v));
             vtil(:,k) = v/d;
             dtil(k) = 1/d;
@@ -167,7 +165,7 @@ for r = 1:MaxItr
             gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
             f_temp(:,k) = interp1(t, f(:,k,1), (t(end)-t(1)).*gam(k,:) + t(1))';
             q_temp(:,k) = f_to_srvf(f_temp(:,k),t);
-            v = q_temp(:,k) - mq_c
+            v = q_temp(:,k) - mq_c;
             d = sqrt(trapz(t, v.*v));
             vtil(:,k) = v/d;
             dtil(k) = 1/d;
