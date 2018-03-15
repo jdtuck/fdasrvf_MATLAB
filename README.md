@@ -1,9 +1,8 @@
-[![MATLAB
-FileExchange](https://img.shields.io/badge/MATLAB-FileExchange-orange.svg)][fex]
+[![MATLAB FileExchange](https://img.shields.io/badge/MATLAB-FileExchange-orange.svg)][fex]
 
 fdasrvf
-======
 =======
+
 *MATLAB library for elastic functional data analysis*
 
 A MATLAB package for functional data analysis using the square root
