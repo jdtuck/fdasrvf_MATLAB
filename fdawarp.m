@@ -1,7 +1,51 @@
 classdef fdawarp
-    % fdawarp elastic fda functional class
-    %   fdawarp object contains the ability to align and plot functional
-    %   data and is required for follow on analysis
+    %fdawarp A class to provide a SRVF functional data analysis
+    % -------------------------------------------------------------------------
+    % This class provides alignment methods for functional data using the
+    % SRVF framework
+    %
+    % Usage:  obj = fdawarp(f,t)
+    %
+    % where:
+    %   f: (M,N): matrix defining N functions of M samples
+    %   time: time vector of length M
+    %
+    %
+    % fdawarp Properties:
+    %    f - (M,N): matrix defining N functions of M samples
+    %    time - time vector of length M
+    %    fn - aligned functions
+    %    qn - aligned srvfs
+    %    q0 - initial srvfs
+    %    fmean - function mean
+    %    mqn - mean srvf
+    %    gam - warping functions
+    %    psi - srvf of warping functions
+    %    stats - alignment statistics
+    %    qun - cost function
+    %    lambda - lambda
+    %    method - optimization method
+    %    gamI - invserse warping function
+    %    rsamps - random samples
+    %    fs - random aligned functions
+    %    gams - random warping functions
+    %    ft - random warped functions
+    %    qs - random aligned srvfs
+    %    type - alignment type
+    %
+    %
+    % fdawarp Methods:
+    %   fdawarp - class constructor
+    %   time_warping - align functions and find karcher mean
+    %   time_warping - align functions and find karcher median
+    %   multiple_align_functions - align functions to a specified mean
+    %   gauss_model - model functions using a generative gaussian model on
+    %       fPCA space
+    %   plot - plot results and functions in object
+    %          
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2018
     
     properties
         f      % (M,N): matrix defining N functions of M samples
@@ -50,13 +94,11 @@ classdef fdawarp
             % This function aligns a collection of functions using the elastic square-root
             % slope (srsf) framework.
             %
-            % Usage:  out = time_warping(f,t)
-            %         out = time_warping(f,t,lambda)
-            %         out = time_warping(f,t,lambda,option)
+            % Usage:  obj.time_warping()
+            %         obj.time_warping(lambda)
+            %         obj.time_warping(lambda,option)
             %
             % Input:
-            % f (M,N): matrix defining N functions of M samples
-            % t : time vector of length M
             % lambda: regularization parameter
             %
             % default options
@@ -269,9 +311,11 @@ classdef fdawarp
             % This function aligns a collection of functions using the elastic square-root
             % slope (srsf) framework to the median
             %
+            % Usage:  obj.time_warping_median()
+            %         obj.time_warping_median(lambda)
+            %         obj.time_warping_median(lambda,option)
+            %
             % Input:
-            % f (M,N): matrix defining N functions of M samples
-            % t : time vector of length M
             % lambda: regularization parameter
             %
             % default options
@@ -512,9 +556,9 @@ classdef fdawarp
             % This function aligns a collection of functions using the elastic square-root
             % slope (srsf) framework.
             %
-            % Usage:  out = multiple_align_functions(mu)
-            %         out = multiple_align_functions(lambda)
-            %         out = multiple_align_functions(lambda, option)
+            % Usage:  obj.multiple_align_functions(mu)
+            %         obj.multiple_align_functions(lambda)
+            %         obj.multiple_align_functions(lambda, option)
             %
             % Input:
             % mu: vector of function to align to
@@ -574,13 +618,13 @@ classdef fdawarp
             end
             
             fprintf('\n lambda = %5.1f \n', lambda);
-  
+            
             [M, N] = size(obj.f);
             
             if option.smooth == 1
                 obj.f = smooth_data(obj.f, option.sparam);
             end
-          
+            
             
             %% Compute the q-function of the plot
             q = f_to_srvf(obj.f,obj.time);
@@ -661,7 +705,7 @@ classdef fdawarp
                 end
             end
             
-           
+            
             obj.psi = [];
             obj.lambda = lambda;
             obj.method = option.method;
@@ -674,11 +718,11 @@ classdef fdawarp
             % This function models the functional data using a Gaussian model extracted
             % from the principal components of the srvfs
             %
-            % Usage: samples = gauss_model(obj, n, sort_samples)
+            % Usage: obj.gauss_model(n, sort_samples)
             %
             % Inputs:
             % n: number of random samples (n = 1)
-            % sort_samples: sort samples (e.g., = F)
+            % sort_samples: sort samples (e.g., = false)
             %
             % Output:
             % fdawarp object
@@ -776,6 +820,7 @@ classdef fdawarp
         function plot(obj)
             % plot plot functional alignment results
             % -------------------------------------------------------------------------
+            % Usage: obj.plot()
             
             if obj.rsamps
                 

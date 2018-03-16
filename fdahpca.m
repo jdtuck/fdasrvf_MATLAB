@@ -1,5 +1,35 @@
 classdef fdahpca
-    %fdahpca Elastic horizontal fpca class
+    %fdahpca A class to provide a horizontal fPCA
+    % -------------------------------------------------------------------------
+    % This class provides horizontal fPCA using the
+    % SRVF framework
+    %
+    % Usage:  obj = fdahpca(warp_data)
+    %
+    % where:
+    %   warp_data - fdawarp object of aligned data
+    %
+    %
+    % fdahpca Properties:
+    %   warp_data - fdawarp class with alignment data
+    %   gam_pca - warping functions principal directions
+    %   psi_pca - srvf principal directions
+    %   latent - latent values
+    %   U - eigenvectors
+    %   coef - coeficients
+    %   vec - shooting vectors
+    %   mu - Karcher Mean
+    %   tau - principal directions
+    %
+    %
+    % fdahpca Methods:
+    %   fdahpca - class constructor
+    %   calc_fpca - perform horizontal fPCA
+    %   plot - plot results and functions in object
+    %
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2018
     
     properties
         warp_data % fdawarp class with alignment data
@@ -30,11 +60,10 @@ classdef fdahpca
             % This function calculates vertical functional principal component analysis
             % on aligned data
             %
-            % Usage: hfpca = horizFPCA(out_warp,no)
-            %        hfpca = horizFPCA(out_warp,no,showplot)
+            % Usage: obj.horizFPCA(no)
+            %        obj.horizFPCA(no,showplot)
             %
             % Inputs:
-            % out_warp: structure from time_warping of aligned data
             % no: number of principal components to extract
             % showplot: show plots of principal directions (e.g, true)
             %
@@ -91,6 +120,7 @@ classdef fdahpca
         function plot(obj)
             % plot plot elastic horizontal fPCA results
             % -------------------------------------------------------------------------
+            % Usage: obj.plot()
             cl = 'rbgmc';
             [~, T, p1] = size(obj.gam_pca);
             num_plot = ceil(p1/3);

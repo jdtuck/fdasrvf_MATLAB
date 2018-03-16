@@ -1,6 +1,37 @@
-classdef ambbox
-    %ambbox amplitude boxplot class
-    %   constructs and plots amplitude boxplot
+classdef ampbox
+    %ampbox A class to amplitude box plots
+    % -------------------------------------------------------------------------
+    % This class provides amplitude boxplot for functional data using the
+    % SRVF framework
+    %
+    % Usage:  obj = ampbox(warp_data)
+    %
+    % where:
+    %   warp_data - fdawarp class of aligned data
+    %
+    %
+    % ampbox Properties:
+    %   warp_data - fdawarp class with alignment data
+    %   Q1 - First quartile
+    %   Q3 - Second quartile
+    %   Q1a - First quantile based on alpha
+    %   Q3a - Second quantile based on alpha
+    %   minn - minimum extreme function
+    %   maxx - maximum extreme function
+    %   outlier_index - indexes of outlier functions
+    %   f_median - median function
+    %   q_median - median srvf
+    %   plt - surface plot mesh
+    %
+    %
+    % ampbox Methods:
+    %   ampbox - class constructor
+    %   construct_boxplot - construct boxplot
+    %   plot - plot results and functions in object
+    %          
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2018
     
     properties
         warp_data      % fdawarp class with alignment data
@@ -17,8 +48,8 @@ classdef ambbox
     end
     
     methods
-        function obj = ambbox(fdawarp)
-            %ambbox Construct an instance of this class
+        function obj = ampbox(fdawarp)
+            %ampbox Construct an instance of this class
             %   Detailed explanation goes here
             if (isempty(fdawarp.fn))
                 error('Please align fdawarp class using time_warping!');
@@ -30,15 +61,14 @@ classdef ambbox
             % CONSTRUCT_BOXPLOT constructs the amplitude boxplot
             % -------------------------------------------------------------------------
             %
-            % Usage:  out = Amplitude_Boxplot(out_warp, alpha, k_a, figs)
+            % Usage:  obj.construct_boxplot(alpha, k_a, figs)
             %
             % Input:
-            % out_warp: struct from time_warping_median of aligned data using the median
             % alpha: quantile value (e.g.,=.05, i.e., 95\%)
             % ka: scalar for outlier cutoff (e.g.,=1)
             %
             % Output: structure containing
-            % ambox object
+            % ampbox object
             
             if obj.warp_data.rsamps
                 f_tilde = obj.warp_data.fs;
@@ -196,6 +226,9 @@ classdef ambbox
         end
         
         function plot(obj)
+            % plot plot box plot and surface plot
+            % -------------------------------------------------------------------------
+            % Usage: obj.plot()
             figure(310); clf;
             t = obj.warp_data.time;
             M = length(time);

@@ -1,6 +1,39 @@
 classdef fdakma
-    %fdakma Summary of this class goes here
-    %   Detailed explanation goes here
+    %fdakma A class to provide a kmeans clustering and alignment
+    % -------------------------------------------------------------------------
+    % This class provides kmeans and alignment using the
+    % SRVF framework
+    %
+    % Usage:  obj = fdakma(f,t)
+    %
+    % where:
+    %   f: (M,N): matrix defining N functions of M samples
+    %   time: time vector of length M
+    %
+    %
+    % fdakma Properties:
+    %   f - original functions
+    %   time - time
+    %   fn - aligned functions in cell of clusters
+    %   qn - aligned srvfs in cell of clusters
+    %   gam - warping functions in cell of clusters
+    %   gamI - inverse gamma
+    %   q0 - original srvfs
+    %   labels - cluster labels
+    %   templates - cluster centers
+    %   templates_q - cluster srvf centers
+    %   qun - cost function
+    %   method - optimization method
+    %
+    %
+    % fdakma Methods:
+    %   fdakma - class constructor
+    %   kmeans - perform kmeans
+    %   plot - plot results and functions in object
+    %
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2018
     
     properties
         f            % original functions
@@ -40,10 +73,10 @@ classdef fdakma
             % This function clusters functions and aligns using the elastic square-root
             % slope (srsf) framework.
             %
-            % Usage:  out = kmeans(K)
-            %         out = kmeans(K,seeds)
-            %         out = kmeans(seeds,lambda)
-            %         out = kmeans(seeds,lambda,option)
+            % Usage:  obj.kmeans(K)
+            %         obj.kmeans(K,seeds)
+            %         obj.kmeans(seeds,lambda)
+            %         obj.kmeans(seeds,lambda,option)
             %
             % Input:
             % K: number of clusters
@@ -269,6 +302,8 @@ classdef fdakma
         
         function plot(obj)
             % PLOT plot kmeans clustering alignment results
+            % -------------------------------------------------------------
+            % Usage: obj.plot()
             figure(1); clf;
             plot(obj.time, obj.f, 'linewidth', 1);
             title('Original data', 'fontsize', 16);

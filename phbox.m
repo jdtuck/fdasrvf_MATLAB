@@ -1,6 +1,37 @@
 classdef phbox
-    %phbox phase boxplot class
-    %   constructs and plots phase boxplot
+    %phbox A class to phase box plots
+    % -------------------------------------------------------------------------
+    % This class provides phase boxplot for functional data using the
+    % SRVF framework
+    %
+    % Usage:  obj = phbox(warp_data)
+    %
+    % where:
+    %   warp_data - fdawarp class of aligned data
+    %
+    %
+    % phbox Properties:
+    %   warp_data      % fdawarp class with alignment data
+    %   Q1             % First quartile
+    %   Q3             % Second quartile
+    %   Q1a            % First quantile based on alpha
+    %   Q3a            % Second quantile based on alpha
+    %   minn           % minimum extreme function
+    %   maxx           % maximum extreme function
+    %   outlier_index  % indexes of outlier functions
+    %   median_x       % median warping function
+    %   psi_median     % median srvf of warping function
+    %   plt            % surface plot mesh
+    %
+    %
+    % phbox Methods:
+    %   phbox - class constructor
+    %   construct_boxplot - construct boxplot
+    %   plot - plot results and functions in object
+    %
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2018
     
     properties
         warp_data      % fdawarp class with alignment data
@@ -30,15 +61,14 @@ classdef phbox
             % CONSTRUCT_BOXPLOT constructs the phase boxplot
             % -------------------------------------------------------------------------
             %
-            % Usage:  out = Phase_Boxplot(out_warp, k_p, alpha, figs)
+            % Usage:  obj.construct_boxplot(k_p, alpha, figs)
             %
             % Input:
-            % warp_median: structure from time_warping_median of aligned data using the median
             % alpha quantile: value (e.g.,=.05, i.e., 95\%)
             % k_p: scalar for outlier cutoff (e.g.,=1)
             %
             % Output: structure containing
-            % ambox object
+            % phbox object
             
             if out_warp.rsamps
                 gam = obj.warp_data.gams;
@@ -214,6 +244,9 @@ classdef phbox
         end
         
         function plot(obj)
+            % plot plot box plot and surface plot
+            % -------------------------------------------------------------------------
+            % Usage: obj.plot()
             [M, ~] = size(obj.warp_data.gam);
             t = linspace(0,1,M);
             figure(410); clf;

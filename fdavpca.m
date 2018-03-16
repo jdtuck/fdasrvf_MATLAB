@@ -1,5 +1,35 @@
 classdef fdavpca
-    %fdavpca Elastic vertical fpca class
+    %fdavpca A class to provide a vertical fPCA
+    % -------------------------------------------------------------------------
+    % This class provides vertical fPCA using the
+    % SRVF framework
+    %
+    % Usage:  obj = fdavpca(warp_data)
+    %
+    % where:
+    %   warp_data - fdawarp object of aligned data
+    %
+    %
+    % fdavpca Properties:
+    %   warp_data - fdawarp class with alignment data
+    %   q_pca - srvf principal directions
+    %   f_pca - f principal directions
+    %   latent - latent values
+    %   coef - prinicapl coefficients
+    %   id - point used for f(0)
+    %   mqn - mean srvf
+    %   U - eigenvectors
+    %   stds - geodesic directions
+    %
+    %
+    % fdavpca Methods:
+    %   fdavpca - class constructor
+    %   calc_fpca - perform vertical fPCA
+    %   plot - plot results and functions in object
+    %
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2018
     
     properties
         warp_data % fdawarp class with alignment data
@@ -30,8 +60,8 @@ classdef fdavpca
             % This function calculates vertical functional principal component analysis
             % on aligned data
             %
-            % Usage: vfpca = calc_fpca(obj,no,id)
-            %        vfpca = calc_fpca(obj,no)
+            % Usage: obj.calc_fpca(no)
+            %        obj.calc_fpca(no,id)
             %
             % Inputs:
             % warp_data: struct from time_warping of aligned data
@@ -105,7 +135,8 @@ classdef fdavpca
         
         function plot(obj)
             % plot plot elastic vertical fPCA results
-            % -------------------------------------------------------------------------
+            % -------------------------------------------------------------
+            % Usage: obj.plot()
             cl = 'rbgmc';
             [~, ~, p1] = size(obj.q_pca);
             num_plot = ceil(p1/3);
