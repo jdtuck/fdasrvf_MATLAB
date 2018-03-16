@@ -1,177 +1,194 @@
-function out = elastic_mlogistic(f, y, t, option)
-% ELASTIC_MLOGISTIC Elastic Multinomial Logistic Functional Regression
-% -------------------------------------------------------------------------
-% This function identifies a multinomial regression model with 
-% phase-variablity using elastic methods
-%
-% Usage:  out = elastic_mlogistic(f, y, t)
-%         out = elastic_mlogistic(f, y, t, option)
-%
-% Input:
-% f (M,N): matrix defining N functions of M samples
-% y : response vector of length N
-% t : time vector of length M
-%
-% default options
-% option.parallel = 0; % turns offs MATLAB parallel processing (need
-% parallel processing toolbox)
-% option.closepool = 0; % determines wether to close matlabpool
-% option.smooth = 0; % smooth data using standard box filter
-% option.B = []; % defines basis if empty uses bspline
-% option.df = 20; % degress of freedom
-% option.sparam = 25; % number of times to run filter
-% option.max_itr = 20; % maximum number of iterations
-%
-% Output:
-% structure with fields:
-% alpha: intercept
-% beta: regression function
-% fn: aligned functions
-% qn: aligned srvfs
-% gamma: warping functions
-% q: original srvfs
-% B: basis Matrix used
-% b: coefficient vector
-% Loss: logistic loss
-% n_classes: number of classes
-% type: model type
-
-if nargin < 4
-    option.parallel = 0;
-    option.closepool = 0;
-    option.smooth = 0;
-    option.sparam = 25;
-    option.B = [];
-    option.df = 20;
-    option.max_itr = 20;
-end
-
-if option.parallel == 1
-    if isempty(gcp('nocreate'))
-        % prompt user for number threads to use
-        nThreads = input('Enter number of threads to use: ');
-        if nThreads > 1
-            parpool(nThreads);
-        elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-            while (nThreads > 12) % wait until user figures it out
-                fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                nThreads = input('Enter number of threads to use: ');
-            end
-            if nThreads > 1
-                parpool(nThreads);
-            end
+classdef elastic_mlogistic
+    %elastic_mlogistic Summary of this class goes here
+    %   Detailed explanation goes here
+    
+    properties
+        Property1
+    end
+    
+    methods
+        function obj = elastic_mlogistic(inputArg1,inputArg2)
+            %UNTITLED6 Construct an instance of this class
+            %   Detailed explanation goes here
+            obj.Property1 = inputArg1 + inputArg2;
         end
-    end
-end
-
-%% Initialize
-
-a = size(t,1);
-if (a ~=1)
-    t = t';
-end
-binsize = mean(diff(t));
-[M, N] = size(f);
-
-% code labs 
-m = max(y);
-Y = zeros(N,m);
-for ii =1:N
-    Y(ii,y(ii)) = 1;
-end
-
-if option.smooth == 1
-    f = smooth_data(f, option.sparam);
-end
-
-% create B-spline basis
-if isempty(option.B)
-    B = create_basismatrix(t, option.df, 4);
-else
-    B = option.B;
-end
-Nb = size(B,2);
-
-q = f_to_srvf(f,t);
-
-gamma = repmat(linspace(0,1,M)',1,N);
-
-%% Main Loop
-itr = 1;
-LL = zeros(1,option.max_itr);
-while itr <= option.max_itr
-    fprintf('Iteration: %d\n', itr);
-    % align data
-    fn = zeros(M,N);
-    qn = zeros(M,N);
-    for k = 1:N
-        fn(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gamma(:,k) + t(1))';
-        qn(:,k) = gradient(fn(:,k), binsize)./sqrt(abs(gradient(fn(:,k), binsize))+eps);
-    end
-    
-    Phi = ones(N, Nb+1);
-    for ii = 1:N
-        for jj = 2:Nb+1
-            Phi(ii,jj) = trapz(t, qn(:,ii) .* B(:,jj-1));
-        end
-    end
-    
-    % find alpha and beta using bfgs
-    options.Method = 'lbfgs';
-    options.Display = 'off';
-    b0 = zeros(m*(Nb+1), 1);
-    b = minFunc(@mlogit_optim,b0,options,Phi,Y);
-    
-    B0 = reshape(b, Nb+1, m);
-    alpha = B0(1,:);
-    beta = zeros(M,m);
-    for ii = 1:m
-        beta(:,ii) = B * B0(2:Nb+1,ii);
-    end
-    
-    % compute the lostic loss
-    LL(itr) = mlogit_loss(b, Phi, Y);
         
-    % find gamma
-    gamma_new = zeros(M,N);
-    if option.parallel == 1
-        parfor ii=1:N
-            gamma_new(:,ii) = mlogit_warp_grad(alpha, beta, t, q(:,ii), Y(ii,:));
+        function out = calc_model(f, y, t, option)
+            % ELASTIC_MLOGISTIC Elastic Multinomial Logistic Functional Regression
+            % -------------------------------------------------------------------------
+            % This function identifies a multinomial regression model with
+            % phase-variablity using elastic methods
+            %
+            % Usage:  out = elastic_mlogistic(f, y, t)
+            %         out = elastic_mlogistic(f, y, t, option)
+            %
+            % Input:
+            % f (M,N): matrix defining N functions of M samples
+            % y : response vector of length N
+            % t : time vector of length M
+            %
+            % default options
+            % option.parallel = 0; % turns offs MATLAB parallel processing (need
+            % parallel processing toolbox)
+            % option.closepool = 0; % determines wether to close matlabpool
+            % option.smooth = 0; % smooth data using standard box filter
+            % option.B = []; % defines basis if empty uses bspline
+            % option.df = 20; % degress of freedom
+            % option.sparam = 25; % number of times to run filter
+            % option.max_itr = 20; % maximum number of iterations
+            %
+            % Output:
+            % structure with fields:
+            % alpha: intercept
+            % beta: regression function
+            % fn: aligned functions
+            % qn: aligned srvfs
+            % gamma: warping functions
+            % q: original srvfs
+            % B: basis Matrix used
+            % b: coefficient vector
+            % Loss: logistic loss
+            % n_classes: number of classes
+            % type: model type
+            
+            if nargin < 4
+                option.parallel = 0;
+                option.closepool = 0;
+                option.smooth = 0;
+                option.sparam = 25;
+                option.B = [];
+                option.df = 20;
+                option.max_itr = 20;
+            end
+            
+            if option.parallel == 1
+                if isempty(gcp('nocreate'))
+                    % prompt user for number threads to use
+                    nThreads = input('Enter number of threads to use: ');
+                    if nThreads > 1
+                        parpool(nThreads);
+                    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
+                        while (nThreads > 12) % wait until user figures it out
+                            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
+                            nThreads = input('Enter number of threads to use: ');
+                        end
+                        if nThreads > 1
+                            parpool(nThreads);
+                        end
+                    end
+                end
+            end
+            
+            %% Initialize
+            
+            a = size(t,1);
+            if (a ~=1)
+                t = t';
+            end
+            binsize = mean(diff(t));
+            [M, N] = size(f);
+            
+            % code labs
+            m = max(y);
+            Y = zeros(N,m);
+            for ii =1:N
+                Y(ii,y(ii)) = 1;
+            end
+            
+            if option.smooth == 1
+                f = smooth_data(f, option.sparam);
+            end
+            
+            % create B-spline basis
+            if isempty(option.B)
+                B = create_basismatrix(t, option.df, 4);
+            else
+                B = option.B;
+            end
+            Nb = size(B,2);
+            
+            q = f_to_srvf(f,t);
+            
+            gamma = repmat(linspace(0,1,M)',1,N);
+            
+            %% Main Loop
+            itr = 1;
+            LL = zeros(1,option.max_itr);
+            while itr <= option.max_itr
+                fprintf('Iteration: %d\n', itr);
+                % align data
+                fn = zeros(M,N);
+                qn = zeros(M,N);
+                for k = 1:N
+                    fn(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gamma(:,k) + t(1))';
+                    qn(:,k) = gradient(fn(:,k), binsize)./sqrt(abs(gradient(fn(:,k), binsize))+eps);
+                end
+                
+                Phi = ones(N, Nb+1);
+                for ii = 1:N
+                    for jj = 2:Nb+1
+                        Phi(ii,jj) = trapz(t, qn(:,ii) .* B(:,jj-1));
+                    end
+                end
+                
+                % find alpha and beta using bfgs
+                options.Method = 'lbfgs';
+                options.Display = 'off';
+                b0 = zeros(m*(Nb+1), 1);
+                b = minFunc(@mlogit_optim,b0,options,Phi,Y);
+                
+                B0 = reshape(b, Nb+1, m);
+                alpha = B0(1,:);
+                beta = zeros(M,m);
+                for ii = 1:m
+                    beta(:,ii) = B * B0(2:Nb+1,ii);
+                end
+                
+                % compute the lostic loss
+                LL(itr) = mlogit_loss(b, Phi, Y);
+                
+                % find gamma
+                gamma_new = zeros(M,N);
+                if option.parallel == 1
+                    parfor ii=1:N
+                        gamma_new(:,ii) = mlogit_warp_grad(alpha, beta, t, q(:,ii), Y(ii,:));
+                    end
+                else
+                    for ii=1:N
+                        gamma_new(:,ii) = mlogit_warp_grad(alpha, beta, t, q(:,ii), Y(ii,:));
+                    end
+                end
+                
+                if norm(gamma-gamma_new) < 1e-5
+                    break
+                else
+                    gamma = gamma_new;
+                end
+                
+                itr = itr + 1;
+            end
+            gamma = gamma_new;
+            
+            out.alpha = alpha;
+            out.beta = beta;
+            out.fn = fn;
+            out.qn = qn;
+            out.gamma = gamma;
+            out.q = q;
+            out.B = B;
+            out.b = b(2:end);
+            out.Loss = LL(1:itr-1);
+            out.n_classes = m;
+            out.type = 'mlogistic';
+            
+            if option.parallel == 1 && option.closepool == 1
+                if isempty(gcp('nocreate'))
+                    delete(gcp('nocreate'))
+                end
+            end
+            
         end
-    else
-        for ii=1:N
-            gamma_new(:,ii) = mlogit_warp_grad(alpha, beta, t, q(:,ii), Y(ii,:));
-        end
     end
-    
-    if norm(gamma-gamma_new) < 1e-5
-        break
-    else
-        gamma = gamma_new;
-    end
-    
-    itr = itr + 1;
-end
-gamma = gamma_new;
-
-out.alpha = alpha;
-out.beta = beta;
-out.fn = fn;
-out.qn = qn;
-out.gamma = gamma;
-out.q = q;
-out.B = B;
-out.b = b(2:end);
-out.Loss = LL(1:itr-1);
-out.n_classes = m;
-out.type = 'mlogistic';
-
-if option.parallel == 1 && option.closepool == 1
-    if isempty(gcp('nocreate'))
-        delete(gcp('nocreate'))
-    end
-end
-
 end
 
 %% Helper Functions
@@ -240,7 +257,7 @@ for ii = 1:m
 end
 gami = linspace(0,1,m1);
 
-gamma = mlogit_warp(alpha, beta1, t, q, y, gami, max_itr, tol, delta, display); 
+gamma = mlogit_warp(alpha, beta1, t, q, y, gami, max_itr, tol, delta, display);
 
 end
 
