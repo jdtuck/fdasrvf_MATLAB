@@ -2,6 +2,7 @@
 %
 % Files
 %   align_fPCA               - Group-wise function alignment and PCA Extractions
+%   ambbox                   - ambbox amplitude boxplot class
 %   Amplitude_Boxplot        - Functional Amplitude Boxplot
 %   bootstrap_tol            - Boostrapped tolerance bounds
 %   create_basismatrix       - Create Basis Matrix
@@ -15,6 +16,7 @@
 %   exp_map                  - Exponential Map
 %   f_to_srvf                - Convert function to Square-Root Velocity Function
 %   fdahpca                  - fdahpca Elastic horizontal fpca class
+%   fdakma                   - fdakma Summary of this class goes here
 %   fdavpca                  - fdavpca Elastic vertical fpca class
 %   fdawarp                  - fdawarp elastic fda functional class
 %   gauss_model              - Gaussian gnerative model
@@ -30,6 +32,7 @@
 %   pairwise_align           - Align two functions
 %   pairwise_align_bayes     - PAIRWISE_ALIGN Align two functions using Bayesian method
 %   Phase_Boxplot            - Functional phase Boxplot
+%   phbox                    - phbox phase boxplot class
 %   progress                 - Wrapper class to provide an iterator object for loop creation
 %   ProgressBar              - A class to provide a convenient and useful progress bar
 %   rgam                     - Random Warping

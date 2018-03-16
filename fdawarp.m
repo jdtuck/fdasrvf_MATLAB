@@ -65,7 +65,6 @@ classdef fdawarp
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.showplot = 1; % turns on and off plotting
             % option.method = 'DP1'; % optimization method (DP, DP2, SIMUL, RBFGS)
             % option.w = 0.0; % BFGS weight
             % option.MaxItr = 20;  % maximum iterations
@@ -281,7 +280,6 @@ classdef fdawarp
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.showplot = 1; % turns on and off plotting
             % option.method = 'DP'; % optimization method (DP, DP2, SIMUL, RBFGS)
             % option.w = 0.0; % BFGS weight
             % option.MaxItr = 20;  % maximum iterations
@@ -294,7 +292,6 @@ classdef fdawarp
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.showplot = 1;
                 option.method = 'DP1';
                 option.w = 0.0;
                 option.MaxItr = 20;
@@ -303,7 +300,6 @@ classdef fdawarp
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.showplot = 1;
                 option.method = 'DP1';
                 option.w = 0.0;
                 option.MaxItr = 20;
