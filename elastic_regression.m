@@ -67,7 +67,7 @@ classdef elastic_regression
             end
             
             obj.f = f;
-            obj.y = y;
+            obj.y = y(:);
             obj.time = time;
         end
         
@@ -202,7 +202,7 @@ classdef elastic_regression
                 % compute the SSE
                 int_X = zeros(N,1);
                 for ii = 1 %N
-                    int_X(ii) = trapz(t, obj.qn(:,ii).*obj.beta);
+                    int_X(ii) = trapz(obj.time, obj.qn(:,ii).*obj.beta);
                 end
                 
                 obj.SSE(itr) = sum((obj.y-obj.alpha-int_X).^2);
