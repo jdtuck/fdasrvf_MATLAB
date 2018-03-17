@@ -25,14 +25,14 @@ classdef elastic_regression
     %   q - original srvfs
     %   B - basis Matrix used
     %   b - coefficient vector
-    %   SSE  sum of squared errors 
+    %   SSE  sum of squared errors
     %
     %
     % elastic_regression Methods:
     %   elastic_regression - class constructor
     %   calc_model - calculate regression model parameters
     %   predict - prediction function
-    %          
+    %
     %
     % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
     % Date   :  15-Mar-2018
@@ -50,7 +50,7 @@ classdef elastic_regression
         q % original srvfs
         B % basis Matrix used
         b % coefficient vector
-        SSE % sum of squared errors 
+        SSE % sum of squared errors
         
     end
     
@@ -239,7 +239,7 @@ classdef elastic_regression
                 obj.gamma(:, k) = warp_f_gamma(gamma_new(:,k),gamI,obj.time);
             end
             
-           
+            
             obj.b = obj.b(2:end);
             obj.SSE = obj.SSE(1:itr-1);
             
@@ -247,6 +247,64 @@ classdef elastic_regression
                 if isempty(gcp('nocreate'))
                     delete(gcp('nocreate'))
                 end
+            end
+        end
+        
+        function out = predict(obj, newdata)
+            % PREDICT Elastic Functional Regression Prediction
+            % -------------------------------------------------------------------------
+            % This function performs prediction on regression model on new
+            % data if available or current stored data in object
+            %
+            % Usage:  obj.prediction()
+            %         obj.prediction(newdata)
+            %
+            % Input:
+            % newdata - struct containing new data for prediction
+            % newdata.f - (M,N) matrix of functions
+            % newdata.time - vector of time points
+            % newdata.y - truth if available
+            % newdata.smooth - smooth data if needed
+            % newdata.sparam - number of times to run filter
+            %
+            % default options
+            %
+            % Output:
+            % structure with fields:
+            % y_pred: predicted value or probability (depends on model type)
+            % SSE: sum of squared errors if truth available
+            if (exist(newdata))
+                q1 = f_to_srvf(newdata.f,newdata.time);
+                n = size(q1,2);
+                y_pred = zeros(n,1);
+                for ii = 1:n
+                    difference = obj.q - repmat(q1(:,ii),1,size(obj.q,2));
+                    dist = sum(abs(difference).^2).^(1/2);
+                    [~, argmin] = min(dist);
+                    q_tmp = warp_q_gamma(q1(:,ii), obj.gamma(:,argmin), newdata.time);
+                    
+                    y_pred(ii) = obj.alpha + trapz(newdata.time, q_tmp.' .* obj.beta);
+                end
+                if (isempty(newdata.y))
+                    out.SSE = NaN;
+                else
+                    out.SSE = sum((newdata.y-y_pred).^2);
+                end
+                out.y_pred = y_pred;
+            else
+                n = size(obj.q,2);
+                y_pred = zeros(n,1);
+                for ii = 1:n
+                    difference = obj.q - repmat(obj.q(:,ii),1,size(obj.q,2));
+                    dist = sum(abs(difference).^2).^(1/2);
+                    [~, argmin] = min(dist);
+                    q_tmp = warp_q_gamma(obj.q(:,ii), obj.gamma(:,argmin), newdata.time);
+                    
+                    y_pred(ii) = obj.alpha + trapz(obj.time, q_tmp.' .* obj.beta);
+                end
+                
+                out.SSE = sum((obj.y-y_pred).^2);
+                out.y_pred = y_pred;
             end
         end
     end

@@ -1,8 +1,8 @@
 classdef elastic_logistic
-    %elastic_logistic A class to provide a SRVF logistic 
+    %elastic_logistic A class to provide a SRVF logistic
     % regression
     % -------------------------------------------------------------------------
-    % This class provides elastic logisitc regression for 
+    % This class provides elastic logisitc regression for
     % functional data using the SRVF framework accounting for warping
     %
     % Usage:  obj = elastic_logistic(f,y,time)
@@ -180,7 +180,7 @@ classdef elastic_logistic
                 gamma_new = zeros(M,N);
                 if option.parallel == 1
                     parfor ii=1:N
-                        gamma_new(:,ii) = logistic_warp(obj.beta, obj.time, ... 
+                        gamma_new(:,ii) = logistic_warp(obj.beta, obj.time, ...
                             obj.q(:,ii), obj.y(ii));
                     end
                 else
@@ -200,7 +200,7 @@ classdef elastic_logistic
             end
             obj.gamma = gamma_new;
             
- 
+            
             obj.b = obj.b(2:end);
             obj.Loss = LL(1:itr-1);
             
@@ -210,6 +210,77 @@ classdef elastic_logistic
                 end
             end
             
+        end
+        
+        function out = predict(obj, newdata)
+            % PREDICT Elastic Functional Regression Prediction
+            % -------------------------------------------------------------------------
+            % This function performs prediction on regression model on new
+            % data if available or current stored data in object
+            %
+            % Usage:  obj.prediction()
+            %         obj.prediction(newdata)
+            %
+            % Input:
+            % newdata - struct containing new data for prediction
+            % newdata.f - (M,N) matrix of functions
+            % newdata.time - vector of time points
+            % newdata.y - truth if available
+            % newdata.smooth - smooth data if needed
+            % newdata.sparam - number of times to run filter
+            %
+            % default options
+            %
+            % Output:
+            % structure with fields:
+            % y_labels: predicted labels
+            % PC: probability of classification if truth available
+            if (exist(newdata))
+                q1 = f_to_srvf(newdata.f,newdata.time);
+                n = size(q1,2);
+                y_pred = zeros(n,1);
+                for ii = 1:n
+                    difference = obj.q - repmat(q1(:,ii),1,size(obj.q,2));
+                    dist = sum(abs(difference).^2).^(1/2);
+                    [~, argmin] = min(dist);
+                    q_tmp = warp_q_gamma(q1(:,ii), obj.gamma(:,argmin), newdata.time);
+                    
+                    y_pred(ii) = obj.alpha + trapz(newdata.time, q_tmp.' .* obj.beta);
+                end
+                y_pred = phi(y_pred);
+                out.y_labels = ones(1,n);
+                out.y_labels(y_pred < 0.5) = -1;
+                if (isempty(newdata.y))
+                    out.PC = NaN;
+                else
+                    TP = sum(newdata.y(out.y_labels == 1) == 1);
+                    FP = sum(newdata.y(out.y_labels == -1) == 1);
+                    TN = sum(newdata.y(out.y_labels == -1) == -1);
+                    FN = sum(newdata.y(out.y_labels == 1) == -1);
+                    out.PC = (TP+TN)/(TP+FP+FN+TN);
+                end
+                
+            else
+                n = size(obj.q,2);
+                y_pred = zeros(n,1);
+                for ii = 1:n
+                    difference = obj.q - repmat(obj.q(:,ii),1,size(obj.q,2));
+                    dist = sum(abs(difference).^2).^(1/2);
+                    [~, argmin] = min(dist);
+                    q_tmp = warp_q_gamma(obj.q(:,ii), obj.gamma(:,argmin), newdata.time);
+                    
+                    y_pred(ii) = obj.alpha + trapz(obj.time, q_tmp.' .* obj.beta);
+                end
+                y_pred = phi(y_pred);
+                out.y_labels = ones(1,n);
+                out.y_labels(y_pred < 0.5) = -1;
+                TP = sum(obj.y(out.y_labels == 1) == 1);
+                FP = sum(obj.y(out.y_labels == -1) == 1);
+                TN = sum(obj.y(out.y_labels == -1) == -1);
+                FN = sum(obj.y(out.y_labels == 1) == -1);
+                out.PC = (TP+TN)/(TP+FP+FN+TN);
+                
+            end
         end
     end
 end

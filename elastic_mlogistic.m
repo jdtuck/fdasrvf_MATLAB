@@ -1,8 +1,8 @@
 classdef elastic_mlogistic
-    %elastic_mlogistic A class to provide a SRVF multionomial logistic 
+    %elastic_mlogistic A class to provide a SRVF multionomial logistic
     % regression
     % -------------------------------------------------------------------------
-    % This class provides elastic multinomial logisitc regression for 
+    % This class provides elastic multinomial logisitc regression for
     % functional data using the SRVF framework accounting for warping
     %
     % Usage:  obj = elastic_mlogistic(f,y,time)
@@ -220,6 +220,96 @@ classdef elastic_mlogistic
                 end
             end
             
+        end
+        
+        function out = predict(obj, newdata)
+            % PREDICT Elastic Functional Regression Prediction
+            % -------------------------------------------------------------------------
+            % This function performs prediction on regression model on new
+            % data if available or current stored data in object
+            %
+            % Usage:  obj.prediction()
+            %         obj.prediction(newdata)
+            %
+            % Input:
+            % newdata - struct containing new data for prediction
+            % newdata.f - (M,N) matrix of functions
+            % newdata.time - vector of time points
+            % newdata.y - truth if available
+            % newdata.smooth - smooth data if needed
+            % newdata.sparam - number of times to run filter
+            %
+            % default options
+            %
+            % Output:
+            % structure with fields:
+            % y_labels: predicted labels
+            % PC: probability of classification if truth available
+            m = obj.n_classes;
+            if (exist(newdata))
+                q1 = f_to_srvf(newdata.f,newdata.time);
+                n = size(q1,2);
+                y_pred = zeros(n,m);
+                
+                for ii = 1:n
+                    difference = obj.q - repmat(q1(:,ii),1,size(obj.q,2));
+                    dist = sum(abs(difference).^2).^(1/2);
+                    [~, argmin] = min(dist);
+                    q_tmp = warp_q_gamma(q1(:,ii), obj.gamma(:,argmin), newdata.time);
+                    
+                    for jj = 1:m
+                        y_pred(ii,jj) = obj.alpha(jj) + trapz(newdata.time, q_tmp.' .* obj.beta(:, jj));
+                    end
+                end
+                y_pred = phi(reshape(y_pred,1,n*m));
+                y_pred = reshape(y_pred,n,m);
+                [~, out.y_labels] = max(y_pred,[],2);
+                if (isempty(newdata.y))
+                    out.PC = NaN;
+                else
+                    PC = zeros(1,m);
+                    cls_set = 1:m;
+                    for ii = 1:m
+                        cls_sub = setdiff(cls_set,ii);
+                        TP = sum(newdata.y(out.y_labels == ii) == ii);
+                        FP = sum(newdata.y(ismember(out.y_labels,cls_sub)) == ii);
+                        TN = sum(newdata.y(ismember(out.y_labels,cls_sub)) == ...
+                            y_labels(ismember(out.y_labels,cls_sub)));
+                        FN = sum(ismember(newdata.y(out.y_labels==ii), cls_sub));
+                        PC(ii) = (TP+TN)/(TP+FP+FN+TN);
+                    end
+                    out.PC = sum(newdata.y == out.y_labels)./length(out.y_labels);
+                end
+            else
+                n = size(obj.q,2);
+                y_pred = zeros(n,m);
+                for ii = 1:n
+                    difference = obj.q - repmat(obj.q(:,ii),1,size(obj.q,2));
+                    dist = sum(abs(difference).^2).^(1/2);
+                    [~, argmin] = min(dist);
+                    q_tmp = warp_q_gamma(obj.q(:,ii), obj.gamma(:,argmin), newdata.time);
+                    
+                    for jj = 1:m
+                        y_pred(ii,jj) = obj.alpha(jj) + trapz(obj.time, q_tmp.' .* obj.beta(:, jj));
+                    end
+                end
+                
+                y_pred = phi(reshape(y_pred,1,n*m));
+                y_pred = reshape(y_pred,n,m);
+                [~, out.y_labels] = max(y_pred,[],2);
+                PC = zeros(1,m);
+                cls_set = 1:m;
+                for ii = 1:m
+                    cls_sub = setdiff(cls_set,ii);
+                    TP = sum(obj.y(out.y_labels == ii) == ii);
+                    FP = sum(obj.y(ismember(out.y_labels,cls_sub)) == ii);
+                    TN = sum(obj.y(ismember(out.y_labels,cls_sub)) == ...
+                        y_labels(ismember(out.y_labels,cls_sub)));
+                    FN = sum(ismember(obj.y(out.y_labels==ii), cls_sub));
+                    PC(ii) = (TP+TN)/(TP+FP+FN+TN);
+                end
+                out.PC = sum(obj.y == out.y_labels)./length(out.y_labels);
+            end
         end
     end
 end
