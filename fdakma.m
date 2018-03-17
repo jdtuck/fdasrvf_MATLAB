@@ -47,6 +47,7 @@ classdef fdakma
         templates    % cluster centers
         templates_q  % cluster srvf centers
         qun          % cost function
+        lambda       % lambda
         method       % optimization method
     end
     
@@ -67,7 +68,7 @@ classdef fdakma
             obj.time = time;
         end
         
-        function obj = kmeans(obj, K,seeds,lambda,option)
+        function obj = kmeans(obj,K,seeds,lambda,option)
             % KMEANS K-Means clustering and alignment
             % -------------------------------------------------------------------------
             % This function clusters functions and aligns using the elastic square-root
@@ -75,13 +76,13 @@ classdef fdakma
             %
             % Usage:  obj.kmeans(K)
             %         obj.kmeans(K,seeds)
-            %         obj.kmeans(seeds,lambda)
-            %         obj.kmeans(seeds,lambda,option)
+            %         obj.kmeans(seeds,obj.lambda)
+            %         obj.kmeans(seeds,obj.lambda,option)
             %
             % Input:
             % K: number of clusters
             % seeds: indexes of cluster center functions (default [])
-            % lambda: regularization parameter
+            % obj.lambda: regularization parameter
             %
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
@@ -98,20 +99,9 @@ classdef fdakma
             % Output:
             % fdakma object
             
-            if nargin < 2
+            if nargin < 3
                 seeds = [];
-                lambda = 0;
-                option.parallel = 0;
-                option.alignment = true;
-                option.closepool = 0;
-                option.smooth = 0;
-                option.sparam = 25;
-                option.method = 'DP1';
-                option.w = 0.0;
-                option.MaxItr = 20;
-                option.thresh = 0.01;
-            elseif nargin < 3
-                lambda = 0;
+                obj.lambda = 0;
                 option.parallel = 0;
                 option.alignment = true;
                 option.closepool = 0;
@@ -122,6 +112,17 @@ classdef fdakma
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             elseif nargin < 4
+                obj.lambda = 0;
+                option.parallel = 0;
+                option.alignment = true;
+                option.closepool = 0;
+                option.smooth = 0;
+                option.sparam = 25;
+                option.method = 'DP1';
+                option.w = 0.0;
+                option.MaxItr = 20;
+                option.thresh = 0.01;
+            elseif nargin < 5
                 option.parallel = 0;
                 option.alignment = true;
                 option.closepool = 0;
@@ -153,7 +154,7 @@ classdef fdakma
             end
             %% Parameters
             
-            fprintf('\n lambda = %5.1f \n', lambda);
+            fprintf('\n lambda = %5.1f \n', obj.lambda);
             
             
             [M, N] = size(obj.f);
@@ -185,8 +186,8 @@ classdef fdakma
             
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
-            f_temp = zeros(length(t),N);
-            q_temp = zeros(length(t),N);
+            f_temp = zeros(length(obj.time),N);
+            q_temp = zeros(length(obj.time),N);
             for r = 1:option.MaxItr
                 gam1 = {};
                 Dy = zeros(K,N);
@@ -202,12 +203,12 @@ classdef fdakma
                         parfor k = 1:N
                             q_c = q(:,k); mq_c = obj.templates_q(:,i);
                             if (option.alignment)
-                                gamt(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method,option.w, ...
                                     obj.templates(1,i), obj.f(1,k));
                             else
                                 gamt(k,:) = linspace(0,1,M);
                             end
-                            f_temp(:,k) = warp_f_gamma(obj.f(:,k),gamt(k,:),opj.time);
+                            f_temp(:,k) = warp_f_gamma(obj.f(:,k),gamt(k,:),obj.time);
                             q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time);
                             Dy(i,k) = sqrt(sum(trapz(obj.time,(q_temp(:,k)-obj.templates_q(:,i)).^2)));
                         end
@@ -215,14 +216,14 @@ classdef fdakma
                         for k = 1:N
                             q_c = q(:,k); mq_c = obj.templates_q(:,i);
                             if (option.alignment)
-                                gamt(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method,option.w, ...
                                     obj.templates(1,i), obj.f(1,k));
                             else
                                 gamt(k,:) = linspace(0,1,M);
                             end
-                            f_temp(:,k) = warp_f_gamma(obj.f(:,k),gamt(k,:),opj.time);
+                            f_temp(:,k) = warp_f_gamma(obj.f(:,k),gamt(k,:),obj.time);
                             q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time);
-                            Dy(i,k) = sqrt(sum(trapz(t,(q_temp(:,k)-obj.templates_q(:,i)).^2)));
+                            Dy(i,k) = sqrt(sum(trapz(obj.time,(q_temp(:,k)-obj.templates_q(:,i)).^2)));
                         end
                     end
                     gam1{i} = gamt;
@@ -240,21 +241,21 @@ classdef fdakma
                     N1 = size(ftmp,2);
                     f_temp1 = zeros(M,N1);
                     q_temp1 = zeros(M,N1);
-                    gam1 = zeros(N1,M);
+                    gam2 = zeros(N1,M);
                     if option.parallel == 1
                         parfor k = 1:N1
                             f_temp1(:,k) = warp_f_gamma(ftmp(:,k),obj.gamI,obj.time);
                             q_temp1(:,k) = f_to_srvf(f_temp1(:,k),obj.time);
-                            gam1(k,:) = warp_f_gamma(gamtmp(k,:),obj.gamI,obj.time);
+                            gam2(k,:) = warp_f_gamma(gamtmp(k,:),obj.gamI,obj.time);
                         end
                     else
                         for k = 1:N1
                             f_temp1(:,k) = warp_f_gamma(ftmp(:,k),obj.gamI,obj.time);
-                            q_temp1(:,k) = f_to_srvf(f_temp1(:,k),t);
-                            gam1(k,:) = warp_f_gamma(gamtmp(k,:),obj.gamI,obj.time);
+                            q_temp1(:,k) = f_to_srvf(f_temp1(:,k),obj.time);
+                            gam2(k,:) = warp_f_gamma(gamtmp(k,:),obj.gamI,obj.time);
                         end
                     end
-                    gam1{i}(id,:) = gam1;
+                    gam1{i}(id,:) = gam2;
                     qn1{i}(:,id) = q_temp1;
                     fn1{i}(:,id) = f_temp1;
                 end
@@ -295,7 +296,6 @@ classdef fdakma
             obj.fn = ftmp;
             obj.qn = qtmp;
             obj.labels = cluster_id;
-            obj.lambda = lambda;
             obj.method = option.method;
             obj.qun = obj.qun(1:r);
         end
@@ -317,7 +317,7 @@ classdef fdakma
             title('Cluster Mean Functions');
             
             figure(3); clf;
-            plot(t, obj.fn{1}, 'Color', colors(1,:));
+            plot(obj.time, obj.fn{1}, 'Color', colors(1,:));
             hold all
             for k = 2:K
                 plot(obj.time, obj.fn{k}, 'Color', colors(k,:));
