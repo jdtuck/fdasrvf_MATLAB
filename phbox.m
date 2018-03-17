@@ -54,6 +54,9 @@ classdef phbox
             if (isempty(fdawarp.fn))
                 error('Please align fdawarp class using time_warping!');
             end
+            if (~strcmpi(fdawarp.type,'median'))
+                error('Please align fdawarp class using time_warping_median!');
+            end
             obj.warp_data = fdawarp;
         end
         
@@ -70,7 +73,7 @@ classdef phbox
             % Output: structure containing
             % phbox object
             
-            if out_warp.rsamps
+            if obj.warp_data.rsamps
                 gam = obj.warp_data.gams;
             else
                 gam = obj.warp_data.gam;
@@ -248,7 +251,7 @@ classdef phbox
             % -------------------------------------------------------------------------
             % Usage: obj.plot()
             [M, ~] = size(obj.warp_data.gam);
-            t = linspace(0,1,M);
+            t = linspace(0,1,M).';
             figure(410); clf;
             plot(t, obj.median_x, 'black','linewidth', 2);
             hold on;
@@ -262,7 +265,7 @@ classdef phbox
             axis([0,1,0,1]);
             
             figure(416); clf;
-            surf(U,V,Fs2);
+            surf(obj.plt.U,obj.plt.V,obj.plt.Fs2);
             hold on;
             shading flat;
             plot3(t,zeros(1,M),obj.median_x - t,'k','LineWidth',3)

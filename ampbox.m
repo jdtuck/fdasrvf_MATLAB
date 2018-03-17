@@ -52,7 +52,11 @@ classdef ampbox
             %ampbox Construct an instance of this class
             %   Detailed explanation goes here
             if (isempty(fdawarp.fn))
-                error('Please align fdawarp class using time_warping!');
+                error('Please align fdawarp class using time_warping_median!');
+            end
+            
+            if (~strcmpi(fdawarp.type,'median'))
+                error('Please align fdawarp class using time_warping_median!');
             end
             obj.warp_data = fdawarp;
         end
@@ -231,8 +235,8 @@ classdef ampbox
             % Usage: obj.plot()
             figure(310); clf;
             t = obj.warp_data.time;
-            M = length(time);
-            plot(t, obj.f_median, 'black','linewidth', 2);
+            M = length(t);
+            plot(t, obj.warp_data.fmean, 'black','linewidth', 2);
             hold on;
             plot(t, obj.Q1, 'blue','linewidth', 2);
             plot(t, obj.Q3, 'blue', 'linewidth', 2);

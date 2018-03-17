@@ -22,7 +22,7 @@ function bounds = bootstrap_tol(out_warp, quants, nboot, alpha)
 % uprtol_gam: upper tolerance gams
 % mnCI_gam: tolerance of mean gams
 
-if (~isa(a,'fdawarp'))
+if (~isa(out_warp,'fdawarp'))
     error('Require input of class fdawarp');
 end
 
