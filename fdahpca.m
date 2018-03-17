@@ -81,6 +81,8 @@ classdef fdahpca
             [obj.U,S,~] = svd(K);
             Sig = diag(S);
             T = size(obj.vec,2);
+            obj.U = obj.U(:,1:no);
+            Sig = Sig(1:no);
             
             % Parameters
             obj.tau = 1:5;

@@ -40,6 +40,7 @@ bootmean = zeros(length(time),nboot);
 bootlwr_gam = zeros(length(time),nboot);
 bootupr_gam = zeros(length(time),nboot);
 bootmean_gam = zeros(length(time),nboot);
+parpool();
 fprintf('Bootstrap Sampling. \n');
 obj = ProgressBar(nboot, ...
     'IsParallel', true, ...
@@ -62,6 +63,8 @@ parfor ii = 1:nboot
     
 end
 obj.release();
+
+delete(gcp('nocreate'))
 
 % get CI's from bootstraps
 bounds.lwrtol = quantile(bootlwr,alpha/2,2);

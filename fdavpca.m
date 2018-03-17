@@ -99,6 +99,8 @@ classdef fdavpca
             [obj.U,S,~] = svd(K);
             s = diag(S);
             stdS = sqrt(s);
+            s = s(1:no);
+            obj.U = obj.U(:,1:no);
             
             % compute the PCA in the q domain
             obj.q_pca = zeros(length(mq_new)+1,Nstd,no);
