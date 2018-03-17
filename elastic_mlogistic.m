@@ -1,31 +1,86 @@
 classdef elastic_mlogistic
-    %elastic_mlogistic Summary of this class goes here
-    %   Detailed explanation goes here
+    %elastic_mlogistic A class to provide a SRVF multionomial logistic 
+    % regression
+    % -------------------------------------------------------------------------
+    % This class provides elastic multinomial logisitc regression for 
+    % functional data using the SRVF framework accounting for warping
+    %
+    % Usage:  obj = elastic_mlogistic(f,y,time)
+    %
+    % where:
+    %   f: (M,N): matrix defining N functions of M samples
+    %   y: response vector
+    %   time: time vector of length M
+    %
+    %
+    % elastic_mlogistic Properties:
+    %   f - (M,N) % matrix defining N functions of M samples
+    %   y - response vector of length N
+    %   time - time vector of length M
+    %   alpha - intercept
+    %   beta - regression function
+    %   fn - aligned functions
+    %   qn - aligned srvfs
+    %   gamma - warping functions
+    %   q - original srvfs
+    %   B - basis Matrix used
+    %   b - coefficient vector
+    %   Loss - logistic loss
+    %   n_classes - number of classes
+    %
+    %
+    % elastic_mlogistic Methods:
+    %   elastic_mlogistic - class constructor
+    %   calc_model - calculate regression model parameters
+    %   predict - prediction function
+    %
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2018
     
     properties
-        Property1
+        f % (M,N): matrix defining N functions of M samples
+        y % response vector
+        time % time vector with M samples
+        alpha % intercept
+        beta % regression function
+        fn % aligned functions
+        qn % aligned srvfs
+        gamma % warping functions
+        q % original srvfs
+        B % basis Matrix used
+        b % coefficient vector
+        Loss % logistic loss
+        n_classes % number of classes
     end
     
     methods
-        function obj = elastic_mlogistic(inputArg1,inputArg2)
-            %UNTITLED6 Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
+        function obj = elastic_mlogistic(f, y, time)
+            %elastic_mlogistic Construct an instance of this class
+            % Input:
+            %   f: (M,N): matrix defining N functions of M samples
+            %   y: response vector
+            %   time: time vector of length M
+            a = size(time,1);
+            if (a ~=1)
+                time = time';
+            end
+            
+            obj.f = f;
+            obj.y = y;
+            obj.time = time;
         end
         
-        function out = calc_model(f, y, t, option)
-            % ELASTIC_MLOGISTIC Elastic Multinomial Logistic Functional Regression
+        function obj = calc_model(obj, option)
+            % CALC_MODEL Calculate multinomial logistic regression model parameters
             % -------------------------------------------------------------------------
             % This function identifies a multinomial regression model with
             % phase-variablity using elastic methods
             %
-            % Usage:  out = elastic_mlogistic(f, y, t)
-            %         out = elastic_mlogistic(f, y, t, option)
+            % Usage:  obj.calc_model()
+            %         obj.calc_model(option)
             %
             % Input:
-            % f (M,N): matrix defining N functions of M samples
-            % y : response vector of length N
-            % t : time vector of length M
             %
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
@@ -38,20 +93,9 @@ classdef elastic_mlogistic
             % option.max_itr = 20; % maximum number of iterations
             %
             % Output:
-            % structure with fields:
-            % alpha: intercept
-            % beta: regression function
-            % fn: aligned functions
-            % qn: aligned srvfs
-            % gamma: warping functions
-            % q: original srvfs
-            % B: basis Matrix used
-            % b: coefficient vector
-            % Loss: logistic loss
-            % n_classes: number of classes
-            % type: model type
+            % elastic_mlogistic object
             
-            if nargin < 4
+            if nargin < 1
                 option.parallel = 0;
                 option.closepool = 0;
                 option.smooth = 0;
@@ -81,35 +125,30 @@ classdef elastic_mlogistic
             
             %% Initialize
             
-            a = size(t,1);
-            if (a ~=1)
-                t = t';
-            end
-            binsize = mean(diff(t));
-            [M, N] = size(f);
+            [M, N] = size(obj.f);
             
             % code labs
-            m = max(y);
+            m = max(obj.y);
             Y = zeros(N,m);
             for ii =1:N
-                Y(ii,y(ii)) = 1;
+                Y(ii,obj.y(ii)) = 1;
             end
             
             if option.smooth == 1
-                f = smooth_data(f, option.sparam);
+                obj.f = smooth_data(obj.f, option.sparam);
             end
             
             % create B-spline basis
             if isempty(option.B)
-                B = create_basismatrix(t, option.df, 4);
+                obj.B = create_basismatrix(t, option.df, 4);
             else
-                B = option.B;
+                obj.B = option.B;
             end
-            Nb = size(B,2);
+            Nb = size(obj.B,2);
             
-            q = f_to_srvf(f,t);
+            obj.q = f_to_srvf(obj.f,obj.time);
             
-            gamma = repmat(linspace(0,1,M)',1,N);
+            obj.gamma = repmat(linspace(0,1,M)',1,N);
             
             %% Main Loop
             itr = 1;
@@ -117,17 +156,17 @@ classdef elastic_mlogistic
             while itr <= option.max_itr
                 fprintf('Iteration: %d\n', itr);
                 % align data
-                fn = zeros(M,N);
-                qn = zeros(M,N);
+                obj.fn = zeros(M,N);
+                obj.qn = zeros(M,N);
                 for k = 1:N
-                    fn(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gamma(:,k) + t(1))';
-                    qn(:,k) = gradient(fn(:,k), binsize)./sqrt(abs(gradient(fn(:,k), binsize))+eps);
+                    obj.fn(:,k) = warp_f_gamma(obj.f(:,k),obj.gamma(:,k),obj.time);
+                    obj.qn(:,k) = f_to_srvf(obj.fn(:,k),obj.time);
                 end
                 
                 Phi = ones(N, Nb+1);
                 for ii = 1:N
                     for jj = 2:Nb+1
-                        Phi(ii,jj) = trapz(t, qn(:,ii) .* B(:,jj-1));
+                        Phi(ii,jj) = trapz(t, obj.qn(:,ii) .* obj.B(:,jj-1));
                     end
                 end
                 
@@ -135,51 +174,45 @@ classdef elastic_mlogistic
                 options.Method = 'lbfgs';
                 options.Display = 'off';
                 b0 = zeros(m*(Nb+1), 1);
-                b = minFunc(@mlogit_optim,b0,options,Phi,Y);
+                obj.b = minFunc(@mlogit_optim,b0,options,Phi,Y);
                 
-                B0 = reshape(b, Nb+1, m);
-                alpha = B0(1,:);
-                beta = zeros(M,m);
+                B0 = reshape(obj.b, Nb+1, m);
+                obj.alpha = B0(1,:);
+                obj.beta = zeros(M,m);
                 for ii = 1:m
-                    beta(:,ii) = B * B0(2:Nb+1,ii);
+                    obj.beta(:,ii) = obj.B * B0(2:Nb+1,ii);
                 end
                 
                 % compute the lostic loss
-                LL(itr) = mlogit_loss(b, Phi, Y);
+                LL(itr) = mlogit_loss(obj.b, Phi, Y);
                 
                 % find gamma
                 gamma_new = zeros(M,N);
                 if option.parallel == 1
                     parfor ii=1:N
-                        gamma_new(:,ii) = mlogit_warp_grad(alpha, beta, t, q(:,ii), Y(ii,:));
+                        gamma_new(:,ii) = mlogit_warp_grad(obj.alpha, obj.beta, ...
+                            obj.time, obj.q(:,ii), Y(ii,:));
                     end
                 else
                     for ii=1:N
-                        gamma_new(:,ii) = mlogit_warp_grad(alpha, beta, t, q(:,ii), Y(ii,:));
+                        gamma_new(:,ii) = mlogit_warp_grad(obj.alpha, obj.beta, ...
+                            obj.time, obj.q(:,ii), Y(ii,:));
                     end
                 end
                 
-                if norm(gamma-gamma_new) < 1e-5
+                if norm(obj.gamma-gamma_new) < 1e-5
                     break
                 else
-                    gamma = gamma_new;
+                    obj.gamma = gamma_new;
                 end
                 
                 itr = itr + 1;
             end
-            gamma = gamma_new;
+            obj.gamma = gamma_new;
             
-            out.alpha = alpha;
-            out.beta = beta;
-            out.fn = fn;
-            out.qn = qn;
-            out.gamma = gamma;
-            out.q = q;
-            out.B = B;
-            out.b = b(2:end);
-            out.Loss = LL(1:itr-1);
-            out.n_classes = m;
-            out.type = 'mlogistic';
+            obj.b = obj.b(2:end);
+            obj.Loss = LL(1:itr-1);
+            obj.n_classes = m;
             
             if option.parallel == 1 && option.closepool == 1
                 if isempty(gcp('nocreate'))

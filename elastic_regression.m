@@ -1,33 +1,88 @@
 classdef elastic_regression
-    %elastic_regression Summary of this class goes here
-    %   Detailed explanation goes here
+    %elastic_regression A class to provide a SRVF regression
+    % -------------------------------------------------------------------------
+    % This class provides elastic regression for functional data using the
+    % SRVF framework accounting for warping
+    %
+    % Usage:  obj = elastic_regression(f,y,time)
+    %
+    % where:
+    %   f: (M,N): matrix defining N functions of M samples
+    %   y: response vector
+    %   time: time vector of length M
+    %
+    %
+    % elastic_regression Properties:
+    %   f - (M,N) % matrix defining N functions of M samples
+    %   y - response vector of length N
+    %   time - time vector of length M
+    %   lambda - regularization parameter
+    %   alpha - intercept
+    %   beta - regression function
+    %   fn - aligned functions
+    %   qn - aligned srvfs
+    %   gamma - warping functions
+    %   q - original srvfs
+    %   B - basis Matrix used
+    %   b - coefficient vector
+    %   SSE  sum of squared errors 
+    %
+    %
+    % elastic_regression Methods:
+    %   elastic_regression - class constructor
+    %   calc_model - calculate regression model parameters
+    %   predict - prediction function
+    %          
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2018
     
     properties
-        Property1
+        f %(M,N) % matrix defining N functions of M samples
+        y % response vector of length N
+        time % time vector of length M
+        lambda % regularization parameter
+        alpha % intercept
+        beta % regression function
+        fn % aligned functions
+        qn % aligned srvfs
+        gamma % warping functions
+        q % original srvfs
+        B % basis Matrix used
+        b % coefficient vector
+        SSE % sum of squared errors 
+        
     end
     
     methods
-        function obj = elastic_regression(inputArg1,inputArg2)
+        function obj = elastic_regression(f, y, time)
             %elastic_regression Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
+            % Input:
+            %   f: (M,N): matrix defining N functions of M samples
+            %   y: response vector
+            %   time: time vector of length M
+            a = size(time,1);
+            if (a ~=1)
+                time = time';
+            end
+            
+            obj.f = f;
+            obj.y = y;
+            obj.time = time;
         end
         
-        function out = calc_model(f, y, t, lambda, option)
-            % ELASTIC_REGRESSION Elastic Functional Regression
+        function obj = calc_model(obj, lambda, option)
+            % CALC_MODEL Calculate regression model parameters
             % -------------------------------------------------------------------------
             % This function identifies a regression model with phase-variablity using
             % elastic methods
             %
-            % Usage:  out = elastic_regression(f, y, t)
-            %         out = elastic_regression(f, y, t, lambda)
-            %         out = elastic_regression(f, y, t, lambda, option)
+            % Usage:  obj.calc_model()
+            %         obj.calc_model(lambda)
+            %         obj.calc_model(lambda, option)
             %
             % input:
-            % f (M,N): matrix defining N functions of M samples
-            % y : response vector of length N
-            % t : time vector of length M
-            % lambda: regularization parameter
+            % lambda % regularization parameter
             %
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
@@ -39,22 +94,10 @@ classdef elastic_regression
             % option.sparam = 25; % number of times to run filter
             % option.max_itr = 20; % maximum number of iterations
             %
-            % output:
-            % structure with fields:
-            % alpha: intercept
-            % beta: regression function
-            % fn: aligned functions
-            % qn: aligned srvfs
-            % gamma: warping functions
-            % q: original srvfs
-            % B: basis Matrix used
-            % b: coefficient vector
-            % SSE: sum of squared errors
-            % type: model type
+            % output %
+            % elastic_regression object
             
-            addpath(genpath('DP'))
-            
-            if nargin < 4
+            if nargin < 2
                 lambda = 0;
                 option.parallel = 0;
                 option.closepool = 1;
@@ -63,7 +106,7 @@ classdef elastic_regression
                 option.B = [];
                 option.df = 20;
                 option.max_itr = 20;
-            elseif nargin < 5
+            elseif nargin < 3
                 option.parallel = 0;
                 option.closepool = 1;
                 option.smooth = 0;
@@ -76,13 +119,13 @@ classdef elastic_regression
             if option.parallel == 1
                 if isempty(gcp('nocreate'))
                     % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
+                    nThreads = input('Enter number of threads to use % ');
                     if nThreads > 1
                         parpool(nThreads);
                     elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
                         while (nThreads > 12) % wait until user figures it out
                             fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                            nThreads = input('Enter number of threads to use: ');
+                            nThreads = input('Enter number of threads to use % ');
                         end
                         if nThreads > 1
                             parpool(nThreads);
@@ -95,95 +138,93 @@ classdef elastic_regression
             
             fprintf('\n lambda = %5.1f \n', lambda);
             
-            a = size(t,1);
-            if (a ~=1)
-                t = t';
-            end
-            binsize = mean(diff(t));
-            [M, N] = size(f);
+            binsize = mean(diff(obj.time));
+            [M, N] = size(obj.f);
             
             if option.smooth == 1
-                f = smooth_data(f, option.sparam);
+                obj.f = smooth_data(obj.f, option.sparam);
             end
             
             % create B-spline basis
             if isempty(option.B)
-                B = create_basismatrix(t, option.df, 4);
+                obj.B = create_basismatrix(obj.time, option.df, 4);
             else
-                B = option.B;
+                obj.B = option.B;
             end
-            Nb = size(B,2);
+            Nb = size(obj.B,2);
             
             % second derivative for regularization
             Bdiff = zeros(M, Nb);
             for ii = 1:Nb
-                Bdiff(:,ii) = gradient(gradient(B(:,ii), binsize),binsize);
+                Bdiff(:,ii) = gradient(gradient(obj.B(:,ii), binsize),binsize);
             end
             
-            q = f_to_srvf(f,t);
+            obj.q = f_to_srvf(obj.f,obj.time);
             
-            gamma = repmat(linspace(0,1,M)',1,N);
+            obj.gamma = repmat(linspace(0,1,M)',1,N);
             
             itr = 1;
-            SSE = zeros(1,option.max_itr);
+            obj.SSE = zeros(1,option.max_itr);
             
             while itr <= option.max_itr
-                fprintf('Iteration: %d\n', itr);
+                fprintf('Iteration % %d\n', itr);
                 % align data
-                fn = zeros(M,N);
-                qn = zeros(M,N);
+                obj.fn = zeros(M,N);
+                obj.qn = zeros(M,N);
                 for k = 1:N
-                    fn(:,k) = interp1(t, f(:,k), (t(end)-t(1)).*gamma(:,k) + t(1))';
-                    qn(:,k) = gradient(fn(:,k), binsize)./sqrt(abs(gradient(fn(:,k), binsize))+eps);
+                    obj.fn(:,k) = warp_f_gamma(obj.f(:,k),obj.gamma(:,k),obj.time);
+                    obj.qn(:,k) = f_to_srvf(obj.fn(:,k),obj.time);
                 end
                 
                 % OLS using basis
                 Phi = ones(N, Nb+1);
                 for ii = 1:N
                     for jj = 2:Nb+1
-                        Phi(ii,jj) = trapz(t, qn(:,ii) .* B(:,jj-1));
+                        Phi(ii,jj) = trapz(obj.time, obj.qn(:,ii) .* obj.B(:,jj-1));
                     end
                 end
                 
                 R = zeros(Nb+1, Nb+1);
                 for ii = 2:Nb+1
-                    for jj = 2:Nb+1
-                        R(ii,jj) = trapz(t, Bdiff(:,ii-1).*Bdiff(:,ii-1));
+                    for jj = 2 :Nb+1
+                        R(ii,jj) = trapz(obj.time, Bdiff(:,ii-1).*Bdiff(:,ii-1));
                     end
                 end
                 
                 xx = Phi.' * Phi;
                 inv_xx = xx + lambda * R;
-                xy = Phi.' * y;
-                b = inv_xx\xy;
+                xy = Phi.' * obj.y;
+                obj.b = inv_xx\xy;
                 
-                alpha = b(1);
-                beta = B * b(2:Nb+1);
+                obj.alpha = obj.b(1);
+                obj.beta = obj.B * obj.b(2:Nb+1);
                 
                 % compute the SSE
                 int_X = zeros(N,1);
-                for ii = 1:N
-                    int_X(ii) = trapz(t, qn(:,ii).*beta);
+                for ii = 1 %N
+                    int_X(ii) = trapz(t, obj.qn(:,ii).*obj.beta);
                 end
                 
-                SSE(itr) = sum((y-alpha-int_X).^2);
+                obj.SSE(itr) = sum((obj.y-obj.alpha-int_X).^2);
                 
                 % find gamma
                 gamma_new = zeros(M,N);
                 if option.parallel == 1
                     parfor ii=1:N
-                        gamma_new(:,ii) = regression_warp(beta, t, q(:,ii), y(ii), alpha);
+                        gamma_new(:,ii) = regression_warp(obj.beta, obj.time, ...
+                            obj.q(:,ii), obj.y(ii), obj.alpha);
                     end
                 else
-                    for ii=1:N
-                        gamma_new(:,ii) = regression_warp(beta, t, q(:,ii), y(ii), alpha);
+                    for ii=1 %N
+                        gamma_new(:,ii) = regression_warp(obj.beta, obj.time, ...
+                            obj.q(:,ii), obj.y(ii), obj.alpha);
                     end
                 end
                 
-                if norm(gamma-gamma_new) < 1e-5
+                if norm(obj.gamma-gamma_new) < 1e-5
                     break
                 else
-                    gamma = gamma_new;
+                    obj.gamma = gamma_new;
                 end
                 
                 itr = itr + 1;
@@ -191,24 +232,16 @@ classdef elastic_regression
             
             % last step with centering of gamma
             gamI = SqrtMeanInverse(gamma_new.');
-            gamI_dev = gradient(gamI, 1/(M-1));
-            beta = interp1(t, beta, (t(end)-t(1)).*gamI + t(1))'.*sqrt(gamI_dev');
+            obj.beta = warp_q_gamma(obj.beta,gamI,obj.time);
             for k = 1:N
-                qn(:,k) = interp1(t, qn(:,k), (t(end)-t(1)).*gamI + t(1))'.*sqrt(gamI_dev');
-                fn(:,k) = interp1(t, fn(:,k), (t(end)-t(1)).*gamI + t(1))';
-                gamma(:, k) = interp1(t, gamma_new(:, k), (t(end)-t(1)).*gamI + t(1));
+                obj.qn(:,k) = warp_q_gamma(obj.qn(:,k),gamI,obj.time);
+                obj.fn(:,k) = warp_f_gama(obj.fn(:,k),gamI,obj.time);
+                obj.gamma(:, k) = warp_f_gamma(gamma_new(:,k),gamI,obj.time);
             end
             
-            out.alpha = alpha;
-            out.beta = beta;
-            out.fn = fn;
-            out.qn = qn;
-            out.gamma = gamma;
-            out.q = q;
-            out.B = B;
-            out.b = b(2:end);
-            out.SSE = SSE(1:itr-1);
-            out.type = 'linear';
+           
+            obj.b = obj.b(2:end);
+            obj.SSE = obj.SSE(1:itr-1);
             
             if option.parallel == 1 && option.closepool == 1
                 if isempty(gcp('nocreate'))
@@ -216,50 +249,50 @@ classdef elastic_regression
                 end
             end
         end
-        
-        %% Helper Functions
-        function gamma = zero_crossing(Y, q, bt, t, y_max,y_min, gmax, gmin)
-            % finds zero-crossing of optimal gamma, gam = s*gmax + (1-s)*gmin
-            % from elastic regression model
-            max_itr = 100;
-            M = length(t);
-            a = zeros(1, max_itr);
-            a(1) = 1;
-            f = zeros(1, max_itr);
-            f(1) = y_max - Y;
-            f(2) = y_min - Y;
-            mrp = f(1);
-            mrn = f(2);
-            mrp_ind = 1;  % most recent positive index
-            mrn_ind = 2;  % most recent negative index
-            
-            for ii = 3:max_itr
-                x1 = a(mrp_ind);
-                x2 = a(mrn_ind);
-                y1 = mrp;
-                y2 = mrn;
-                a(ii) = (x1*y2 - x2*y1) / (y2-y1);
-                
-                gam_m = a(ii) * gmax + (1 - a(ii)) * gmin;
-                gamdev = gradient(gam_m, 1/(M-1));
-                qtmp = interp1(t, q, (t(end)-t(1)).*gam_m + t(1)).*sqrt(gamdev);
-                f(ii) = trapz(t, qtmp.*bt) - Y;
-                
-                if abs(f(ii)) < 1e-5
-                    break
-                elseif f(ii) > 0
-                    mrp = f(ii);
-                    mrp_ind = ii;
-                else
-                    mrn = f(ii);
-                    mrn_ind = ii;
-                end
-            end
-            
-            gamma = a(ii) * gmax + (1 - a(ii)) * gmin;
-            
-        end
     end
+end
+
+%% Helper Functions
+function gamma = zero_crossing(Y, q, bt, t, y_max,y_min, gmax, gmin)
+% finds zero-crossing of optimal gamma, gam = s*gmax + (1-s)*gmin
+% from elastic regression model
+max_itr = 100;
+M = length(t);
+a = zeros(1, max_itr);
+a(1) = 1;
+f = zeros(1, max_itr);
+f(1) = y_max - Y;
+f(2) = y_min - Y;
+mrp = f(1);
+mrn = f(2);
+mrp_ind = 1;  % most recent positive index
+mrn_ind = 2;  % most recent negative index
+
+for ii = 3 %max_itr
+    x1 = a(mrp_ind);
+    x2 = a(mrn_ind);
+    y1 = mrp;
+    y2 = mrn;
+    a(ii) = (x1*y2 - x2*y1) / (y2-y1);
+    
+    gam_m = a(ii) * gmax + (1 - a(ii)) * gmin;
+    gamdev = gradient(gam_m, 1/(M-1));
+    qtmp = interp1(t, q, (t(end)-t(1)).*gam_m + t(1)).*sqrt(gamdev);
+    f(ii) = trapz(t, qtmp.*bt) - Y;
+    
+    if abs(f(ii)) < 1e-5
+        break
+    elseif f(ii) > 0
+        mrp = f(ii);
+        mrp_ind = ii;
+    else
+        mrn = f(ii);
+        mrn_ind = ii;
+    end
+end
+
+gamma = a(ii) * gmax + (1 - a(ii)) * gmin;
+
 end
 
 function gamma_new = regression_warp(beta, t, q, y, alpha)
