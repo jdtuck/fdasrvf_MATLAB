@@ -380,13 +380,6 @@ classdef fdawarp
                 f1 = smooth_data(f1, option.sparam);
             end
             
-            if option.showplot == 1
-                figure(1); clf;
-                plot(t, obj.f, 'linewidth', 1);
-                title('Original data', 'fontsize', 16);
-                pause(0.1);
-            end
-            
             %% Compute the q-function of the plot
             q = f_to_srvf(obj.f,t);
             
@@ -505,25 +498,25 @@ classdef fdawarp
             end
             
             gamI_o = SqrtMeanInverse(gam_o);
-            mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,t);
+            mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,obj.time);
             for k = 1:N
-                q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,t);
-                f1(:,k,r+1) = warp_q_gamma(f1(:,k,r),gamI_o,t);
-                gamI_o(k,:) = interp1(t, gamI_o(k,:), (t(end)-t(1)).*gamI_o + t(1));
+                q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,obj.time);
+                f1(:,k,r+1) = warp_f_gamma(f1(:,k,r),gamI_o,obj.time);
+                gam_o(k,:) = warp_f_gamma(gam_o(k,:),gamI_o,obj.time);
             end
             
             %% Aligned data & stats
             obj.fn = f1(:,:,r+1);
             obj.qn = q(:,:,r+1);
             obj.q0 = q(:,:,1);
-            std_f0 = std(f0, 0, 2);
-            std_fn = std(fn, 0, 2);
+            std_f0 = std(obj.f, 0, 2);
+            std_fn = std(obj.fn, 0, 2);
             obj.mqn = mq(:,r+1);
-            fmedian = mean(obj.f(1,:))+cumtrapz(t,obj.mqn.*abs(obj.mqn));
+            obj.fmean = mean(obj.f(1,:))+cumtrapz(t,obj.mqn.*abs(obj.mqn));
             
             fgam = zeros(M,N);
             for ii = 1:N
-                fgam(:,ii) = warp_f_gamma(fmedian,gam_o(ii,:),t);
+                fgam(:,ii) = warp_f_gamma(obj.fmean,gam_o(ii,:),t);
             end
             var_fgam = var(fgam,[],2);
             
@@ -649,27 +642,25 @@ classdef fdawarp
             mcmcopts.extrainfo = true;
             if option.parallel == 1
                 parfor k = 1:N
-                    if (option.method=='expBayes')
+                    if (strcmpi(option.method,'expBayes'))
                         out_e = pairwise_align_bayes(mu, obj.f(:,k), obj.time, mcmcopts);
                         gam1(k,:) = out_e.gamma;
                     else
                         gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method,option.w, ...
-                            mf(1,r), obj.f(1,k,1));
+                            mu(1), obj.f(1,k));
                     end
-                    gam_dev(k,:) = gradient(gam1(k,:), 1/(M-1));
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
                     qn1(:,k) = f_to_srvf(fn1(:,k),obj.time);
                 end
             else
                 for k = 1:N
-                    if (option.method=='expBayes')
+                    if (strcmpi(option.method,'expBayes'))
                         out_e = pairwise_align_bayes(mu, obj.f(:,k), obj.time, mcmcopts);
                         gam1(k,:) = out_e.gamma;
                     else
                         gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method,option.w, ...
-                            mf(1,r), obj.f(1,k,1));
+                            mu(1), obj.f(1,k));
                     end
-                    gam_dev(k,:) = gradient(gam1(k,:), 1/(M-1));
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
                     qn1(:,k) = f_to_srvf(fn1(:,k),obj.time);
                 end
@@ -682,16 +673,14 @@ classdef fdawarp
             obj.fn = fn1;
             obj.qn = qn1;
             obj.gam = gam1;
-            mean_f0 = mean(obj.f, 2);
             std_f0 = std(obj.f, 0, 2);
-            mean_fn = mean(obj.fn, 2);
             std_fn = std(obj.fn, 0, 2);
             obj.mqn = mq;
             obj.fmean = mean(obj.f(1,:))+cumtrapz(obj.time,obj.mqn.*abs(obj.mqn));
             
             fgam = zeros(M,N);
             for ii = 1:N
-                fgam(:,ii) = wapr_f_gamma(obj.fmean,obj.gam(ii,:),obj.time);
+                fgam(:,ii) = warp_f_gamma(obj.fmean,obj.gam(ii,:),obj.time);
             end
             var_fgam = var(fgam,[],2);
             
@@ -727,7 +716,9 @@ classdef fdawarp
             % Output:
             % fdawarp object
             
-            
+            if (isempty(obj.type))
+                error('Please align first');
+            end
             if nargin < 2
                 n = 1;
                 sort_samples = false;
@@ -822,7 +813,7 @@ classdef fdawarp
             % -------------------------------------------------------------------------
             % Usage: obj.plot()
             
-            if obj.rsamps
+            if (obj.rsamps)
                 
                 figure(1); clf
                 M = length(obj.time);
