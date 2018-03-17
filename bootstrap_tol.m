@@ -8,7 +8,7 @@ function bounds = bootstrap_tol(out_warp, quants, nboot, alpha)
 % Usage:  bounds = bootstrap_tol(out_warp, quants, nboot, alpha)
 %
 % Inputs:
-% out_warp: structure from \link{time_warping} of aligned data
+% out_warp: fdawarp object of aligned data
 % quant: array of quantiles of normal - example [.0275, 0.975]
 % nboot: number of bootstraps
 % alpha: significance level - example .05
@@ -17,13 +17,20 @@ function bounds = bootstrap_tol(out_warp, quants, nboot, alpha)
 % Structure containing
 % lwrtol: lower tolerance fs
 % uprtol: upper tolerance fs
-% mn: tolerance of mean fs
+% mnCI: tolerance of mean fs
 % lwrtol_gam: lower tolerance gams
 % uprtol_gam: upper tolerance gams
-% mn_gam: tolerance of mean gams
+% mnCI_gam: tolerance of mean gams
 
-time = out_warp.time;
+if (~isa(out_warp,'fdawarp'))
+    error('Require input of class fdawarp');
+end
+
+if (isempty(out_warp.fn))
+    error('Please align using method time_warping');
+end
 fn = out_warp.fn;
+time = out_warp.time;
 
 % bootstrap CI's
 bootlwr = zeros(length(time),nboot);
@@ -33,6 +40,7 @@ bootmean = zeros(length(time),nboot);
 bootlwr_gam = zeros(length(time),nboot);
 bootupr_gam = zeros(length(time),nboot);
 bootmean_gam = zeros(length(time),nboot);
+parpool();
 fprintf('Bootstrap Sampling. \n');
 obj = ProgressBar(nboot, ...
     'IsParallel', true, ...
@@ -55,6 +63,8 @@ parfor ii = 1:nboot
     
 end
 obj.release();
+
+delete(gcp('nocreate'))
 
 % get CI's from bootstraps
 bounds.lwrtol = quantile(bootlwr,alpha/2,2);

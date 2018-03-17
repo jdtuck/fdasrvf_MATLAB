@@ -1,10 +1,10 @@
-% FDASRVF_MATLAB
+% FDASRVF
 %
 % Files
 %   align_fPCA               - Group-wise function alignment and PCA Extractions
+%   ampbox                   - ampbox A class to amplitude box plots
 %   Amplitude_Boxplot        - Functional Amplitude Boxplot
 %   bootstrap_tol            - Boostrapped tolerance bounds
-%   create_basismatrix       - Create Basis Matrix
 %   cumsimps                 - Cumulative Simpson's numerical integration.
 %   cumtrapzmid              - Cummulative Trapezodial Integration from mid point
 %   elastic_distance         - Calculates two elastic distances
@@ -14,6 +14,10 @@
 %   elastic_regression       - Elastic Functional Regression
 %   exp_map                  - Exponential Map
 %   f_to_srvf                - Convert function to Square-Root Velocity Function
+%   fdahpca                  - fdahpca A class to provide a horizontal fPCA
+%   fdakma                   - fdakma A class to provide a kmeans clustering and alignment
+%   fdavpca                  - fdavpca A class to provide a vertical fPCA
+%   fdawarp                  - fdawarp A class to provide a SRVF functional data analysis
 %   gauss_model              - Gaussian gnerative model
 %   horizFPCA                - Horizontal Functional Principal Component Analysis
 %   inner_product            - Functional inner product
@@ -27,6 +31,7 @@
 %   pairwise_align           - Align two functions
 %   pairwise_align_bayes     - PAIRWISE_ALIGN Align two functions using Bayesian method
 %   Phase_Boxplot            - Functional phase Boxplot
+%   phbox                    - phbox A class to phase box plots
 %   progress                 - Wrapper class to provide an iterator object for loop creation
 %   ProgressBar              - A class to provide a convenient and useful progress bar
 %   rgam                     - Random Warping
