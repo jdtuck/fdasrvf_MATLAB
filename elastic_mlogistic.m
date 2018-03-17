@@ -61,6 +61,7 @@ classdef elastic_mlogistic
             %   f: (M,N): matrix defining N functions of M samples
             %   y: response vector
             %   time: time vector of length M
+            error('function not working properly');
             a = size(time,1);
             if (a ~=1)
                 time = time';
