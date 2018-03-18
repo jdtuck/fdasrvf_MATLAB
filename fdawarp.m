@@ -37,7 +37,7 @@ classdef fdawarp
     % fdawarp Methods:
     %   fdawarp - class constructor
     %   time_warping - align functions and find karcher mean
-    %   time_warping - align functions and find karcher median
+    %   time_warping_median - align functions and find karcher median
     %   multiple_align_functions - align functions to a specified mean
     %   gauss_model - model functions using a generative gaussian model on
     %       fPCA space
