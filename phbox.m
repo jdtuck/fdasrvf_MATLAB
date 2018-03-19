@@ -65,7 +65,7 @@ classdef phbox
             % CONSTRUCT_BOXPLOT constructs the phase boxplot
             % -------------------------------------------------------------------------
             %
-            % Usage:  obj.construct_boxplot(k_p, alpha, figs)
+            % Usage:  obj.construct_boxplot(k_p, alpha)
             %
             % Input:
             % alpha quantile: value (e.g.,=.05, i.e., 95\%)

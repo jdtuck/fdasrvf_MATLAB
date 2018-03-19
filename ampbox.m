@@ -66,7 +66,7 @@ classdef ampbox
             % CONSTRUCT_BOXPLOT constructs the amplitude boxplot
             % -------------------------------------------------------------------------
             %
-            % Usage:  obj.construct_boxplot(alpha, k_a, figs)
+            % Usage:  obj.construct_boxplot(alpha, k_a)
             %
             % Input:
             % alpha: quantile value (e.g.,=.05, i.e., 95\%)
