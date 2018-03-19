@@ -50,7 +50,8 @@ classdef ampbox
     methods
         function obj = ampbox(fdawarp)
             %ampbox Construct an instance of this class
-            %   Detailed explanation goes here
+            % Input:
+            %   fdawarp: fdawarp class
             if (isempty(fdawarp.fn))
                 error('Please align fdawarp class using time_warping_median!');
             end
