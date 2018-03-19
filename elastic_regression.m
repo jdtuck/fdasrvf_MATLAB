@@ -257,8 +257,8 @@ classdef elastic_regression
             % This function performs prediction on regression model on new
             % data if available or current stored data in object
             %
-            % Usage:  obj.prediction()
-            %         obj.prediction(newdata)
+            % Usage:  obj.predict()
+            %         obj.predict(newdata)
             %
             % Input:
             % newdata - struct containing new data for prediction
