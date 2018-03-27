@@ -29,5 +29,4 @@ dy = sqrt(trapz(time,(q1-qw).^2));
 time1 = linspace(0,1,length(time));
 binsize = mean(diff(time1));
 psi = sqrt(gradient(gam,binsize));
-v = inv_exp_map(ones(1,length(gam)), psi);
-dx = sqrt(trapz(time,v.^2));
+dx = acos(trapz(time1,psi));
