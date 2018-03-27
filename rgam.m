@@ -35,7 +35,8 @@ for k = 1:num
     v = v - ((mu*v.')*mu)/TT;
     vn = norm(v)/sqrt(TT);
     psi = cos(vn).*mu + sin(vn).*v./vn;
-    gam(k,:) = [0 cumsum(psi.*psi)]./N;
+    gam0 = [0 cumsum(psi.*psi)]./N;
+    gam(k,:) = (gam0-gam0(1))/(gam0(end)-gam0(1));  % slight change on scale
 end
 
 end
