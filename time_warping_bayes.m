@@ -252,16 +252,16 @@ end
 
 if (mcmcopts.extrainfo)
     % matrix of posterior draws from gamma
-    gamma_mat = zeros(length(q1.x),size(pw_sim_est_psi_matrix,2),N);
+    gamma_mat = zeros(length(time),size(pw_sim_est_psi_matrix,2),N);
     gamma_stats = zeros(2,size(pw_sim_est_psi_matrix,2),N);
     for jj = 1:N
         for ii = 1:size(pw_sim_est_psi_matrix,2)
-            result_i = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
+            result_i = interp1(result_posterior_psi_simDomain{jj}.x, pw_sim_est_psi_matrix(:,ii,jj), time, 'linear', 'extrap');
             result_i2.y=result_i;
-            result_i2.x=f1.x;
+            result_i2.x=time;
             tmp = f_phiinv(result_i2);
-            gamma_mat(:,ii) = round(norm_gam(tmp.y),SIG_GAM);
-            gamma_stats(:,ii) = statsFun(gamma_mat(:,ii));
+            gamma_mat(:,ii,jj) = round(norm_gam(tmp.y),SIG_GAM);
+            gamma_stats(:,ii,jj) = statsFun(gamma_mat(:,ii));
         end
     end
 end
