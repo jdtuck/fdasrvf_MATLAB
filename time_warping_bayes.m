@@ -50,10 +50,10 @@ function out = time_warping_bayes(f, time, mcmcopts)
 % out.gamma_stats: posterior gamma stats
 % out.xdist: phase distance posterior
 % out.ydist: amplitude distance posterior
-N = size(f,2);
+[M,N] = size(f);
 
 if nargin < 4
-    mcmcopts.iter = 200;%2e4;
+    mcmcopts.iter = 2000;%2e4;
     mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
     mcmcopts.alpha0 = 0.1;
     mcmcopts.beta0 = 0.1;
@@ -97,7 +97,7 @@ g_coef_ini = mcmcopts.initcoef;
 numSimPoints = mcmcopts.npoints;
 pw_sim_global_domain_par = linspace(0,1,numSimPoints).';
 g_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mg, 1);
-pw_sim_global_Mq = length(g_basis.x)/2;
+pw_sim_global_Mq = size(mcmcopts.initcoef,1)/2;
 sigma1_ini = 1;
 zpcn = mcmcopts.zpcn;
 pw_sim_global_sigma_g = mcmcopts.propvar;
@@ -176,6 +176,11 @@ result.q_star(1,:) = q_star_curr;
 result.SSE(1,:) = SSE_curr;
 result.logl(1) = logl_curr;
 
+q_star_coef_curr = g_basis.matrix\q_star_curr;
+clear q_star_curr
+q_star_curr.x = g_basis.x;
+q_star_curr.y = q_star_ini;
+
 % update the chain for iter-1 times
 obj = ProgressBar(iter-1, ...
     'Title', 'Running MCMC' ...
@@ -185,25 +190,26 @@ for m = 2:iter
     for ii = 1:N
         q_tmp = q;
         q_tmp.y = q_tmp.y(:,ii);
-        [g_coef_curr(:,ii), ~, ~] = f_updateg_pw(g_coef_curr(:,ii), g_basis, sigma1_curr^2, q_tmp, q_star_curr, @propose_g_coef);
+        [g_coef_curr(:,ii), ~, ~] = f_updateg_pw(g_coef_curr(:,ii), g_basis, sigma1_curr^2, q_tmp, q_star_curr.y, @propose_g_coef);
     end
     SSE_curr = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), ...
-        q,q_star_curr);
+        q,q_star_curr.y);
     % update q_star
-    [q_star_curr, accept, zpcnInd] = f_updateq_pw(g_coef_curr, g_basis, sigma1_curr^2, q, q_star_curr, SSE_curr, @propose_q_star);
+    [q_star_coef_curr, accept, zpcnInd] = f_updateq_pw(g_coef_curr, g_basis, sigma1_curr^2, q, q_star_coef_curr, SSE_curr, @propose_g_coef);
+    q_star_curr = f_basistofunction(g_basis.x,0,q_star_coef_curr,g_basis,false);
     
     % update sigma1
     SSE_curr = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), ...
-        q,q_star_curr);
-    newshape = length(time)/2 + mcmcopts.alpha0;
+        q,q_star_curr.y);
+    newshape = N*length(time)/2 + mcmcopts.alpha0;
     newscale = 1/2 * sum(SSE_curr) + mcmcopts.beta0;
-    sigma1_curr = sqrt(1/gamrnd(newshape,newscale));
+    sigma1_curr = sqrt(1/gamrnd(newshape,1/newscale));
     logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), ...
-        q,q_star_curr,sigma1_curr^2,SSE_curr);
+        q,q_star_curr.y,sigma1_curr^2,SSE_curr);
     
     % save update to results
     result.g_coef(m,:,:) = g_coef_curr;
-    result.q_star(m,:) = q_star_curr;
+    result.q_star(m,:) = q_star_curr.y;
     result.sigma1(m) = sigma1_curr;
     result.SSE(m,:) = SSE_curr;
     if (mcmcopts.extrainfo)
@@ -216,64 +222,60 @@ end
 obj.release();
 
 % calculate posterior mean of psi
-pw_sim_est_psi_matrix = zeros(length(pw_sim_global_domain_par), length(valid_index));
+pw_sim_est_psi_matrix = zeros(length(pw_sim_global_domain_par), length(valid_index),N);
 for k = 1:length(valid_index)
-    g_temp = f_basistofunction(pw_sim_global_domain_par, 0, result.g_coef(valid_index(k),:,3).', g_basis, false);
-    psi_temp = f_exp1(g_temp);
-    pw_sim_est_psi_matrix(:,k) = psi_temp.y;
-end
-
-result_posterior_psi_simDomain = f_psimean(pw_sim_global_domain_par, pw_sim_est_psi_matrix);
-
-% resample to same number of points as the input f1 and f2
-result_i = interp1(result_posterior_psi_simDomain.x, result_posterior_psi_simDomain.y, g_basis.x, 'linear', 'extrap');
-result_posterior_psi.x=g_basis.x;
-result_posterior_psi.y=result_i;
-
-% transform posterior mean of psi to gamma
-result_posterior_gamma = f_phiinv(result_posterior_psi);
-gam0 = result_posterior_gamma.y;
-result_posterior_gamma.y = norm_gam(gam0);
-
-% warped f2
-f2_warped = warp_f_gamma(f2.y, result_posterior_gamma.y, result_posterior_gamma.x);
-
-if (mcmcopts.extrainfo)
-    % matrix of posterior draws from gamma
-    gamma_mat = zeros(length(q1.x),size(pw_sim_est_psi_matrix,2));
-    one_v = ones(1,size(pw_sim_est_psi_matrix,1));
-    Dx = zeros(1,size(pw_sim_est_psi_matrix,2));
-    Dy = Dx;
-    gamma_stats = zeros(2,size(pw_sim_est_psi_matrix,2));
-    for ii = 1:size(pw_sim_est_psi_matrix,2)
-        result_i = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
-        result_i2.y=result_i;
-        result_i2.x=f1.x;
-        tmp = f_phiinv(result_i2);
-        gamma_mat(:,ii) = round(norm_gam(tmp.y),SIG_GAM);
-        v = inv_exp_map(one_v, pw_sim_est_psi_matrix(:,ii));
-        Dx(ii) = sqrt(trapz(pw_sim_global_domain_par, v.^2));
-        q2warp = warp_q_gamma(q2.y, gamma_mat(:,ii), q2.x).';
-        Dy(ii) = sqrt(trapz(q2.x,(q1.y-q2warp).^2));
-        gamma_stats(:,ii) = statsFun(gamma_mat(:,ii));
+    for ii = 1:N
+        g_temp = f_basistofunction(pw_sim_global_domain_par, 0, result.g_coef(valid_index(k),:,ii).', g_basis, false);
+        psi_temp = f_exp1(g_temp);
+        pw_sim_est_psi_matrix(:,k,ii) = psi_temp.y;
     end
 end
 
+result_posterior_psi_simDomain = cell(N,1);
+result_posterior_psi = cell(N,1);
+result_posterior_gamma = zeros(M,N);
+f_warped = zeros(M,N);
+for ii = 1:N
+    result_posterior_psi_simDomain{ii} = f_psimean(pw_sim_global_domain_par, pw_sim_est_psi_matrix(:,:,ii));
+    % resample to same number of points as the input f1 and f2
+    result_i = interp1(result_posterior_psi_simDomain{ii}.x, result_posterior_psi_simDomain{ii}.y, time, 'linear', 'extrap');
+    tmp_psi.x=time;
+    tmp_psi.y=result_i;
+    result_posterior_psi{ii} = tmp_psi;
+    % transform posterior mean of psi to gamma
+    tmp_gamma = f_phiinv(tmp_psi);
+    gam0 = tmp_gamma.y;
+    tmp_gamma.y = norm_gam(gam0);
+    result_posterior_gamma(:,ii) = norm_gam(gam0);
+    f_warped(:,ii) = warp_f_gamma(f(:,ii), result_posterior_gamma(:,ii), tmp_gamma.x);
+end
+
+% if (mcmcopts.extrainfo)
+%     % matrix of posterior draws from gamma
+%     gamma_mat = zeros(length(q1.x),size(pw_sim_est_psi_matrix,2));
+%     gamma_stats = zeros(2,size(pw_sim_est_psi_matrix,2));
+%     for ii = 1:size(pw_sim_est_psi_matrix,2)
+%         result_i = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
+%         result_i2.y=result_i;
+%         result_i2.x=f1.x;
+%         tmp = f_phiinv(result_i2);
+%         gamma_mat(:,ii) = round(norm_gam(tmp.y),SIG_GAM);
+%         gamma_stats(:,ii) = statsFun(gamma_mat(:,ii));
+%     end
+% end
+
 % return object
-out.f2_warped = f2_warped;
-out.gamma = result_posterior_gamma.y;
+out.f_warped = f_warped;
+out.gamma = result_posterior_gamma;
 out.g_coef = result.g_coef;
-out.psi = result_posterior_psi.y;
 out.sigma1 = result.sigma1;
 
 if (mcmcopts.extrainfo)
     out.accept = result.accept(2:end);
     out.betas_ind = result.accept_betas(2:end);
     out.logl = result.logl;
-    out.gamma_mat = gamma_mat;
-    out.gamma_stats = gamma_stats;
-    out.xdist = Dx;
-    out.ydist = Dy;
+%     out.gamma_mat = gamma_mat;
+%     out.gamma_stats = gamma_stats;
 end
 end
 
@@ -350,32 +352,35 @@ end
 end
 
 % function for calculating the next MCMC sample given current state
-function [q_star, accept, zpcnInd] = f_updateq_pw(g_coef_curr,g_basis,var1_curr,q,q_star_curr,SSE_curr,propose_q_star)
-q_star_prop = propose_q_star(q_star_curr);
+function [q_star, accept, zpcnInd] = f_updateq_pw(g_coef_curr,g_basis,var1_curr,q,q_star_coef_curr,SSE_curr,propose_g_coef)
+q_star_coef_prop = propose_g_coef(q_star_coef_curr);
+ind = q_star_coef_prop.ind;
+q_star_prop = f_basistofunction(g_basis.x,0,q_star_coef_prop.prop,g_basis, false);
+q_star_curr = f_basistofunction(g_basis.x,0,q_star_coef_curr,g_basis, false);
 
 if (SSE_curr == 0)
     SSE_curr = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis, false), q, q_star_curr);
 end
 
-SSE_prop = sum(f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), q, q_star_prop.prop));
+SSE_prop = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), q, q_star_prop.y);
 
-logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), q, q_star_curr, var1_curr, SSE_curr);
+logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), q, q_star_curr.y, var1_curr, SSE_curr);
 
-logl_prop = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), q, q_star_prop.prop, var1_curr, SSE_prop);
+logl_prop = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), q, q_star_prop.y, var1_curr, SSE_prop);
 
 ratio = min(1, exp(logl_prop-logl_curr));
 
 u = rand;
 if (u <= ratio)
-    q_star = q_star_prop.prop;
+    q_star = q_star_coef_prop.prop;
     accept = true;
-    zpcnInd = q_star_prop.ind;
+    zpcnInd = ind;
 end
 
 if (u > ratio)
-    q_star = q_star_curr;
+    q_star = q_star_coef_curr;
     accept = false;
-    zpcnInd = q_star_prop.ind;
+    zpcnInd = ind;
 end
 end
 
@@ -411,7 +416,8 @@ if (SSEg == 0)
 end
 N = size(q.y,2);
 n = length(q.x);
-out = N*n * log(1/sqrt(2*pi)) - N*n * log(sqrt(var1)) - sum(SSEg) / (2 * var1);
+out = n * log(1/sqrt(2*pi)) + n * log(1/sqrt(var1)) - (SSEg ./ (2 * var1));
+out = sum(out);
 end
 
 %##########################################################################
