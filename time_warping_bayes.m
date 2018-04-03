@@ -1,4 +1,4 @@
-function out = time_warping_bayes(f, time, mcmcopts)
+function obj = time_warping_bayes(f, time, mcmcopts)
 % TIME_WARPING_BAYES Align multiple functions using Bayesian method
 % -------------------------------------------------------------------------
 % This function aligns a collection of functions using the elastic square-root
@@ -232,7 +232,7 @@ for k = 1:length(valid_index)
 end
 
 result_posterior_psi_simDomain = cell(N,1);
-result_posterior_psi = cell(N,1);
+result_posterior_psi = zeros(M,N);
 result_posterior_gamma = zeros(M,N);
 f_warped = zeros(M,N);
 for ii = 1:N
@@ -241,7 +241,7 @@ for ii = 1:N
     result_i = interp1(result_posterior_psi_simDomain{ii}.x, result_posterior_psi_simDomain{ii}.y, time, 'linear', 'extrap');
     tmp_psi.x=time;
     tmp_psi.y=result_i;
-    result_posterior_psi{ii} = tmp_psi;
+    result_posterior_psi(:,ii) = tmp_psi.y;
     % transform posterior mean of psi to gamma
     tmp_gamma = f_phiinv(tmp_psi);
     gam0 = tmp_gamma.y;
@@ -250,32 +250,57 @@ for ii = 1:N
     f_warped(:,ii) = warp_f_gamma(f(:,ii), result_posterior_gamma(:,ii), tmp_gamma.x);
 end
 
-% if (mcmcopts.extrainfo)
-%     % matrix of posterior draws from gamma
-%     gamma_mat = zeros(length(q1.x),size(pw_sim_est_psi_matrix,2));
-%     gamma_stats = zeros(2,size(pw_sim_est_psi_matrix,2));
-%     for ii = 1:size(pw_sim_est_psi_matrix,2)
-%         result_i = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
-%         result_i2.y=result_i;
-%         result_i2.x=f1.x;
-%         tmp = f_phiinv(result_i2);
-%         gamma_mat(:,ii) = round(norm_gam(tmp.y),SIG_GAM);
-%         gamma_stats(:,ii) = statsFun(gamma_mat(:,ii));
-%     end
-% end
+if (mcmcopts.extrainfo)
+    % matrix of posterior draws from gamma
+    gamma_mat = zeros(length(q1.x),size(pw_sim_est_psi_matrix,2),N);
+    gamma_stats = zeros(2,size(pw_sim_est_psi_matrix,2),N);
+    for jj = 1:N
+        for ii = 1:size(pw_sim_est_psi_matrix,2)
+            result_i = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
+            result_i2.y=result_i;
+            result_i2.x=f1.x;
+            tmp = f_phiinv(result_i2);
+            gamma_mat(:,ii) = round(norm_gam(tmp.y),SIG_GAM);
+            gamma_stats(:,ii) = statsFun(gamma_mat(:,ii));
+        end
+    end
+end
 
 % return object
-out.f_warped = f_warped;
-out.gamma = result_posterior_gamma;
-out.g_coef = result.g_coef;
-out.sigma1 = result.sigma1;
+obj.fn = f_warped;
+obj.time = time;
+obj.gam = result_posterior_gamma;
+obj.psi = result_posterior_psi;
+obj.qn = f_to_srvf(f_warped,time);
+obj.q0 = f_to_srvf(f,time);
+obj.mqn = mean(obj.qn,2);
+obj.fmean = mean(obj.f(1,:))+cumtrapz(obj.time,obj.mqn.*abs(obj.mqn));
+std_f0 = std(f, 0, 2);
+std_fn = std(obj.fn, 0, 2);
+fgam = zeros(M,N);
+for ii = 1:N
+    fgam(:,ii) = warp_f_gamma(obj.fmean,obj.gam(:,ii),obj.time);
+end
+var_fgam = var(fgam,[],2);
+
+obj.stats.orig_var = trapz(obj.time,std_f0.^2);
+obj.stats.amp_var = trapz(obj.time,std_fn.^2);
+obj.stats.phase_var = trapz(obj.time,var_fgam);
+
+obj.qun = result.logl;
+obj.method = "bayesian";
+obj.gamI = [];   % todo: fill out
+obj.rsamps = false;
+obj.type = 'mean';
+
+obj.mcmc.g_coef = result.g_coef;
+obj.mcmc.sigma1 = result.sigma1;
 
 if (mcmcopts.extrainfo)
-    out.accept = result.accept(2:end);
-    out.betas_ind = result.accept_betas(2:end);
-    out.logl = result.logl;
-%     out.gamma_mat = gamma_mat;
-%     out.gamma_stats = gamma_stats;
+    obj.mcmc.accept = result.accept(2:end);
+    obj.mcmc.betas_ind = result.accept_betas(2:end);
+    obj.mcmc.gamma_mat = gamma_mat;
+    obj.mcmc.gamma_stats = gamma_stats;
 end
 end
 

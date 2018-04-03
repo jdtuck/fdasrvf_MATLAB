@@ -32,6 +32,7 @@ classdef fdawarp
     %    ft - random warped functions
     %    qs - random aligned srvfs
     %    type - alignment type
+    %    mcmc - mcmc output if bayesian
     %
     %
     % fdawarp Methods:
@@ -68,6 +69,7 @@ classdef fdawarp
         ft     % random warped functions
         qs     % random aligned srvfs
         type   % alignment type
+        mcmc   % mcmc output if bayesian
         
     end
     
