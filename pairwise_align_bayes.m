@@ -167,7 +167,7 @@ for m = 2:iter
     % update sigma1
     newshape = length(q1.x)/2 + mcmcopts.alpha0;
     newscale = 1/2 * SSE_curr + mcmcopts.beta0;
-    sigma1_curr = sqrt(1/gamrnd(newshape,newscale));
+    sigma1_curr = sqrt(1/gamrnd(newshape,1/newscale));
     logl_curr = f_logl_pw(f_basistofunction(g_basis.x, 0, g_coef_curr, g_basis, false), q1, q2, sigma1_curr^2, SSE_curr);
 
     % save update to results
@@ -256,35 +256,6 @@ out.x = g.x;
 out.y = bcalcY(f_L2norm(g), g.y);
 end
 
-function [x,yy] = f_exp1inv(psi)
-x = psi.x;
-y = psi.y;
-
-[x,ia,~] = unique(x);
-[x, ia1] = sort(x);
-y = y(ia);
-y = y(ia1);
-inner = round(trapzCpp(x,y), 10);
-
-if ((inner < 1.001) && (inner >= 1))
-    inner = 1;
-end
-if ((inner <= -1) && (inner > -1.001))
-    inner = -1;
-end
-if ((inner < (-1)) || (inner > 1))
-    fprintf("exp1inv: can't calculate the acos of: %f\n", inner);
-end
-
-theta = acos(inner);
-yy = theta / sin(theta) .* (y - repelem(inner,length(y)));
-
-if (theta==0)
-    yy = zeros(1,length(x));
-end
-
-end
-
 % function for calculating the next MCMC sample given current state
 function [g_coef, logl, SSE, accept, zpcnInd] = f_updateg_pw(g_coef_curr,g_basis,var1_curr,q1,q2,SSE_curr,propose_g_coef)
 g_coef_prop = propose_g_coef(g_coef_curr);
@@ -362,23 +333,6 @@ function out = f_Q(f)
 d = f_predictfunction(f, f.x, 1);
 out.x = f.x;
 out.y = sign(d.y) .* sqrt(abs(d.y));
-end
-
-function out = f_Qinv(q, fini)
-result = zeros(1,length(q.x));
-for i = 1:length(result)
-    y = q.y(1:i);
-    x = q.x(1:i);
-    [x,ia,~] = unique(x);
-    [x, ia1] = sort(x);
-    y = y(ia);
-    y = y(ia1);
-    result(i) = trapzCpp(x,(y*abs(y)));
-end
-result = result + fini;
-result(1) = fini;
-out.x = q.x;
-out.y = result;
 end
 
 %##########################################################################
@@ -470,55 +424,6 @@ end
 end
 
 %##########################################################################
-% Calculate exp_psi(g), expinv_psi(psi2)
-% g, psi: function in the form of list$x, list$y
-% returns exp_psi(g) or expinv_psi(psi2), function in the form of struct.x,
-% struct.y
-%##########################################################################
-function out = f_exppsi(psi, g)
-area = round(f_L2norm(g), 10);
-y = cos(area) * psi.y + sin(area)/area * g.y;
-if (area == 0)
-    y = psi.y;
-end
-out.x = g.x;
-out.y = y;
-end
-
-function out = f_exppsiinv(psi, psi2)
-x = psi.x;
-[x,ia,~] = unique(x);
-[x, ia1] = sort(x);
-y = psi.y(ia);
-y = y(ia1);
-inner = round(trapz(x,y*y),10);
-if ((inner < 1.001) && (inner >= 1))
-    inner = 1;
-end
-if ((inner < 1.05) && (inner >= 1.001))
-    fprintf("exppsiinv: caution! acos of: %d is set to 1...\n", inner);
-    inner = 1;
-end
-if ((inner <= -1) && (inner > -1.001))
-    inner = -1;
-end
-if ((inner <= -1.001) && (inner > -1.05))
-    fprintf("exppsiinv: caution! acos of: %d is set to -1...\n", inner);
-    inner = -1;
-end
-if ((inner < (-1)) || (inner > 1))
-    fprintf("exppsiinv: can't calculate the acos of: %d", inner);
-end
-theta = acos(inner);
-yy = theta/sin(theta) * ((psi2.y) - inner * (psi.y));
-if (theta == 0)
-    yy = zeros(1,length(x));
-end
-out.x = x;
-out.y = yy;
-end
-
-%##########################################################################
 % Calculate Karcher mean/median with Alg1/Alg2 in (Kurtek,2014)
 % x: vector of length = length(domain of the psi's)
 % y: M columns, each of length = length(x)
@@ -534,28 +439,6 @@ result = rmy / f_L2norm(tmp);
 out.x = x;
 out.y = result;
 end
-
-%##########################################################################
-% calculate phi(gamma), phiinv(psi)
-% gamma, psi: function in the form of struct.x, struct.y
-% returns phi(gamma) or phiinv(psi), function in the form of struct.x,
-% struct.y
-%##########################################################################
-function result = f_phi(gamma)
-f_domain = gamma.x;
-k = f_predictfunction(gamma, f_domain, 1);
-k = k.y;
-if (isempty(find(k < 0, 1)) ~= 0)
-    idx = k < 0;
-    k(idx) = 0;
-end
-result.x = f_domain;
-result.y = sqrt(k);
-if (f_L2norm(result) >= (1.01) || f_L2norm(result) <= (0.99))
-    result.y = result.y / f_L2norm(result);
-end
-end
-% the function returned by phi(gamma) = psi is always positive and has L2norm 1
 
 function out = f_phiinv(psi)
 f_domain = psi.x;
