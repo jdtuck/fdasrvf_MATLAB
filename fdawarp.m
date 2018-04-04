@@ -358,7 +358,7 @@ classdef fdawarp
             % mcmc.gamma_stats: posterior gamma stats
             [M, N] = size(obj.f);
             
-            if nargin < 4
+            if nargin < 1
                 mcmcopts.iter = 2000;
                 mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
                 mcmcopts.alpha0 = 0.1;
