@@ -206,7 +206,7 @@ for m = 2:iter
     [q_star_coef_curr, accept, zpcnInd] = f_updateq_pw(g_coef_curr, g_basis_q, sigma1_curr^2, q, q_star_coef_curr, SSE_curr, @propose_q_star);
     q_star_curr = f_basistofunction(g_basis_q.x,0,q_star_coef_curr,g_basis_q,false);
     
-    % center    
+    % center
     result_posterior_gamma = zeros(length(g_basis.x),N);
     for ii = 1:N
         g_temp = f_basistofunction(pw_sim_global_domain_par, 0, g_coef_curr(:,ii), g_basis, false);
@@ -291,7 +291,7 @@ if (mcmcopts.extrainfo)
             result_i2.x=time;
             tmp = f_phiinv(result_i2);
             gamma_mat(:,ii,jj) = round(norm_gam(tmp.y),SIG_GAM);
-            gamma_stats(:,ii,jj) = statsFun(gamma_mat(:,ii));
+            gamma_stats(:,ii,jj) = statsFun(gamma_mat(:,ii,jj));
         end
     end
 end
@@ -332,6 +332,7 @@ if (mcmcopts.extrainfo)
     obj.mcmc.gamma_mat = gamma_mat;
     obj.mcmc.gamma_stats = gamma_stats;
 end
+
 end
 
 function out = statsFun(vec)
@@ -469,7 +470,6 @@ function out = f_logl_pw(g, q, q_star, var1, SSEg)
 if (SSEg == 0)
     SSEg = f_SSEg_pw(g, q, q_star);
 end
-N = size(q.y,2);
 n = length(q.x);
 out = n * log(1/sqrt(2*pi)) + n * log(1/sqrt(var1)) - (SSEg ./ (2 * var1));
 out = sum(out);
@@ -564,55 +564,6 @@ result = f_predictfunction(result, f_domain, 0);
 if (plotf)
     plot(result.x,result.y)
 end
-end
-
-%##########################################################################
-% Calculate exp_psi(g), expinv_psi(psi2)
-% g, psi: function in the form of list$x, list$y
-% returns exp_psi(g) or expinv_psi(psi2), function in the form of struct.x,
-% struct.y
-%##########################################################################
-function out = f_exppsi(psi, g)
-area = round(f_L2norm(g), 10);
-y = cos(area) * psi.y + sin(area)/area * g.y;
-if (area == 0)
-    y = psi.y;
-end
-out.x = g.x;
-out.y = y;
-end
-
-function out = f_exppsiinv(psi, psi2)
-x = psi.x;
-[x,ia,~] = unique(x);
-[x, ia1] = sort(x);
-y = psi.y(ia);
-y = y(ia1);
-inner = round(trapz(x,y*y),10);
-if ((inner < 1.001) && (inner >= 1))
-    inner = 1;
-end
-if ((inner < 1.05) && (inner >= 1.001))
-    fprintf("exppsiinv: caution! acos of: %d is set to 1...\n", inner);
-    inner = 1;
-end
-if ((inner <= -1) && (inner > -1.001))
-    inner = -1;
-end
-if ((inner <= -1.001) && (inner > -1.05))
-    fprintf("exppsiinv: caution! acos of: %d is set to -1...\n", inner);
-    inner = -1;
-end
-if ((inner < (-1)) || (inner > 1))
-    fprintf("exppsiinv: can't calculate the acos of: %d", inner);
-end
-theta = acos(inner);
-yy = theta/sin(theta) * ((psi2.y) - inner * (psi.y));
-if (theta == 0)
-    yy = zeros(1,length(x));
-end
-out.x = x;
-out.y = yy;
 end
 
 %##########################################################################
