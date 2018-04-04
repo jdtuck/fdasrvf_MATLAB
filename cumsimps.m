@@ -46,7 +46,7 @@ function z = cumsimps(x,y,dim)
 
 %%   Make sure x and y are column vectors, or y is a matrix.
 perm = []; nshifts = 0;
-if nargin == 3, % cumsimps(x,y,dim)
+if nargin == 3
   perm = [dim:max(length(size(y)),dim) 1:dim-1];
   y = permute(y,perm);
   [m,n] = size(y);

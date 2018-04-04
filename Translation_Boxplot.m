@@ -24,7 +24,8 @@ figure(100);clf;
     ti = get(gca,'TightInset');
     set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
 
-[M, N] = size(f);
+[~, N] = size(f);
+translation = zeros(1,N);
 for i = 1:N
     translation(i) = trapz(t,f(:,i)) / (t(end) - t(1));
 end
@@ -48,6 +49,7 @@ if isnan(outlier)
     outlier = [];
     outlier_index = [];
 else
+    outlier_index = zeros(1,length(outlier));
     for i = 1:length(outlier)
         outlier_index(i) = find(translation == outlier(i));
 

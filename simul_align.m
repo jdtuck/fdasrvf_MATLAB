@@ -205,7 +205,7 @@ for i=1:n1
                         keyboard
                     end
                     Dcurr = D(ib,jb) + W;
-                    if Dcurr > D(i,j);
+                    if Dcurr > D(i,j)
                         D(i,j) = Dcurr;
                         P(i,j,:) = [ib,jb];
                     end
@@ -230,7 +230,7 @@ else
     mpath = size(D) - [0,1];
 end
 prev_vert = reshape(P(mpath(1,1),mpath(1,2),:),1,2);
-while all(prev_vert>0);
+while all(prev_vert>0)
     mpath = [prev_vert; mpath];
     prev_vert = reshape(P(mpath(1,1),mpath(1,2),:),1,2);
 end

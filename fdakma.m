@@ -68,7 +68,7 @@ classdef fdakma
             obj.time = time;
         end
         
-        function obj = kmeans(obj,K,seeds,lambda,option)
+        function obj = kmeans(obj,K,seeds,option)
             % KMEANS K-Means clustering and alignment
             % -------------------------------------------------------------------------
             % This function clusters functions and aligns using the elastic square-root
@@ -82,7 +82,6 @@ classdef fdakma
             % Input:
             % K: number of clusters
             % seeds: indexes of cluster center functions (default [])
-            % obj.lambda: regularization parameter
             %
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need

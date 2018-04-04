@@ -104,7 +104,7 @@ classdef fdawarp
             % lambda: regularization parameter
             %
             % default options
-            % option.parallel = 0; % turns offs MATLAB parallel processing (need
+            % option.parallel = 0; % turns on MATLAB parallel processing (need
             % parallel processing toolbox)
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
@@ -630,7 +630,6 @@ classdef fdawarp
             fn1 = zeros(M,N);
             qn1 = zeros(M,N);
             gam1 = zeros(N,size(q,1));
-            gam_dev = zeros(N,size(q,1));
             mcmcopts.iter = option.MaxItr;
             mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
             mcmcopts.alpha0 = 0.1;

@@ -134,8 +134,7 @@ mq = q(:,min_ind);
 mf = f(:,min_ind);
 qhat_cent = q-mq*ones(1,N);
 K = 1/M * (qhat_cent * qhat_cent.');
-[U,S,~] = svd(K);
-s = diag(S);
+[U,~,~] = svd(K);
 
 alpha_i = zeros(num_comp,N);
 for ii = 1:num_comp
@@ -169,7 +168,6 @@ else
 end
 %% Compute Mean
 fprintf('Aligning %d functions in SRVF space to %d fPCA components...\n',N, num_comp);
-ds = inf;
 MaxItr = option.MaxItr;
 Dx = zeros(1,MaxItr);
 f_temp = zeros(length(t),N);
@@ -191,8 +189,7 @@ for r = 1:MaxItr
     mf(:,r+1) = mean(f(:,:,r+1),2);
     
     K = cov(q_temp.');
-    [U,S,~] = svd(K);
-    s = diag(S);
+    [U,~,~] = svd(K);
     
     qhat_cent = q_temp - mq(:,r+1)*ones(1,N);
     alpha_i = zeros(num_comp,N);
@@ -217,18 +214,15 @@ for r = 1:MaxItr
     clear gam gam_dev;
     % use DP to find the optimal warping for each function w.r.t. the mean
     gam = zeros(N,size(q,1));
-    gam_dev = zeros(N,size(q,1));
     if option.parallel == 1
         parfor k = 1:N
             gam(k,:) = optimum_reparam(qhat(:,k),q(:,k,1),t,lambda,option.method,option.w, ...
                 mf(1,r+1), f(1,k,r+1));
-            gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
         end
     else
         for k = 1:N
             gam(k,:) = optimum_reparam(qhat(:,k),q(:,k,1),t,lambda,option.method,option.w, ...
                 mf(1,r+1), f(1,k,r+1));
-            gam_dev(k,:) = gradient(gam(k,:), 1/(M-1));
         end
     end
     
