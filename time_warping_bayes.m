@@ -36,21 +36,13 @@ function obj = time_warping_bayes(f, time, mcmcopts)
 % mcmcopts.extrainfo = true; % return extra info about mcmc
 %
 % Output:
-% structure containing
-% out.f_warped: aligned f
-% out.gamma: warping functions
-% out.g_coef: final g_coefs
-% out.psi: final psis
-% out.sigma1: final sigma
+% fdawarp object
 %
-% if extrainfo
-% out.accept: accept of psi samples
-% out.betas_ind
-% out.logl: log likelihood
-% out.gamma_mat: posterior gammas
-% out.gamma_stats: posterior gamma stats
-% out.xdist: phase distance posterior
-% out.ydist: amplitude distance posterior
+% if extrainfo object contains
+% mcmc.accept: accept of q samples
+% mcmc.betas_ind
+% mcmc.gamma_mat: posterior gammas
+% mcmc.gamma_stats: posterior gamma stats
 [M, N] = size(f);
 
 if nargin < 4
