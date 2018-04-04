@@ -29,8 +29,9 @@ function obj = time_warping_bayes(f, time, mcmcopts)
 % tmp.betas = [0.5,0.5,0.005,0.0001]; %pczn paramaters
 % tmp.probs = [0.1,0.1,0.7,0.1];
 % mcmcopts.zpcn = tmp;
-% mcmcopts.propvar = 1; % proposal vairance
-% mcmcopts.initcoef = zeros(20, size(f,2)) % init coef
+% mcmcopts.propvar = 1; % proposal variance
+% mcmcopts.initcoef = zeros(20, size(f,2)) % init warping function coef
+% mcmcopts.nbasis = 40; % number of basis elements for q
 % mcmcopts.npoints = 200; % number of sample interpolation points
 % mcmcopts.extrainfo = true; % return extra info about mcmc
 %
@@ -50,7 +51,7 @@ function obj = time_warping_bayes(f, time, mcmcopts)
 % out.gamma_stats: posterior gamma stats
 % out.xdist: phase distance posterior
 % out.ydist: amplitude distance posterior
-[M,N] = size(f);
+[M, N] = size(f);
 
 if nargin < 4
     mcmcopts.iter = 2000;%2e4;
@@ -62,6 +63,7 @@ if nargin < 4
     mcmcopts.zpcn = tmp;
     mcmcopts.propvar = 1;
     mcmcopts.initcoef = zeros(20, N);
+    mcmcopts.nbasis = 40;
     mcmcopts.npoints = 200;
     mcmcopts.extrainfo = true;
 end
@@ -77,8 +79,13 @@ end
 if (length(mcmcopts.zpcn.betas) ~= length(mcmcopts.zpcn.probs))
     error('In zpcn, betas must equal length of probs')
 end
+
 if (mod(size(mcmcopts.initcoef), 1) ~= 0)
     error('Length of mcmcopts.initcoef must be even')
+end
+
+if (mod(mcmcopts.nbasis, 1) ~= 0)
+    error('mcmcopts.nbasis must be even')
 end
 
 % Number of sig figs to report in gamma_mat
@@ -97,7 +104,8 @@ g_coef_ini = mcmcopts.initcoef;
 numSimPoints = mcmcopts.npoints;
 pw_sim_global_domain_par = linspace(0,1,numSimPoints).';
 g_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mg, 1);
-pw_sim_global_Mq = size(mcmcopts.initcoef,1)/2;
+pw_sim_global_Mq = mcmcopts.nbasis/2;
+g_basis_q = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mq, 1);
 sigma1_ini = 1;
 zpcn = mcmcopts.zpcn;
 pw_sim_global_sigma_g = mcmcopts.propvar;
@@ -176,13 +184,13 @@ result.q_star(1,:) = q_star_curr;
 result.SSE(1,:) = SSE_curr;
 result.logl(1) = logl_curr;
 
-q_star_coef_curr = g_basis.matrix\q_star_curr;
+q_star_coef_curr = g_basis_q.matrix\q_star_curr;
 clear q_star_curr
 q_star_curr.x = g_basis.x;
 q_star_curr.y = q_star_ini;
 
 % update the chain for iter-1 times
-obj = ProgressBar(iter-1, ...
+barobj = ProgressBar(iter-1, ...
     'Title', 'Running MCMC' ...
     );
 for m = 2:iter
@@ -195,8 +203,30 @@ for m = 2:iter
     SSE_curr = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), ...
         q,q_star_curr.y);
     % update q_star
-    [q_star_coef_curr, accept, zpcnInd] = f_updateq_pw(g_coef_curr, g_basis, sigma1_curr^2, q, q_star_coef_curr, SSE_curr, @propose_g_coef);
-    q_star_curr = f_basistofunction(g_basis.x,0,q_star_coef_curr,g_basis,false);
+    [q_star_coef_curr, accept, zpcnInd] = f_updateq_pw(g_coef_curr, g_basis_q, sigma1_curr^2, q, q_star_coef_curr, SSE_curr, @propose_q_star);
+    q_star_curr = f_basistofunction(g_basis_q.x,0,q_star_coef_curr,g_basis_q,false);
+    
+    % center    
+    result_posterior_gamma = zeros(length(g_basis.x),N);
+    for ii = 1:N
+        g_temp = f_basistofunction(pw_sim_global_domain_par, 0, g_coef_curr(:,ii), g_basis, false);
+        psi_temp = f_exp1(g_temp);
+        % transform posterior mean of psi to gamma
+        tmp_gamma = f_phiinv(psi_temp);
+        gam0 = tmp_gamma.y;
+        tmp_gamma.y = norm_gam(gam0);
+        result_posterior_gamma(:,ii) = norm_gam(gam0);
+    end
+    gamI_o = SqrtMeanInverse(result_posterior_gamma.');
+    q_star_curr.y = warp_q_gamma(q_star_curr.y,gamI_o,q_star_curr.x);
+    for k = 1:N
+        result_posterior_gamma(:,k) = interp1(q_star_curr.x, result_posterior_gamma(:,k), (time(end)-time(1)).*gamI_o + time(1));
+        gamma.x = g_basis.x;
+        gamma.y = result_posterior_gamma(:,k);
+        psi = f_phi(gamma);
+        [~,yy] = f_exp1inv(psi);
+        g_coef_curr(:,k) = g_basis.matrix\yy;
+    end
     
     % update sigma1
     SSE_curr = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), ...
@@ -217,9 +247,9 @@ for m = 2:iter
         result.accept(m) = accept;
         result.accept_betas(m) = zpcnInd;
     end
-    obj.step([], [], []);
+    barobj.step([], [], []);
 end
-obj.release();
+barobj.release();
 
 % calculate posterior mean of psi
 pw_sim_est_psi_matrix = zeros(length(pw_sim_global_domain_par), length(valid_index),N);
@@ -274,7 +304,7 @@ obj.psi = result_posterior_psi;
 obj.qn = f_to_srvf(f_warped,time);
 obj.q0 = f_to_srvf(f,time);
 obj.mqn = mean(obj.qn,2);
-obj.fmean = mean(obj.f(1,:))+cumtrapz(obj.time,obj.mqn.*abs(obj.mqn));
+obj.fmean = mean(f(1,:))+cumtrapz(obj.time,obj.mqn.*abs(obj.mqn));
 std_f0 = std(f, 0, 2);
 std_fn = std(obj.fn, 0, 2);
 fgam = zeros(M,N);
@@ -289,7 +319,7 @@ obj.stats.phase_var = trapz(obj.time,var_fgam);
 
 obj.qun = result.logl;
 obj.method = "bayesian";
-obj.gamI = [];   % todo: fill out
+obj.gamI = interp1(g_basis.x, gamI_o, time, 'linear', 'extrap');
 obj.rsamps = false;
 obj.type = 'mean';
 
@@ -336,7 +366,7 @@ if ((inner < (-1)) || (inner > 1))
 end
 
 theta = acos(inner);
-yy = theta / sin(theta) .* (y - repelem(inner,length(y)));
+yy = theta / sin(theta) .* (y - repelem(inner,length(y))');
 
 if (theta==0)
     yy = zeros(1,length(x));
