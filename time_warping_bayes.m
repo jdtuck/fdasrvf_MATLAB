@@ -22,7 +22,7 @@ function obj = time_warping_bayes(f, time, mcmcopts)
 % time: time vector of length M
 %
 % default mcmc options
-% mcmcopts.iter = 2e4; % number of iterations
+% mcmcopts.iter = 2000; % number of iterations
 % mcmcopts.burnin = min(5e3,mcmcopts.iter/2); % number of burnin
 % mcmcopts.alpha0 = 0.1; # inverse gamma prior parameters
 % mcmcopts.beta0 = 0.1; # inverse gamma prior parameters
@@ -54,7 +54,7 @@ function obj = time_warping_bayes(f, time, mcmcopts)
 [M, N] = size(f);
 
 if nargin < 4
-    mcmcopts.iter = 2000;%2e4;
+    mcmcopts.iter = 2000;
     mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
     mcmcopts.alpha0 = 0.1;
     mcmcopts.beta0 = 0.1;
