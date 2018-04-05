@@ -357,6 +357,7 @@ classdef fdawarp
             % mcmc.betas_ind
             % mcmc.gamma_mat: posterior gammas
             % mcmc.qstar_mat: posterior q_star
+            % mcmc.fmean_mat: posterior fmean
             % mcmc.gamma_stats: posterior gamma stats
             % mcmc.qstar_stats: posterior q_star stats
             % mcmc.fmean_stats: posterior fmean stats
@@ -372,7 +373,7 @@ classdef fdawarp
                 mcmcopts.zpcn = tmp;
                 mcmcopts.propvar = 4;
                 mcmcopts.initcoef = zeros(20, N);
-                mcmcopts.nbasis = 10;
+                mcmcopts.nbasis = 30;
                 mcmcopts.npoints = 200;
                 mcmcopts.extrainfo = true;
                 mcmcopts.ncenter = 100;
@@ -411,8 +412,8 @@ classdef fdawarp
             pw_sim_global_domain_par = linspace(0,1,numSimPoints).';
             g_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mg, 1);
             pw_sim_global_Mq = mcmcopts.nbasis/2;
-            q_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mq, 2);
-            q_basis.matrix = [ones(numSimPoints,1) q_basis.matrix];
+            q_basis = basis_bspline(pw_sim_global_domain_par, 2*pw_sim_global_Mq, 3); %basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mq, 2);
+%             q_basis.matrix = [ones(numSimPoints,1) q_basis.matrix];
             sigma1_ini = 1;
             zpcn = mcmcopts.zpcn;
 
@@ -446,10 +447,10 @@ classdef fdawarp
                 pCN_prob = zpcn.probs;
                 probm = [0, cumsum(pCN_prob)];
                 z = rand;
-                sdvec = [pw_sim_global_sigma_q_const pw_sim_global_sigma_q./repelem(1:pw_sim_global_Mq,2)];
+                sdvec = [pw_sim_global_sigma_q./repelem(1:pw_sim_global_Mq,2)];
                 for i = 1:length(pCN_beta)
                     if (z <= probm(i+1) && z > probm(i))
-                        q_star_new = normrnd(0, sdvec, 1, pw_sim_global_Mq * 2+1);
+                        q_star_new = normrnd(0, sdvec, 1, pw_sim_global_Mq * 2);
                         result.prop = sqrt(1-pCN_beta(i)^2) * q_star_curr + pCN_beta(i) * q_star_new.';
                         result.ind = i;
                     end
@@ -646,11 +647,10 @@ classdef fdawarp
                 obj.mcmc.betas_ind = result.accept_betas(2:end);
                 obj.mcmc.gamma_mat = gamma_mat;
                 obj.mcmc.gamma_stats = gamma_stats;
-                obj.mcmc.q_star_mat = result.q_star(valid_index,:);
-                obj.mcmc.q_star_stats = quantile(obj.mcmc.q_star_mat,[.025,0.975]);
-                obj.mcmc.fmean_stats = obj.mcmc.q_star_stats;
-                obj.mcmc.fmean_stats(:,1) = 2*std(obj.f(1,:))+mean(obj.f(1,:))+cumtrapz(obj.time,obj.mcmc.fmean_stats(:,1).*abs(obj.mcmc.fmean_stats(:,1)));
-                obj.mcmc.fmean_stats(:,2) = -2*std(obj.f(1,:))+mean(obj.f(1,:))+cumtrapz(obj.time,obj.mcmc.fmean_stats(:,2).*abs(obj.mcmc.fmean_stats(:,2)));
+                obj.mcmc.q_star_mat = result.q_star(valid_index,:)';
+                obj.mcmc.q_star_stats = quantile(obj.mcmc.q_star_mat,[.025,0.975],2);
+                obj.mcmc.fmean_mat = srvf_to_f(obj.mcmc.q_star_mat,q_basis.x,repelem(mean(obj.f(1,:)),length(valid_index)));
+                obj.mcmc.fmean_stats = quantile(obj.mcmc.fmean_mat,[.025,0.975],2);
             end
 
         end
@@ -1456,6 +1456,11 @@ for i = 1:(2*numBasis)
     out.x = f_domain;
     out.matrix = result;
 end
+end
+
+function out = basis_bspline(f_domain, numBasis, df)
+out.x = f_domain;
+out.matrix = create_basismatrix(f_domain,numBasis,df);
 end
 
 %##########################################################################
