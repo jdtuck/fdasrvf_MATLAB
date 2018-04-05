@@ -366,7 +366,7 @@ classdef fdawarp
                 tmp.betas = [0.5,0.5,0.005,0.0001];
                 tmp.probs = [0.1,0.1,0.7,0.1];
                 mcmcopts.zpcn = tmp;
-                mcmcopts.propvar = 1;
+                mcmcopts.propvar = 4;
                 mcmcopts.initcoef = zeros(20, N);
                 mcmcopts.nbasis = 40;
                 mcmcopts.npoints = 200;
@@ -406,11 +406,21 @@ classdef fdawarp
             pw_sim_global_domain_par = linspace(0,1,numSimPoints).';
             g_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mg, 1);
             pw_sim_global_Mq = mcmcopts.nbasis/2;
-            g_basis_q = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mq, 1);
+            g_basis_q = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mq, 2);
+            g_basis_q.matrix = [ones(numSimPoints,1) g_basis_q.matrix];
             sigma1_ini = 1;
             zpcn = mcmcopts.zpcn;
+
+            % srsf transformation
+            f0 = zeros(length(g_basis.x),N);
+            for ii = 1:N
+                f0(:,ii) = interp1(obj.time,obj.f(:,ii),g_basis.x,'linear');
+            end
+            qo = f_to_srvf(f0, g_basis.x);
+            
             pw_sim_global_sigma_g = mcmcopts.propvar;
-            pw_sim_global_sigma_q = mcmcopts.propvar;
+            pw_sim_global_sigma_q = (quantile(qo(:),.95)-quantile(q0(:),.05))*5;
+            pw_sim_global_sigma_q_const = (quantile(qo(:),.95)-quantile(q0(:),.05))*.5;
             
             function result = propose_g_coef(g_coef_curr)
                 pCN_beta = zpcn.betas;
@@ -431,22 +441,15 @@ classdef fdawarp
                 pCN_prob = zpcn.probs;
                 probm = [0, cumsum(pCN_prob)];
                 z = rand;
+                sdvec = [pw_sim_global_sigma_q_const pw_sim_global_sigma_q./repelem(1:pw_sim_global_Mq,2)];
                 for i = 1:length(pCN_beta)
                     if (z <= probm(i+1) && z > probm(i))
-                        q_star_new = normrnd(0, pw_sim_global_sigma_q ./ repelem(1:pw_sim_global_Mq,2), 1, pw_sim_global_Mq * 2);
+                        q_star_new = normrnd(0, sdvec, 1, pw_sim_global_Mq * 2);
                         result.prop = sqrt(1-pCN_beta(i)^2) * q_star_curr + pCN_beta(i) * q_star_new.';
                         result.ind = i;
                     end
                 end
             end
-            
-            % srsf transformation
-            f0 = zeros(length(g_basis.x),N);
-            for ii = 1:N
-                f0(:,ii) = interp1(obj.time,obj.f(:,ii),g_basis.x,'linear');
-            end
-            qo = f_to_srvf(f0, g_basis.x);
-            
             
             for ii = 1:N
                 tmp = f_exp1(f_basistofunction(g_basis.x,0,g_coef_ini(:,ii),g_basis, false));
@@ -486,7 +489,7 @@ classdef fdawarp
             result.logl(1) = logl_curr;
             
             q_star_coef_curr = g_basis_q.matrix\q_star_curr;
-            clear q_star_curr
+            clear q_star_curr;
             q_star_curr.x = g_basis.x;
             q_star_curr.y = q_star_ini;
             
