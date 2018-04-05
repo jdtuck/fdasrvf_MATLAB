@@ -12,8 +12,11 @@ function f = srvf_to_f(q,time,fo)
 %
 % Output:
 % f: matrix of functions
-integrand = q.*abs(q);
-f = cumtrapz(time, integrand);
-for i = 1:length(fo)
+[M, N] = size(q);
+f = zeros(M,N);
+for i = 1:N
+    integrand = q(:,i).*abs(q(:,i));
+    f(:,i) = cumtrapz(time, integrand);
     f(:,i) = fo(i) + f(:,i);
 end
+
