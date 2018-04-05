@@ -68,7 +68,7 @@ classdef fdakma
             obj.time = time;
         end
         
-        function obj = kmeans(obj,K,seeds,option)
+        function obj = kmeans(obj,K,seeds,lambda1, option)
             % KMEANS K-Means clustering and alignment
             % -------------------------------------------------------------------------
             % This function clusters functions and aligns using the elastic square-root
@@ -76,11 +76,12 @@ classdef fdakma
             %
             % Usage:  obj.kmeans(K)
             %         obj.kmeans(K,seeds)
-            %         obj.kmeans(seeds,option)
+            %         obj.kmeans(K,seeds,lambda1)
             %
             % Input:
             % K: number of clusters
             % seeds: indexes of cluster center functions (default [])
+            % lambda1: controls amount of alignment
             %
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
@@ -97,7 +98,7 @@ classdef fdakma
             % Output:
             % fdakma object
             
-            if nargin < 3
+            if nargin < 2
                 seeds = [];
                 obj.lambda = 0;
                 option.parallel = 0;
@@ -109,7 +110,7 @@ classdef fdakma
                 option.w = 0.0;
                 option.MaxItr = 20;
                 option.thresh = 0.01;
-            elseif nargin < 4
+            elseif nargin < 3
                 obj.lambda = 0;
                 option.parallel = 0;
                 option.alignment = true;
@@ -120,7 +121,8 @@ classdef fdakma
                 option.w = 0.0;
                 option.MaxItr = 20;
                 option.thresh = 0.01;
-            elseif nargin < 5
+            elseif nargin < 4
+                obj.lambda = lambda1;
                 option.parallel = 0;
                 option.alignment = true;
                 option.closepool = 0;
@@ -130,6 +132,8 @@ classdef fdakma
                 option.w = 0.0;
                 option.MaxItr = 20;
                 option.thresh = 0.01;
+            else
+                obj.lambda = lambda1;
             end
             
             % time warping on a set of functions
