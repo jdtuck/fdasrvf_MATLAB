@@ -387,8 +387,8 @@ classdef fdakma
             dqq = sqrt(sum((q - mnq*ones(1,N)).^2,1));
             [~, min_ind] = min(dqq);
             K = 1;
-            obj.templates{1} = obj.f(:,min_ind);
-            obj.templates_q{1} = q(:,min_ind);
+            obj.templates(:,1) = obj.f(:,min_ind);
+            obj.templates_q(:,1) = q(:,min_ind);
 
             if (isnan(obj.lambda))
                 fprintf('\n Initializing Lambda \n');
@@ -428,16 +428,16 @@ classdef fdakma
                         end
                     else
                         for k = 1:N
-                            q_c = q(:,k); mq_c = obj.templates_q{i};
+                            q_c = q(:,k); mq_c = obj.templates_q(:,i);
                             if (option.alignment)
                                 gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method,option.w, ...
-                                    obj.templates{i}(1), obj.f(1,k));
+                                    obj.templates(1,i), obj.f(1,k));
                             else
                                 gamt(k,:) = linspace(0,1,M);
                             end
                             f_temp(:,k) = warp_f_gamma(obj.f(:,k),gamt(k,:),obj.time);
                             q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time);
-                            Dy(i,k) = sqrt(sum(trapz(obj.time,(q_temp(:,k)-obj.templates_q{i}).^2)));
+                            Dy(i,k) = sqrt(sum(trapz(obj.time,(q_temp(:,k)-obj.templates_q(:,i)).^2)));
                         end
                     end
                     gam1{i} = gamt;
@@ -452,8 +452,8 @@ classdef fdakma
                     if idx(ii) ~= 0
                         K = K + 1;
                         cluster_id(ii) = K;
-                        obj.templates{K} = obj.f(:,ii);
-                        obj.templates_q{K} = q(:,ii);
+                        obj.templates(:,K) = obj.f(:,ii);
+                        obj.templates_q(:,K) = q(:,ii);
                     end
                 end
                 
@@ -461,7 +461,7 @@ classdef fdakma
                 for i = 1:K
                     id = cluster_id == i;
                     for j = 1:length(id)
-                        qun1(i) = qun1(i) + sqrt(sum(trapz(obj.time,(q(:,id(j))-obj.templates_q{i}).^2)));
+                        qun1(i) = qun1(i) + sqrt(sum(trapz(obj.time,(q(:,id(j))-obj.templates_q(:,i)).^2)));
                     end
                 end
                 obj.qun(r+1) = sum(qun1)+obj.lambda*K;
