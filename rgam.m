@@ -1,5 +1,5 @@
 function gam = rgam(N, sigma, num)
-% RGAM Random Warping
+% RGAM Generate random warping functions
 % -------------------------------------------------------------------------
 % Generates random warping functions
 %

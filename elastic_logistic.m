@@ -1,7 +1,6 @@
 classdef elastic_logistic
-    %elastic_logistic A class to provide a SRVF logistic
-    % regression
-    % -------------------------------------------------------------------------
+    %elastic_logistic A class to provide SRVF logistic regression
+    % ---------------------------------------------------------------------
     % This class provides elastic logisitc regression for
     % functional data using the SRVF framework accounting for warping
     %

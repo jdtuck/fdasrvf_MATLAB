@@ -1,5 +1,5 @@
 classdef fdahpca
-    %fdahpca A class to provide a horizontal fPCA
+    %fdahpca A class to provide horizontal fPCA
     % -------------------------------------------------------------------------
     % This class provides horizontal fPCA using the
     % SRVF framework

@@ -1,5 +1,5 @@
 function [mu,gam_mu,psi,vec] = SqrtMean(gam)
-% SQRTMEAN SRVF transform of warping functions
+% SQRTMEAN SRVF transform of warping functions calculates mean
 % -------------------------------------------------------------------------
 % This function calculates the srvf of warping functions with corresponding
 % shooting vectors and finds the mean

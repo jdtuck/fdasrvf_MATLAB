@@ -1,5 +1,5 @@
 classdef elastic_regression
-    %elastic_regression A class to provide a SRVF regression
+    %elastic_regression A class to provide SRVF regression
     % -------------------------------------------------------------------------
     % This class provides elastic regression for functional data using the
     % SRVF framework accounting for warping

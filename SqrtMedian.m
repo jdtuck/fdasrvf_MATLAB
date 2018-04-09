@@ -1,5 +1,5 @@
 function [gam_median, psi_median, psi, vec] = SqrtMedian(gam)
-% SQRTMEDIAN SRVF transform of warping functions
+% SQRTMEDIAN SRVF transform of warping functions calculates median
 % -------------------------------------------------------------------------
 % This function calculates the srvf of warping functions with corresponding
 % shooting vectors and finds the median

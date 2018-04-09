@@ -1,5 +1,5 @@
 classdef fdawarp
-    %fdawarp A class to provide a SRVF functional data analysis
+    %fdawarp A class to provide alignment of functional data using SRVF
     % -------------------------------------------------------------------------
     % This class provides alignment methods for functional data using the
     % SRVF framework

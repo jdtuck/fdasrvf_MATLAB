@@ -1,5 +1,6 @@
 function gamI = SqrtMeanInverse(gam)
-% SQRTMEANINVERSE SRVF transform of warping functions
+% SQRTMEANINVERSE SRVF transform of warping functions calculates mean
+% inverse
 % -------------------------------------------------------------------------
 % This function calculates the srvf of warping functions with corresponding
 % shooting vectors and finds the inverse of the mean

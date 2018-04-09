@@ -1,5 +1,5 @@
 classdef fdavpca
-    %fdavpca A class to provide a vertical fPCA
+    %fdavpca A class to provide vertical fPCA
     % -------------------------------------------------------------------------
     % This class provides vertical fPCA using the
     % SRVF framework

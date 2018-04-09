@@ -1,5 +1,5 @@
 classdef elastic_mlogistic
-    %elastic_mlogistic A class to provide a SRVF multionomial logistic
+    %elastic_mlogistic A class to provide wSRVF multionomial logistic
     % regression
     % -------------------------------------------------------------------------
     % This class provides elastic multinomial logisitc regression for

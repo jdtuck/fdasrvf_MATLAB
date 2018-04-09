@@ -1,5 +1,6 @@
 function [dy, dx] = elastic_distance(f1, f2, time, lambda)
-% ELASTIC_DISTANCE Calculates two elastic distances
+% ELASTIC_DISTANCE Calculates the two elastic distances between two
+% functions
 % -------------------------------------------------------------------------
 % This functions calculates the distances between functions,
 % \eqn{D_y} and \eqn{D_x}, where function 1 is aligned to function 2

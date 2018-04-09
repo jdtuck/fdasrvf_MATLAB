@@ -1,5 +1,5 @@
 classdef phbox
-    %phbox A class to phase box plots
+    %phbox Construct phase box plots
     % -------------------------------------------------------------------------
     % This class provides phase boxplot for functional data using the
     % SRVF framework

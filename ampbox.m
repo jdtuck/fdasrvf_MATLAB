@@ -1,5 +1,5 @@
 classdef ampbox
-    %ampbox A class to amplitude box plots
+    %ampbox Produce amplitude box plots
     % -------------------------------------------------------------------------
     % This class provides amplitude boxplot for functional data using the
     % SRVF framework
