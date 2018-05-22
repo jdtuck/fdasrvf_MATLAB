@@ -212,7 +212,6 @@ if (mcmcopts.extrainfo)
     one_v = ones(1,size(pw_sim_est_psi_matrix,1));
     Dx = zeros(1,size(pw_sim_est_psi_matrix,2));
     Dy = Dx;
-    gamma_stats = zeros(2,size(pw_sim_est_psi_matrix,2));
     for ii = 1:size(pw_sim_est_psi_matrix,2)
         result_i = interp1(result_posterior_psi_simDomain.x, pw_sim_est_psi_matrix(:,ii), f1.x, 'linear', 'extrap');
         result_i2.y=result_i;
@@ -222,9 +221,9 @@ if (mcmcopts.extrainfo)
         v = inv_exp_map(one_v, pw_sim_est_psi_matrix(:,ii));
         Dx(ii) = sqrt(trapz(pw_sim_global_domain_par, v.^2));
         q2warp = warp_q_gamma(q2.y, gamma_mat(:,ii), q2.x).';
-        Dy(ii) = sqrt(trapz(q2.x,(q1.y-q2warp).^2));
-        gamma_stats(:,ii) = statsFun(gamma_mat(:,ii));
+        Dy(ii) = sqrt(trapz(q2.x,(q1.y-q2warp).^2)); 
     end
+    gamma_stats = statsFun(gamma_mat);
 end
 
 % return object
@@ -246,9 +245,9 @@ end
 end
 
 function out = statsFun(vec)
-a = quantile(vec,0.025);
-b = quantile(vec,0.975);
-out = [a,b];
+a = quantile(vec.',0.025);
+b = quantile(vec.',0.975);
+out = [a;b];
 end
 
 function out = f_exp1(g)
