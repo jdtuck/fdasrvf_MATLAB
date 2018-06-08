@@ -238,7 +238,7 @@ if (mcmcopts.extrainfo)
     out.betas_ind = result.accept_betas(2:end);
     out.logl = result.logl;
     out.gamma_mat = gamma_mat;
-    out.gamma_stats = gamma_stats;
+    out.gamma_stats = gamma_stats.';
     out.xdist = Dx;
     out.ydist = Dy;
 end
