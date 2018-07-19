@@ -1,5 +1,5 @@
 function qo = warp_q_gamma(q,gamma,t,spline)
-% WARP_F_GAMMA Warp SRVF
+% WARP_F_GAMMA Warp SRVF by gamma
 % -------------------------------------------------------------------------
 % This function warps SRVF \eqn{q} by \eqn{\gamma}
 %

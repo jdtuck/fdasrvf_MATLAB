@@ -1,5 +1,5 @@
 function fo = warp_f_gamma(f,gamma,t,spline)
-% WARP_F_GAMMA Warp Function
+% WARP_F_GAMMA Warp Function by gamma
 % -------------------------------------------------------------------------
 % This function warps function \eqn{f} by \eqn{\gamma}
 %
