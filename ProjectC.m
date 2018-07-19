@@ -64,7 +64,7 @@ while (norm(res) > epsilon)
     x = J\(res');
     C(iter) = norm(res);
     
-    delG = Form_Basis_Normal_A(qnew);
+    delG = Basis_Normal_A(qnew);
     temp = 0;
     for i = 1:n
         temp = temp + x(i)*delG{i}*dt;
