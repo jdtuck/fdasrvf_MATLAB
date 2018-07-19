@@ -16,7 +16,6 @@ function fnew = Project_Tangent(f,q)
 [n,~] = size(q);
 % Project w in T_q({\cal B}), ie the unit sphere
 w = f - InnerProd_Q(f,q)*q;
-e = eye(n);
 % Form the basis for the Normal space of {\cal A}
 g = Basis_Normal_A(q);
 
