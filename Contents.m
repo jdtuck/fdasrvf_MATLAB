@@ -5,6 +5,7 @@
 %   ampbox                        - ampbox Produce amplitude box plots
 %   Basis_Normal_A                - Find Normal Basis
 %   bootstrap_tol                 - Boostrapped tolerance bounds
+%   calculateCentroid             - Calculate centroid of curve
 %   create_basismatrix            - Create Basis Matrix
 %   cumsimps                      - Cumulative Simpson's numerical integration.
 %   cumtrapzmid                   - Cummulative Trapezodial Integration from mid point
