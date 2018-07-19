@@ -12,6 +12,7 @@ function q = curve_to_q(p)
 % 
 % Output:
 % q: matrix of SRVF
+
 [n,N] = size(p);
 v = zeros(n,N);
 for i = 1:n
