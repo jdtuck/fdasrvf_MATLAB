@@ -5,13 +5,14 @@ function p = q_to_curve(q)
 % 
 % Usage: p = q_to_curve(q)
 %
-% This function converts functions to srsf
+% This function converts SRVFs to curves
 %
 % Input:
 % q: matrix (n,T) defining T points on n dimensional SRVF
 % 
 % Output:
 % q: matrix of curve
+
 [n,T] = size(q);
 
 qnorm = zeros(1,T);

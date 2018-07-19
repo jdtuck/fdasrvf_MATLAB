@@ -16,6 +16,8 @@ function [dist,X2n,q2n,X1,q1]=pairwise_align_curves(X1,X2,option)
 % option.plot_reg = true;   % plot registration
 % option.plot_reparam = true;  % plot reparametization
 % option.N = 200;  % resample curve to N points
+% option.stp = 6;  % number of steps in geodesic
+% option.closed = false;  % closed curve
 %
 % Output:
 % q: matrix of SRSFs(X1,X2)
@@ -26,7 +28,6 @@ function [dist,X2n,q2n,X1,q1]=pairwise_align_curves(X1,X2,option)
 % q1: SRVF of of curve 1
 
 % Load some parameters, no need to change this
-lam = 0;
 n = size(X1,1);
 
 if nargin < 3
@@ -34,6 +35,8 @@ if nargin < 3
     option.plot_reg = true;
     option.plot_reparam = true;
     option.N = 200;
+    option.stp = 6;
+    option.closed = false;
 end
 
 % Resample the curves to have N points
@@ -47,26 +50,11 @@ X2 = X2 - repmat(mean(X2,2),1,size(X2,2));
 % Form the q function for representing curves and find best rotation
 q1 = curve_to_q(X1);
 q2 = curve_to_q(X2);
-A = q1*q2';
-[U,~,V] = svd(A);
-if det(A)> 0
-    Ot = U*V';
-else
-    if (size(X1,1)==2)
-        Ot = U*([V(:,1) -V(:,2)])';
-    else
-        Ot = U*([V(:,1) V(:,2) -V(:,3)])';
-    end
-end
-X2 = Ot*X2;
-q2 = Ot*q2;
-
-% Applying optimal re-parameterization to the second curve
-[gam] = DynamicProgrammingQ(q1/sqrt(InnerProd_Q(q1,q1)),q2/sqrt(InnerProd_Q(q2,q2)),lam,0);
-gamI = invertGamma(gam);
-gamI = (gamI-gamI(1))/(gamI(end)-gamI(1));
+[~,R,gamI] = Find_Rotation_and_Seed_unique(q1,q2,true,option.closed);
+X2 = R*X2;
 X2n = warp_curve_gamma(X2,gamI);
 q2n = curve_to_q(X2n);
+
 if option.plot_reparam
     figure(100); clf;
     plot(linspace(0,1,option.N),gamI,'LineWidth',2)
@@ -76,59 +64,27 @@ if option.plot_reparam
 end
 
 % Find optimal rotation
-A = q1*q2n';
-[U,~,V] = svd(A);
-if det(A)> 0
-    Ot = U*V';
-else
-    if (size(X1,1)==2)
-        Ot = U*([V(:,1) -V(:,2)])';
-    else
-        Ot = U*([V(:,1) V(:,2) -V(:,3)])';
-    end
-end
-X2n = Ot*X2n;
-q2n = Ot*q2n;
+[q2n,R] = Find_Best_Rotation(q1,q2n);
+X2n = R*X2n;
 
 % Forming geodesic between the registered curves
-N = size(X1,2);
-dist = acos(sum(sum(q1.*q2n))/N);
+dist = acos(InnerProd_Q(q1,q2n));
 fprintf('The distance between the two curves is %0.3f\n',dist)
-no = 7;
-PsiQ = zeros(n,option.N,no);
-PsiX = zeros(n,option.N,no);
+stp = 6;
 if(option.plot_geod)
-    if (size(X1,1)==2)
-        for t=1:no
-            s = dist*(t-1)/6;
-            PsiQ(:,:,t) = (sin(dist - s)*q1 + sin(s)*q2n)/sin(dist);
-            PsiX(:,:,t) = q_to_curve(PsiQ(:,:,t));
-        end
-        figure(4); clf; axis equal; hold on;
-        for t=1:7
-            z = plot(0.5*t + PsiX(1,:,t), PsiX(2,:,t),'r-');
-            set(z,'LineWidth',2,'color',[(t-1)/6 (t-1)/12 0]);
-        end
-        axis off;
-    else
-        for t=1:7
-            s = dist*(t-1)/6;
-            PsiQ(:,:,t) = (sin(dist - s)*q1 + sin(s)*q2n)/sin(dist);
-            PsiX(:,:,t) = q_to_curve(PsiQ(:,:,t));
-        end
-        figure(4); clf; axis equal; hold on;
-        for t=1:7
-            z = plot3(0.5*t + PsiX(1,:,t), PsiX(2,:,t), PsiX(3,:,t),'r-');
-            set(z,'LineWidth',2,'color',[(t-1)/6 (t-1)/12 0]);
-        end
-        axis off;
-    end
+    PsiQ = geodesic_sphere_Full(q1,q2,stp,option.closed);
+    p2n = q_to_curve(q2n);
+    Path_Plot(PsiQ,p2n,10,[73,6])
 end
 
+Geod = zeros(n,option.N,stp+1);
+for j=1:stp+1
+    Geod(:,:,j)=q_to_curve(PsiQ(:,:,j));
+end
 % Displaying the correspondence
 if(option.plot_reg)
-    X2n=PsiX(:,:,end);
-    X1=PsiX(:,:,1);
+    X2n=Geod(:,:,end);
+    X1=Geod(:,:,1);
     if (size(X1,1)==2)
         figure(3); clf;
         z = plot(X1(1,:), X1(2,:),'r');

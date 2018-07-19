@@ -1,18 +1,22 @@
-function Xn = ReSampleCurve(X,N)
+function Xn = ReSampleCurve(X,N,closed)
 % RESAMPLECURVE Resample curve to have N points
 % -------------------------------------------------------------------------
 % Resample curve
 % 
 % Usage: Xn = ReSampleCurve(X,N)
 %
-% This function converts functions to srsf
+% This function resamples a curve on N points
 %
 % Input:
 % X: matrix (nxT) of n dimensional curve with T sample points
 % N: number of points
+% closed: if curve is closed (default T)
 % 
 % Output:
 % X: matrix (nxN) of n dimensional curve with N sample points
+if nargin < 3
+    closed = false;
+end
 [n,T] = size(X);
 del = zeros(1,T);
 del(1) = 0;
@@ -26,4 +30,10 @@ newdel = (0:N-1)/(N-1);
 Xn = zeros(n,N);
 for j=1:n
     Xn(j,:) = interp1(cumdel,X(j,1:T),newdel,'linear');
+end
+
+if closed
+    q = curve_to_q(Xn);
+    qn = ProjectC(q);
+    Xn = q_to_curve(qn);
 end

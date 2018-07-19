@@ -5,7 +5,7 @@ function val = InnerProd_Q(q1,q2)
 % 
 % Usage: val = InnerProd_Q(q1,q2)
 %
-% This function converts functions to srsf
+% This function calculates the innter product between two curves
 %
 % Input:
 % q1: matrix of (nxT) of SRVF1

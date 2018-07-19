@@ -11,7 +11,8 @@ function fn = warp_curve_gamma(f,gamma,spline)
 % spline use spline interpolation (default false)
 %
 % Output
-% fn: warped function
+% fn: warped curve
+
 if nargin < 3
     spline = false;
 end

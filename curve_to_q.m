@@ -5,7 +5,7 @@ function q = curve_to_q(p)
 % 
 % Usage: q = curve_to_q(p)
 %
-% This function converts functions to srsf
+% This function converts cruves to SRVFs
 %
 % Input:
 % p: matrix (n,T) defining T points on n dimensional curve
