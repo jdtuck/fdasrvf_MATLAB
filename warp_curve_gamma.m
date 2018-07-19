@@ -1,5 +1,5 @@
 function fn = warp_curve_gamma(f,gamma,spline)
-% warp_curve_gamma Warp curve by gamma
+% WARP_CURVE_GAMMA Warp curve by gamma
 % -------------------------------------------------------------------------
 % This function warps curve \eqn{f} by \eqn{\gamma}
 %
@@ -12,10 +12,11 @@ function fn = warp_curve_gamma(f,gamma,spline)
 %
 % Output
 % fn: warped function
-if nargin < 4
+if nargin < 3
     spline = false;
 end
 
+[n,T] = size(f);
 fn = f;
 if spline
     for j=1:n
