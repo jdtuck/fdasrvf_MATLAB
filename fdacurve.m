@@ -32,6 +32,7 @@ classdef fdacurve
             beta1 = zeros(n,N,K);
             for ii = 1:K
                 beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N);
+                beta1(:,:,ii) = beta1(:,:,ii) - repmat(mean(beta1(:,:,ii),2),1,size(beta1(:,:,ii),2));
                 q(:,:,ii) = curve_to_q(beta1(:,:,ii));
             end
             obj.q = q;
