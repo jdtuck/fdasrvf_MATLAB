@@ -10,6 +10,7 @@ classdef fdacurve
         basis     % calculated basis
         beta_mean % karcher mean curve
         q_mean    % karcher mean srvf
+        gams      % warping functions
         v         % shooting vectors
         C         % karcher covariance
         closed    % closed curve if true
@@ -31,10 +32,10 @@ classdef fdacurve
             beta1 = zeros(n,N,K);
             for ii = 1:K
                 beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N);
-                q(:,:,ii) = curve_to_q(beta(:,:,ii));
+                q(:,:,ii) = curve_to_q(beta1(:,:,ii));
             end
             obj.q = q;
-            obj.beta = bebeta1ta;
+            obj.beta = beta1;
         end
         
         function obj = karcher_mean(obj,option)
@@ -87,12 +88,14 @@ classdef fdacurve
             mu=obj.q(:,:,shape);
             iter = 1;
             T = size(mu,2);
-            K = size(obq.q,3);
+            K = size(obj.q,3);
+            gamma = zeros(T,K);
             sumd = zeros(1,option.MaxItr+1);
             normvbar = zeros(1,option.MaxItr+1);
-            v1 = zeros(size(obq.q));
+            v1 = zeros(size(obj.q));
             tolv=10^-4;
             told=5*10^-3;
+            delta=0.5;
             
             % Compute the Karcher mean
             while iter<=option.MaxItr
@@ -108,7 +111,8 @@ classdef fdacurve
                     q1=obj.q(:,:,i);
                     
                     % Compute shooting vector from mu to q_i
-                    [qn,~,~] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                    [qn,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                    gamma(:,i) = gamI;
                     [qn,~] = Find_Best_Rotation(mu,qn);
                     
                     q1dotq2=InnerProd_Q(mu,qn);
@@ -117,6 +121,9 @@ classdef fdacurve
                     if q1dotq2>1
                         q1dotq2=1;
                     end
+                    
+                    d = acos(q1dotq2);
+                    
                     u=qn-q1dotq2*mu;
                     normu=sqrt(InnerProd_Q(u,u));
                     if normu>10^-4
@@ -138,7 +145,7 @@ classdef fdacurve
                 end
                 
                 % Compute average direction of tangent vectors v_i
-                vbar=sumv/N;
+                vbar=sumv/T;
                 normvbar(iter)=sqrt(InnerProd_Q(vbar,vbar));
                 normv=normvbar(iter);
                 
@@ -165,6 +172,7 @@ classdef fdacurve
             
             obj.beta_mean = betamean;
             obj.q_mean = mu;
+            obj.gams = gamma;
             obj.v = v1;
             
         end
@@ -194,6 +202,27 @@ classdef fdacurve
         end
         
         function plot(obj)
+            % plot plot curve mean results
+            % -------------------------------------------------------------------------
+            % Usage: obj.plot()
+            figure(1);clf;hold all;
+            K = size(obj.beta,3);
+            for ii = 1:K
+                plot(obj.beta(1,:,ii),obj.beta(2,:,ii))
+                title('Curves')
+            end
+            
+            if (~isempty(obj.gams))
+                figure(2); clf
+                plot(obj.beta_mean(1,:),obj.beta_mean(2,:))
+                title('Karcher Mean')
+                
+                figure(3); clf;
+                M = size(obj.beta,2);
+                plot((0:M-1)/(M-1), obj.gams, 'linewidth', 1);
+                axis square;
+                title('Warping functions', 'fontsize', 16);
+            end
         end
     end
 end
