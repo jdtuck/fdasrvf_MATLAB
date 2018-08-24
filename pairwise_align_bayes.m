@@ -59,6 +59,7 @@ if nargin < 4
     tmp.betas = 0.6;%[0.5,0.5,0.005,0.0001];
     tmp.probs = 0.1;%[0.7,0.1,0.7,0.1];
     mcmcopts.zpcn = tmp;
+    mcmcopts.h = 1e-4;
     mcmcopts.propvar = 1;
     mcmcopts.initcoef = repelem(0, 20).';
     mcmcopts.npoints = 200;
@@ -114,18 +115,29 @@ sigma1_ini = 1;
 zpcn = mcmcopts.zpcn;
 pw_sim_global_sigma_g = mcmcopts.propvar;
 
-    function result = propose_g_coef(g_coef_curr)
+    function result = propose_g_coef(g_coef_curr, var1)
         pCN_beta = zpcn.betas;
         pCN_prob = zpcn.probs;
-        probm = [0, cumsum(pCN_prob)];
-        z = rand;
-        for i = 1:length(pCN_beta)
-%             if (z <= probm(i+1) && z > probm(i))
-                g_coef_new = normrnd(0, pw_sim_global_sigma_g ./ repelem(1:pw_sim_global_Mg,2), 1, pw_sim_global_Mg * 2);
-                result.prop = sqrt(1-pCN_beta(i)^2) * g_coef_new.' + pCN_beta(i) * g_coef_curr;
-                result.ind = i;
-%             end
-        end
+%         probm = [0, cumsum(pCN_prob)];
+%         z = rand;
+%         % pCN
+%         for i = 1:length(pCN_beta)
+% %             if (z <= probm(i+1) && z > probm(i))
+%                 g_coef_new = normrnd(0, pw_sim_global_sigma_g ./ repelem(1:pw_sim_global_Mg,2), 1, pw_sim_global_Mg * 2);
+%                 result.prop = sqrt(1-pCN_beta(i)^2) * g_coef_new.' + pCN_beta(i) * g_coef_curr;
+%                 result.ind = i;
+% %             end
+%         end
+
+        % \inf-Mala
+        h = mcmcopts.h;
+        C = pw_sim_global_sigma_g ./ repelem(1:pw_sim_global_Mg,2);
+        g_coef_new = normrnd(0, C, 1, pw_sim_global_Mg * 2);
+        g_temp1 = f_basistofunction(g_basis.x,0,g_coef_curr,g_basis, false);
+        dPhi = f_dlogl_pw(g_temp1, q1, q2, var1);
+        result.prop = sqrt(1-pCN_beta^2) * (g_coef_new-sqrt(h)/2.*dPhi.*C).' + pCN_beta * g_coef_curr;
+        result.ind = 1;
+        
     end
 
 % srsf transformation
@@ -162,7 +174,8 @@ obj = ProgressBar(iter-1, ...
     );
 for m = 2:iter
     % update g
-    [g_coef_curr, ~, SSE_curr, accept, zpcnInd] = f_updateg_pw(g_coef_curr, g_basis, sigma1_curr^2, q1, q2, SSE_curr, @propose_g_coef);
+    C = pw_sim_global_sigma_g ./ repelem(1:pw_sim_global_Mg,2);
+    [g_coef_curr, ~, SSE_curr, accept, zpcnInd] = f_updateg_pw(g_coef_curr, g_basis, sigma1_curr^2, q1, q2, SSE_curr, C, mcmcopts, @propose_g_coef);
 
     % update sigma1
     newshape = length(q1.x)/2 + mcmcopts.alpha0;
@@ -256,26 +269,37 @@ out.y = bcalcY(f_L2norm(g), g.y);
 end
 
 % function for calculating the next MCMC sample given current state
-function [g_coef, logl, SSE, accept, zpcnInd] = f_updateg_pw(g_coef_curr,g_basis,var1_curr,q1,q2,SSE_curr,propose_g_coef)
-g_coef_prop = propose_g_coef(g_coef_curr);
+function [g_coef, logl, SSE, accept, zpcnInd] = f_updateg_pw(g_coef_curr,g_basis,var1_curr,q1,q2,SSE_curr,C,mcmcopts,propose_g_coef)
+g_coef_prop = propose_g_coef(g_coef_curr,var1_curr);
 
-tst = f_exp1(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis, false));
+% tst = f_exp1(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis, false));
 % while (min(tst.y)<0)
 %     g_coef_prop = propose_g_coef(g_coef_curr);
 %     tst = f_exp1(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis, false));
 % end
-
+g_prop = f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis, false);
+g_curr = f_basistofunction(g_basis.x,0,g_coef_curr,g_basis, false);
 if (SSE_curr == 0)
-    SSE_curr = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis, false), q1, q2);
+    SSE_curr = f_SSEg_pw(g_curr, q1, q2);
 end
 
-SSE_prop = f_SSEg_pw(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis,false), q1, q2);
+SSE_prop = f_SSEg_pw(g_prop, q1, q2);
 
-logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), q1, q2, var1_curr, SSE_curr);
+logl_curr = f_logl_pw(g_curr, q1, q2, var1_curr, SSE_curr);
 
-logl_prop = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis,false), q1, q2, var1_curr, SSE_prop);
+logl_prop = f_logl_pw(g_prop, q1, q2, var1_curr, SSE_prop);
 
-ratio = min(1, exp(-logl_prop+logl_curr));
+% pCN
+% ratio = min(1, exp(-logl_prop+logl_curr));
+
+% \inf-MALA
+h = mcmcopts.h;
+p = mcmcopts.zpcn.betas;
+dPhiu = f_dlogl_pw(g_curr, q1, q2, var1_curr);
+dPhiv = f_dlogl_pw(g_prop, q1, q2, var1_curr);
+ku = exp(-logl_curr) * exp(-h/8*norm(sqrt(C).*dPhiu).^2-sqrt(h)/2*sum(dPhiu*(g_coef_prop.prop-p*g_coef_curr/sqrt(1-p^2))));
+kv = exp(-logl_prop) * exp(-h/8*norm(sqrt(C).*dPhiv).^2-sqrt(h)/2*sum(dPhiv*(g_coef_curr-p*g_coef_prop.prop/sqrt(1-p^2))));
+ratio = min(1, kv/ku);
 
 u = rand;
 if (u <= ratio)
@@ -320,6 +344,35 @@ if (SSEg == 0)
 end
 n = length(q1.y);
 out = n * log(1/sqrt(2*pi)) - n * log(sqrt(var1)) - SSEg / (2 * var1);
+end
+
+%##########################################################################
+% For pairwise registration, evaluate the derivative loglikelihood of g, 
+% given q1 and q2
+% g, q1, q2 are all given in the form of struct.x and struct.y
+% var1: model variance
+% returns a numeric value which is dglogl(g|q1,q2)
+%##########################################################################
+function out = f_dlogl_pw(g, q1, q2, var1)
+obs_domain = q1.x;
+g_temp = f_predictfunction(g, obs_domain, 0);
+exp1g_temp = f_predictfunction(f_exp1(g), obs_domain, 0);
+pt = [0; bcuL2norm2(obs_domain, exp1g_temp.y)];
+tmp = f_predictfunction(q2, pt, 0);
+A = (q1.y - tmp.y .* exp1g_temp.y).^2;
+
+normg = L2norm(g_temp.y);
+if normg == 0
+    normg = eps;
+end
+dgdv = trapz(obs_domain,g_temp.y)/normg^3;
+
+dexpdv = dgdv*(-sin(normg)+g_temp.y.*cos(normg)/normg+g_temp.y.*sin(normg)/normg^2)+sin(normg)/normg;
+
+intd = [0; bcuL2norm2(obs_domain, exp1g_temp.y.*dexpdv)];
+dAdv = -2*(sqrt(intd).*exp1g_temp.y+tmp.y.*dexpdv);
+
+out = 1/var1*sum(A.*dAdv);
 end
 
 %##########################################################################
