@@ -56,8 +56,8 @@ if nargin < 4
     mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
     mcmcopts.alpha0 = 0.1;
     mcmcopts.beta0 = 0.1;
-    tmp.betas = 0.01;%[0.5,0.5,0.005,0.0001];
-    tmp.probs = 0.1;%[0.1,0.1,0.7,0.1];
+    tmp.betas = 0.6;%[0.5,0.5,0.005,0.0001];
+    tmp.probs = 0.1;%[0.7,0.1,0.7,0.1];
     mcmcopts.zpcn = tmp;
     mcmcopts.propvar = 1;
     mcmcopts.initcoef = repelem(0, 20).';
@@ -122,7 +122,7 @@ pw_sim_global_sigma_g = mcmcopts.propvar;
         for i = 1:length(pCN_beta)
 %             if (z <= probm(i+1) && z > probm(i))
                 g_coef_new = normrnd(0, pw_sim_global_sigma_g ./ repelem(1:pw_sim_global_Mg,2), 1, pw_sim_global_Mg * 2);
-                result.prop = sqrt(1-pCN_beta(i)^2) * g_coef_curr + pCN_beta(i) * g_coef_new.';
+                result.prop = sqrt(1-pCN_beta(i)^2) * g_coef_new.' + pCN_beta(i) * g_coef_curr;
                 result.ind = i;
 %             end
         end
@@ -275,7 +275,7 @@ logl_curr = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_curr,g_basis,false), 
 
 logl_prop = f_logl_pw(f_basistofunction(g_basis.x,0,g_coef_prop.prop,g_basis,false), q1, q2, var1_curr, SSE_prop);
 
-ratio = min(1, exp(logl_prop-logl_curr));
+ratio = min(1, exp(-logl_prop+logl_curr));
 
 u = rand;
 if (u <= ratio)
