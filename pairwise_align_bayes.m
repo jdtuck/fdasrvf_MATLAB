@@ -52,7 +52,7 @@ function out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
 % out.ydist: amplitude distance posterior
 
 if nargin < 4
-    mcmcopts.iter = 2e4;
+    mcmcopts.iter = 1000;
     mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
     mcmcopts.alpha0 = 0.1;
     mcmcopts.beta0 = 0.1;
