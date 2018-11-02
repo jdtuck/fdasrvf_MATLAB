@@ -7,6 +7,8 @@ classdef fdacurve
     properties
         beta      % (n,T,K) matrix defining n dimensional curve on T samples with K curves
         q         % (n,T,K) matrix defining n dimensional srvf on T samples with K srvfs
+        betan     % aligned curves
+        qn        % aligned srvfs
         basis     % calculated basis
         beta_mean % karcher mean curve
         q_mean    % karcher mean srvf
@@ -119,21 +121,21 @@ classdef fdacurve
                 if option.parallel
                     parfor i=1:K
                         q1=obj.q(:,:,i);
-
+                        
                         % Compute shooting vector from mu to q_i
                         [qn,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
                         gamma(:,i) = gamI;
                         [qn,~] = Find_Best_Rotation(mu,qn);
-
+                        
                         q1dotq2=InnerProd_Q(mu,qn);
-
+                        
                         % Compute shooting vector
                         if q1dotq2>1
                             q1dotq2=1;
                         end
-
+                        
                         d = acos(q1dotq2);
-
+                        
                         u=qn-q1dotq2*mu;
                         normu=sqrt(InnerProd_Q(u,u));
                         if normu>10^-4
@@ -141,52 +143,52 @@ classdef fdacurve
                         else
                             w=zeros(size(qn));
                         end
-
+                        
                         % Project to tangent space of manifold to obtain v_i
                         if obj.closed
                             v1(:,:,i)=projectTangent(w,q1);
                         else
                             v1(:,:,i)=w;
                         end
-
+                        
                         sumv=sumv+v1(:,:,i);
                         sumnd_t=sumnd_t+d^2;
                     end
                 else
                     for i=1:K
-                    q1=obj.q(:,:,i);
-                    
-                    % Compute shooting vector from mu to q_i
-                    [qn,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
-                    gamma(:,i) = gamI;
-                    [qn,~] = Find_Best_Rotation(mu,qn);
-                    
-                    q1dotq2=InnerProd_Q(mu,qn);
-                    
-                    % Compute shooting vector
-                    if q1dotq2>1
-                        q1dotq2=1;
-                    end
-                    
-                    d = acos(q1dotq2);
-                    
-                    u=qn-q1dotq2*mu;
-                    normu=sqrt(InnerProd_Q(u,u));
-                    if normu>10^-4
-                        w=u*acos(q1dotq2)/normu;
-                    else
-                        w=zeros(size(qn));
-                    end
-                    
-                    % Project to tangent space of manifold to obtain v_i
-                    if obj.closed
-                        v1(:,:,i)=projectTangent(w,q1);
-                    else
-                        v1(:,:,i)=w;
-                    end
-                    
-                    sumv=sumv+v1(:,:,i);
-                    sumnd_t=sumnd_t+d^2;
+                        q1=obj.q(:,:,i);
+                        
+                        % Compute shooting vector from mu to q_i
+                        [qn,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                        gamma(:,i) = gamI;
+                        [qn,~] = Find_Best_Rotation(mu,qn);
+                        
+                        q1dotq2=InnerProd_Q(mu,qn);
+                        
+                        % Compute shooting vector
+                        if q1dotq2>1
+                            q1dotq2=1;
+                        end
+                        
+                        d = acos(q1dotq2);
+                        
+                        u=qn-q1dotq2*mu;
+                        normu=sqrt(InnerProd_Q(u,u));
+                        if normu>10^-4
+                            w=u*acos(q1dotq2)/normu;
+                        else
+                            w=zeros(size(qn));
+                        end
+                        
+                        % Project to tangent space of manifold to obtain v_i
+                        if obj.closed
+                            v1(:,:,i)=projectTangent(w,q1);
+                        else
+                            v1(:,:,i)=w;
+                        end
+                        
+                        sumv=sumv+v1(:,:,i);
+                        sumnd_t=sumnd_t+d^2;
                     end
                 end
                 sumd(iter+1) = sumnd_t;
@@ -223,6 +225,8 @@ classdef fdacurve
                     delete(gcp('nocreate'))
                 end
             end
+            
+            
             obj.beta_mean = betamean;
             obj.q_mean = mu;
             obj.gams = gamma;
@@ -275,7 +279,7 @@ classdef fdacurve
             
             if (~isempty(obj.gams))
                 figure(2); clf
-                if n == 2 
+                if n == 2
                     plot(obj.beta_mean(1,:),obj.beta_mean(2,:))
                 elseif n == 3
                     plot3(obj.beta_mean(1,:),obj.beta_mean(2,:),obj.beta_mean(3,:))
