@@ -54,6 +54,7 @@ for ctr = 0:end_idx
             end
         else
             q2new = q2n;
+            gamI = linspace(0,1,T);
         end
         
     else

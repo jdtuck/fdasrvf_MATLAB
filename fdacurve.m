@@ -89,6 +89,7 @@ classdef fdacurve
             mu=obj.q(:,:,shape);
             iter = 1;
             T = size(mu,2);
+            n = size(mu,1);
             K = size(obj.q,3);
             gamma = zeros(T,K);
             sumd = zeros(1,option.MaxItr+1);
@@ -105,7 +106,7 @@ classdef fdacurve
                     obj.basis=Basis_Normal_A(mu);
                 end
                 
-                sumv=zeros(2,T);
+                sumv=zeros(n,T);
                 sumd(iter+1)=0;
                 
                 for i=1:K
@@ -130,7 +131,7 @@ classdef fdacurve
                     if normu>10^-4
                         w=u*acos(q1dotq2)/normu;
                     else
-                        w=zeros(2,T);
+                        w=zeros(size(qn));
                     end
                     
                     % Project to tangent space of manifold to obtain v_i
@@ -138,7 +139,6 @@ classdef fdacurve
                         v1(:,:,i)=projectTangent(w,q1);
                     else
                         v1(:,:,i)=w;
-                        
                     end
                     
                     sumv=sumv+v1(:,:,i);
