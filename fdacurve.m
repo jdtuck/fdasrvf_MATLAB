@@ -14,6 +14,7 @@ classdef fdacurve
         v         % shooting vectors
         C         % karcher covariance
         closed    % closed curve if true
+        qun       % cost function
     end
     
     methods
@@ -112,6 +113,7 @@ classdef fdacurve
                 end
                 
                 sumv=zeros(n,T);
+                sumd(1) = Inf;
                 sumd(iter+1)=0;
                 sumnd_t = 0;
                 if option.parallel
@@ -225,6 +227,7 @@ classdef fdacurve
             obj.q_mean = mu;
             obj.gams = gamma;
             obj.v = v1;
+            obj.qun = sumd(1:iter);
             
         end
         
