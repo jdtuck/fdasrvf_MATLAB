@@ -100,7 +100,12 @@ classdef fdacurve
             delta=0.5;
             
             % Compute the Karcher mean
+            fprintf('Computing Karcher mean of %d curves in SRVF space...\n',K);
             while iter<=option.MaxItr
+                fprintf('updating step: r=%d\n', iter);
+                if iter == option.MaxItr
+                    fprintf('maximal number of iterations is reached. \n');
+                end
                 mu=mu/sqrt(InnerProd_Q(mu,mu));
                 if obj.closed
                     obj.basis=Basis_Normal_A(mu);
@@ -108,8 +113,45 @@ classdef fdacurve
                 
                 sumv=zeros(n,T);
                 sumd(iter+1)=0;
-                
-                for i=1:K
+                sumnd_t = 0;
+                if option.parallel
+                    parfor i=1:K
+                        q1=obj.q(:,:,i);
+
+                        % Compute shooting vector from mu to q_i
+                        [qn,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                        gamma(:,i) = gamI;
+                        [qn,~] = Find_Best_Rotation(mu,qn);
+
+                        q1dotq2=InnerProd_Q(mu,qn);
+
+                        % Compute shooting vector
+                        if q1dotq2>1
+                            q1dotq2=1;
+                        end
+
+                        d = acos(q1dotq2);
+
+                        u=qn-q1dotq2*mu;
+                        normu=sqrt(InnerProd_Q(u,u));
+                        if normu>10^-4
+                            w=u*acos(q1dotq2)/normu;
+                        else
+                            w=zeros(size(qn));
+                        end
+
+                        % Project to tangent space of manifold to obtain v_i
+                        if obj.closed
+                            v1(:,:,i)=projectTangent(w,q1);
+                        else
+                            v1(:,:,i)=w;
+                        end
+
+                        sumv=sumv+v1(:,:,i);
+                        sumnd_t=sumnd_t+d^2;
+                    end
+                else
+                    for i=1:K
                     q1=obj.q(:,:,i);
                     
                     % Compute shooting vector from mu to q_i
@@ -142,8 +184,10 @@ classdef fdacurve
                     end
                     
                     sumv=sumv+v1(:,:,i);
-                    sumd(iter+1)=sumd(iter+1)+d^2;
+                    sumnd_t=sumnd_t+d^2;
+                    end
                 end
+                sumd(iter+1) = sumnd_t;
                 
                 % Compute average direction of tangent vectors v_i
                 vbar=sumv/T;
@@ -171,6 +215,12 @@ classdef fdacurve
                 
             end
             
+            
+            if option.parallel == 1 && option.closepool == 1
+                if isempty(gcp('nocreate'))
+                    delete(gcp('nocreate'))
+                end
+            end
             obj.beta_mean = betamean;
             obj.q_mean = mu;
             obj.gams = gamma;
@@ -208,8 +258,15 @@ classdef fdacurve
             % Usage: obj.plot()
             figure(1);clf;hold all;
             K = size(obj.beta,3);
+            n = size(obj.beta,1);
             for ii = 1:K
-                plot(obj.beta(1,:,ii),obj.beta(2,:,ii))
+                if n == 2
+                    plot(obj.beta(1,:,ii),obj.beta(2,:,ii))
+                elseif n == 3
+                    plot3(obj.beta(1,:,ii),obj.beta(2,:,ii),obj.beta(3,:,ii))
+                else
+                    error('Cant plot N > 3')
+                end
                 title('Curves')
             end
             
