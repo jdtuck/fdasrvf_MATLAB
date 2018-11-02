@@ -123,11 +123,11 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
                         gamma(:,i) = gamI;
-                        [qn,~] = Find_Best_Rotation(mu,qn);
+                        [qn_t,~] = Find_Best_Rotation(mu,qn_t);
                         
-                        q1dotq2=InnerProd_Q(mu,qn);
+                        q1dotq2=InnerProd_Q(mu,qn_t);
                         
                         % Compute shooting vector
                         if q1dotq2>1
@@ -136,12 +136,12 @@ classdef fdacurve
                         
                         d = acos(q1dotq2);
                         
-                        u=qn-q1dotq2*mu;
+                        u=qn_t-q1dotq2*mu;
                         normu=sqrt(InnerProd_Q(u,u));
                         if normu>10^-4
                             w=u*acos(q1dotq2)/normu;
                         else
-                            w=zeros(size(qn));
+                            w=zeros(size(qn_t));
                         end
                         
                         % Project to tangent space of manifold to obtain v_i
@@ -159,11 +159,11 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
                         gamma(:,i) = gamI;
-                        [qn,~] = Find_Best_Rotation(mu,qn);
+                        [qn_t,~] = Find_Best_Rotation(mu,qn_t);
                         
-                        q1dotq2=InnerProd_Q(mu,qn);
+                        q1dotq2=InnerProd_Q(mu,qn_t);
                         
                         % Compute shooting vector
                         if q1dotq2>1
@@ -172,12 +172,12 @@ classdef fdacurve
                         
                         d = acos(q1dotq2);
                         
-                        u=qn-q1dotq2*mu;
+                        u=qn_t-q1dotq2*mu;
                         normu=sqrt(InnerProd_Q(u,u));
                         if normu>10^-4
                             w=u*acos(q1dotq2)/normu;
                         else
-                            w=zeros(size(qn));
+                            w=zeros(size(qn_t));
                         end
                         
                         % Project to tangent space of manifold to obtain v_i
@@ -226,6 +226,43 @@ classdef fdacurve
                 end
             end
             
+            betan1 = obj.beta;
+            qn1 = obj.q;
+            if option.parallel
+                parfor i=1:K
+                    q1=obj.q(:,:,i);
+                    beta1 = betan1(:,:,i);
+                    
+                    % Compute shooting vector from mu to q_i
+                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                    beta1 = R*beta1;
+                    beta1n = warp_curve_gamma(beta1,gamI);
+                    q1n = curve_to_q(beta1n);
+                    
+                    % Find optimal rotation
+                    [qn1(:,:,i),R] = Find_Best_Rotation(mu,q1n);
+                    betan1(:,:,i) = R*beta1n;
+                end
+                obj.betan = betan1;
+                obj.qn = qn1;
+            else
+                obj.betan = obj.beta;
+                obj.qn = obj.q;
+                for i=1:K
+                    q1=obj.q(:,:,i);
+                    beta1 = obj.beta(:,:,i);
+                    
+                    % Compute shooting vector from mu to q_i
+                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                    beta1 = R*beta1;
+                    beta1n = warp_curve_gamma(beta1,gamI);
+                    q1n = curve_to_q(beta1n);
+                    
+                    % Find optimal rotation
+                    [obj.qn(:,:,i),R] = Find_Best_Rotation(mu,q1n);
+                    obj.betan(:,:,i) = R*beta1n;
+                end
+            end
             
             obj.beta_mean = betamean;
             obj.q_mean = mu;
