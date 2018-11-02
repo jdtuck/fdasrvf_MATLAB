@@ -268,20 +268,27 @@ classdef fdacurve
                 elseif n == 3
                     plot3(obj.beta(1,:,ii),obj.beta(2,:,ii),obj.beta(3,:,ii))
                 else
-                    error('Cant plot N > 3')
+                    error('Can''t plot dimension > 3')
                 end
                 title('Curves')
             end
             
             if (~isempty(obj.gams))
                 figure(2); clf
-                plot(obj.beta_mean(1,:),obj.beta_mean(2,:))
+                if n == 2 
+                    plot(obj.beta_mean(1,:),obj.beta_mean(2,:))
+                elseif n == 3
+                    plot3(obj.beta_mean(1,:),obj.beta_mean(2,:),obj.beta_mean(3,:))
+                else
+                    error('Can''t plot dimension > 3')
+                end
                 title('Karcher Mean')
                 
                 figure(3); clf;
                 M = size(obj.beta,2);
                 plot((0:M-1)/(M-1), obj.gams, 'linewidth', 1);
                 axis square;
+                grid on;
                 title('Warping functions', 'fontsize', 16);
             end
         end
