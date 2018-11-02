@@ -3,7 +3,7 @@ classdef fdacurve
     % -------------------------------------------------------------------------
     % This class provides alignment methods for curves in R^n using the
     % SRVF framework
-    
+
     properties
         beta      % (n,T,K) matrix defining n dimensional curve on T samples with K curves
         q         % (n,T,K) matrix defining n dimensional srvf on T samples with K srvfs
@@ -17,8 +17,9 @@ classdef fdacurve
         C         % karcher covariance
         closed    % closed curve if true
         qun       % cost function
+        samples   % random samples
     end
-    
+
     methods
         function obj = fdacurve(beta, closed, N)
             %fdacurve Construct an instance of this class
@@ -26,9 +27,9 @@ classdef fdacurve
             %   beta: (n,T,K) matrix defining n dimensional curve on T samples with K curves
             %   closed: true or false if closed curve
             %   N: resample curve to N points
-            
+
             obj.closed = closed;
-            
+
             K = size(beta,3);
             n = size(beta,1);
             q = zeros(n,N,K);
@@ -41,7 +42,7 @@ classdef fdacurve
             obj.q = q;
             obj.beta = beta1;
         end
-        
+
         function obj = karcher_mean(obj,option)
             % KARCHER_MEAN Calculate karcher mean of group of curves
             % -------------------------------------------------------------------------
@@ -61,13 +62,13 @@ classdef fdacurve
             %
             % Output:
             % fdacurve object
-            
+
             if nargin < 2
                 option.parallel = 0;
                 option.closepool = 0;
                 option.MaxItr = 20;
             end
-            
+
             % time warping on a set of functions
             if option.parallel == 1
                 if isempty(gcp('nocreate'))
@@ -86,7 +87,7 @@ classdef fdacurve
                     end
                 end
             end
-            
+
             % Initialize mu as one of the shapes
             shape=1;
             mu=obj.q(:,:,shape);
@@ -101,7 +102,7 @@ classdef fdacurve
             tolv=10^-4;
             told=5*10^-3;
             delta=0.5;
-            
+
             % Compute the Karcher mean
             fprintf('Computing Karcher mean of %d curves in SRVF space...\n',K);
             while iter<=option.MaxItr
@@ -113,7 +114,7 @@ classdef fdacurve
                 if obj.closed
                     obj.basis=Basis_Normal_A(mu);
                 end
-                
+
                 sumv=zeros(n,T);
                 sumd(1) = Inf;
                 sumd(iter+1)=0;
@@ -121,21 +122,21 @@ classdef fdacurve
                 if option.parallel
                     parfor i=1:K
                         q1=obj.q(:,:,i);
-                        
+
                         % Compute shooting vector from mu to q_i
                         [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
                         gamma(:,i) = gamI;
                         [qn_t,~] = Find_Best_Rotation(mu,qn_t);
-                        
+
                         q1dotq2=InnerProd_Q(mu,qn_t);
-                        
+
                         % Compute shooting vector
                         if q1dotq2>1
                             q1dotq2=1;
                         end
-                        
+
                         d = acos(q1dotq2);
-                        
+
                         u=qn_t-q1dotq2*mu;
                         normu=sqrt(InnerProd_Q(u,u));
                         if normu>10^-4
@@ -143,35 +144,35 @@ classdef fdacurve
                         else
                             w=zeros(size(qn_t));
                         end
-                        
+
                         % Project to tangent space of manifold to obtain v_i
                         if obj.closed
                             v1(:,:,i)=projectTangent(w,q1);
                         else
                             v1(:,:,i)=w;
                         end
-                        
+
                         sumv=sumv+v1(:,:,i);
                         sumnd_t=sumnd_t+d^2;
                     end
                 else
                     for i=1:K
                         q1=obj.q(:,:,i);
-                        
+
                         % Compute shooting vector from mu to q_i
                         [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
                         gamma(:,i) = gamI;
                         [qn_t,~] = Find_Best_Rotation(mu,qn_t);
-                        
+
                         q1dotq2=InnerProd_Q(mu,qn_t);
-                        
+
                         % Compute shooting vector
                         if q1dotq2>1
                             q1dotq2=1;
                         end
-                        
+
                         d = acos(q1dotq2);
-                        
+
                         u=qn_t-q1dotq2*mu;
                         normu=sqrt(InnerProd_Q(u,u));
                         if normu>10^-4
@@ -179,66 +180,66 @@ classdef fdacurve
                         else
                             w=zeros(size(qn_t));
                         end
-                        
+
                         % Project to tangent space of manifold to obtain v_i
                         if obj.closed
                             v1(:,:,i)=projectTangent(w,q1);
                         else
                             v1(:,:,i)=w;
                         end
-                        
+
                         sumv=sumv+v1(:,:,i);
                         sumnd_t=sumnd_t+d^2;
                     end
                 end
                 sumd(iter+1) = sumnd_t;
-                
+
                 % Compute average direction of tangent vectors v_i
                 vbar=sumv/T;
                 normvbar(iter)=sqrt(InnerProd_Q(vbar,vbar));
                 normv=normvbar(iter);
-                
+
                 if (normv>tolv) && abs(sumd(iter+1)-sumd(iter))>told
                     % Update mu in direction of vbar
                     mu=cos(delta*normvbar(iter))*mu+sin(delta*normvbar(iter))*vbar/normvbar(iter);
-                    
+
                     % Project the updated mean to the affine (or closed) shape manifold
                     if obj.closed
                         mu = ProjectC(mu);
                     end
-                    
+
                     x=q_to_curve(mu);
                     a=-calculateCentroid(x);
                     betamean=x+repmat(a,1,T);
-                    
+
                 else
                     break
                 end
-                
+
                 iter=iter+1;
-                
+
             end
-            
-            
+
+
             if option.parallel == 1 && option.closepool == 1
                 if isempty(gcp('nocreate'))
                     delete(gcp('nocreate'))
                 end
             end
-            
+
             betan1 = obj.beta;
             qn1 = obj.q;
             if option.parallel
                 parfor i=1:K
                     q1=obj.q(:,:,i);
                     beta1 = betan1(:,:,i);
-                    
+
                     % Compute shooting vector from mu to q_i
                     [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
                     beta1 = R*beta1;
                     beta1n = warp_curve_gamma(beta1,gamI);
                     q1n = curve_to_q(beta1n);
-                    
+
                     % Find optimal rotation
                     [qn1(:,:,i),R] = Find_Best_Rotation(mu,q1n);
                     betan1(:,:,i) = R*beta1n;
@@ -251,27 +252,27 @@ classdef fdacurve
                 for i=1:K
                     q1=obj.q(:,:,i);
                     beta1 = obj.beta(:,:,i);
-                    
+
                     % Compute shooting vector from mu to q_i
                     [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
                     beta1 = R*beta1;
                     beta1n = warp_curve_gamma(beta1,gamI);
                     q1n = curve_to_q(beta1n);
-                    
+
                     % Find optimal rotation
                     [obj.qn(:,:,i),R] = Find_Best_Rotation(mu,q1n);
                     obj.betan(:,:,i) = R*beta1n;
                 end
             end
-            
+
             obj.beta_mean = betamean;
             obj.q_mean = mu;
             obj.gams = gamma;
             obj.v = v1;
             obj.qun = sumd(1:iter);
-            
+
         end
-        
+
         function obj = karcher_cov(obj)
             % KARCHER_COV Calculate karcher covariance
             % -------------------------------------------------------------------------
@@ -284,18 +285,99 @@ classdef fdacurve
             %
             % Output:
             % fdacurve object
-            
-            [~,T,K] = size(obj.v);
-            
-            obj.C=zeros(2*T);
+
+            [n,T,K] = size(obj.v);
+
+            obj.C=zeros(n*T);
             for i=1:K
                 w=obj.v(:,:,i);
-                w=[w(1,:) w(2,:)];
+                if n == 2
+                    w=[w(1,:) w(2,:)];
+                elseif n == 3
+                    w=[w(1,:) w(2,:) w(3,:)];
+                else
+                    error('Not Implmented for dimension > 3')
+                end
                 obj.C=obj.C+w'*w;
             end
             obj.C=obj.C/(K-1);
         end
-        
+
+        function obj = sample_shapes(obj, N, m)
+            % SAMPLE_SHAPES Sample shapes from generative model
+            % -------------------------------------------------------------------------
+            % This function samples shapes from a generative model using a
+            % wrapped normal density on shape pca space
+            %
+            % Usage:  obj.sample_shapes()
+            %
+            % Input:
+            %   N: number of sample shapes
+            %   m: number of principal components
+            %
+            % Output:
+            % fdacurve object
+
+            if nargin < 3
+                N = 10;
+                m = 3;
+            elseif nargin < 2
+                N = 10;
+            end
+
+            [U, S, ~] = svd(obj.C);
+
+            % number of shapes in calculating exp mapping
+            if obj.closed
+                n1 = 10;
+            else
+                n1 = 2;
+            end
+            epsilon=1/(n1-1);
+
+            n = size(obj.beta_mean,1);
+            T = size(obj.beta_mean,2);
+
+            obj.samples = zeros(n,T,N);
+            for i = 1:N
+                v1 = zeros(n,T);
+                for dir = 1:m
+                    if n == 2
+                        Utemp = [U(1:T,dir)';U(T+1:2*T,dir)'];
+                    elseif n == 3
+                        Utemp = [U(1:T,dir)';U(T+1:2*T,dir)';U(2*T+1:3*T,dir)'];
+                    else
+                        error('Not Implmented for dimension > 3')
+                    end
+
+                    v1 = v1 + randn * sqrt(S(dir,dir))*Utemp;
+                end
+
+                % q = exp_mu(v) using n1 steps
+                q1 = obj.q_mean;
+                for j = 1:n1-1
+                    normv = sqrt(InnerProd_Q(v1,v1));
+
+                    if normv < 1e-4
+                        q2 = mu;
+                    else
+                        q2 = cos(epsilon*normv)*q1+sin(epsilon*normv)*v1/normv;
+                        if obj.closed
+                            q2 = ProjectC(q2);
+                        end
+                    end
+
+                    % parallel translate tangent vector
+                    v1=v1-2*InnerProd_Q(v1,q2)/InnerProd_Q(q1+q2,q1+q2)*(q1+q2);
+
+                    q1 = q2;
+                end
+
+                obj.samples(:,:,i) = q_to_curve(q2);
+            end
+
+        end
+
         function plot(obj)
             % plot plot curve mean results
             % -------------------------------------------------------------------------
@@ -313,7 +395,7 @@ classdef fdacurve
                 end
                 title('Curves')
             end
-            
+
             if (~isempty(obj.gams))
                 figure(2); clf
                 if n == 2
@@ -324,7 +406,7 @@ classdef fdacurve
                     error('Can''t plot dimension > 3')
                 end
                 title('Karcher Mean')
-                
+
                 figure(3); clf;
                 M = size(obj.beta,2);
                 plot((0:M-1)/(M-1), obj.gams, 'linewidth', 1);
@@ -335,4 +417,3 @@ classdef fdacurve
         end
     end
 end
-
