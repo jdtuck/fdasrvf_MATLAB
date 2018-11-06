@@ -1,5 +1,5 @@
 function [dist,X2n,q2n,X1,q1]=pairwise_align_curves(X1,X2,option)
-% PAIRWISE_ALIGN_CURVES registers to curves
+% PAIRWISE_ALIGN_CURVES registers two curves
 % -------------------------------------------------------------------------
 % Convert to SRSF
 %
@@ -15,6 +15,7 @@ function [dist,X2n,q2n,X1,q1]=pairwise_align_curves(X1,X2,option)
 % option.plot_geod = true;  % plot geodesic
 % option.plot_reg = true;   % plot registration
 % option.plot_reparam = true;  % plot reparametization
+% option.print = true;  % print output
 % option.N = 200;  % resample curve to N points
 % option.stp = 6;  % number of steps in geodesic
 % option.closed = false;  % closed curve
@@ -34,6 +35,7 @@ if nargin < 3
     option.plot_geod = true;
     option.plot_reg = true;
     option.plot_reparam = true;
+    option.print = true;
     option.N = 200;
     option.stp = 6;
     option.closed = false;
@@ -44,8 +46,10 @@ X1 = ReSampleCurve(X1,option.N);
 X2 = ReSampleCurve(X2,option.N);
 
 %Center curves, not really needed but good for display purposes
-X1 = X1 - repmat(mean(X1,2),1,size(X1,2));
-X2 = X2 - repmat(mean(X2,2),1,size(X2,2));
+a = -calculateCentroid(X1);
+X1 = X1 + repmat(a,1,option.N);
+a = -calculateCentroid(X2);
+X2 = X2 + repmat(a,1,option.N);
 
 % Form the q function for representing curves and find best rotation
 q1 = curve_to_q(X1);
@@ -69,17 +73,17 @@ X2n = R*X2n;
 
 % Forming geodesic between the registered curves
 dist = acos(InnerProd_Q(q1,q2n));
-fprintf('The distance between the two curves is %0.3f\n',dist)
-stp = 6;
+if option.print
+    fprintf('The distance between the two curves is %0.3f\n',dist)
+end
 if(option.plot_geod)
-    PsiQ = geodesic_sphere_Full(q1,q2,stp,option.closed);
+    PsiQ = geodesic_sphere_Full(q1,q2,option.stp,option.closed);
     p2n = q_to_curve(q2n);
     Path_Plot(PsiQ,p2n,10,[73,6])
-end
-
-Geod = zeros(n,option.N,stp+1);
-for j=1:stp+1
-    Geod(:,:,j)=q_to_curve(PsiQ(:,:,j));
+    Geod = zeros(n,option.N,option.stp+1);
+    for j=1:option.stp+1
+        Geod(:,:,j)=q_to_curve(PsiQ(:,:,j));
+    end
 end
 % Displaying the correspondence
 if(option.plot_reg)

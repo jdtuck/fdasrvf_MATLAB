@@ -21,13 +21,17 @@ classdef fdacurve
     end
 
     methods
-        function obj = fdacurve(beta, closed, N)
+        function obj = fdacurve(beta, closed, N, scale)
             %fdacurve Construct an instance of this class
             % Input:
             %   beta: (n,T,K) matrix defining n dimensional curve on T samples with K curves
             %   closed: true or false if closed curve
             %   N: resample curve to N points
+            %   scale: scale curve to length 1 (true/false)
 
+            if nargin < 4
+                scale = true;
+            end
             obj.closed = closed;
 
             K = size(beta,3);
@@ -36,8 +40,9 @@ classdef fdacurve
             beta1 = zeros(n,N,K);
             for ii = 1:K
                 beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N);
-                beta1(:,:,ii) = beta1(:,:,ii) - repmat(mean(beta1(:,:,ii),2),1,size(beta1(:,:,ii),2));
-                q(:,:,ii) = curve_to_q(beta1(:,:,ii));
+                a=-calculateCentroid(beta1(:,:,ii));
+                beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
+                q(:,:,ii) = curve_to_q(beta1(:,:,ii),scale);
             end
             obj.q = q;
             obj.beta = beta1;
@@ -373,7 +378,9 @@ classdef fdacurve
                     q1 = q2;
                 end
 
-                obj.samples(:,:,i) = q_to_curve(q2);
+                beta1s = q_to_curve(q2);
+                a = -calculateCentroid(beta1s);
+                obj.samples(:,:,i) = beta1s + repmat(a,1,T);
             end
 
         end

@@ -3,7 +3,7 @@ function centroid = calculateCentroid(beta)
 % -------------------------------------------------------------------------
 % Calculate centroid of curve
 % 
-% Usage: q = curve_to_q(p)
+% Usage: centroid = calculateCentroid(beta)
 %%
 % Input:
 % beta: matrix (n,T) defining T points on n dimensional curve
