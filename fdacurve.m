@@ -225,13 +225,6 @@ classdef fdacurve
 
             end
 
-
-            if option.parallel == 1 && option.closepool == 1
-                if isempty(gcp('nocreate'))
-                    delete(gcp('nocreate'))
-                end
-            end
-
             betan1 = obj.beta;
             qn1 = obj.q;
             if option.parallel
@@ -270,6 +263,12 @@ classdef fdacurve
                 end
             end
 
+            if option.parallel == 1 && option.closepool == 1
+                if isempty(gcp('nocreate'))
+                    delete(gcp('nocreate'))
+                end
+            end
+            
             obj.beta_mean = betamean;
             obj.q_mean = mu;
             obj.gams = gamma;
