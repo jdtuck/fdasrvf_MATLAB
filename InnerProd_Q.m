@@ -14,6 +14,6 @@ function val = InnerProd_Q(q1,q2)
 % Output:
 % val: inner product
 [~,T] = size(q1);
-val = trapz(linspace(0,1,T),sum(q1.*q2));
+val=sum(sum(q1.*q2))/T;
 
 return;
