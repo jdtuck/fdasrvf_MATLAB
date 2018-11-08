@@ -72,7 +72,15 @@ end
 X2n = R*X2n;
 
 % Forming geodesic between the registered curves
-dist = acos(InnerProd_Q(q1,q2n));
+q1dotq2=InnerProd_Q(q1,q2n);
+
+% Compute shooting vector
+if q1dotq2>1
+    q1dotq2=1;
+end
+
+dist = acos(q1dotq2);
+
 if option.print
     fprintf('The distance between the two curves is %0.3f\n',dist)
 end
