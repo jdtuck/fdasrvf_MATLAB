@@ -420,6 +420,22 @@ classdef fdacurve
                 grid on;
                 title('Warping functions', 'fontsize', 16);
             end
+            
+            if (~isempty(obj.samples))
+                figure(4);clf;hold all;
+                K = size(obj.samples,3);
+                n = size(obj.samples,1);
+                for ii = 1:K
+                    if n == 2
+                        plot(obj.samples(1,:,ii),obj.samples(2,:,ii))
+                    elseif n == 3
+                        plot3(obj.samples(1,:,ii),obj.samples(2,:,ii),obj.samples(3,:,ii))
+                    else
+                        error('Can''t plot dimension > 3')
+                    end
+                    title('Sample Curves')
+                end
+            end
         end
     end
 end
