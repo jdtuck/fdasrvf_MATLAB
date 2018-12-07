@@ -328,7 +328,25 @@ classdef fdacurve
             elseif nargin < 2
                 N = 10;
             end
+            
+            % calculate lengths
+            len = zeros(1,size(obj.beta,3));
+            T = size(obj.beta,2);
+            for ii=1:size(obj.beta,3)
+                p = obj.beta(:,:,ii);
+                v1=gradient(p,1/(T-1));
+                len(ii) = sum(sqrt(sum(v1.*v1)))/T;
+            end
 
+            if (length(unique(len))==1)
+                scale = 1;
+            else
+                pd = makedist('uniform',min(len),max(len));
+            end
+            
+            % random warping
+            gam_s = randomGamma(obj.gams.',N);
+      
             [U, S, ~] = svd(obj.C);
 
             % number of shapes in calculating exp mapping
@@ -377,10 +395,19 @@ classdef fdacurve
                     q1 = q2;
                 end
 
-                beta1s = q_to_curve(q2);
+                % random scale 
+                if (length(unique(len))>1)
+                    scale = random(pd);
+                end
+                beta1s = q_to_curve(q2,scale);
                 a = -calculateCentroid(beta1s);
-                obj.samples(:,:,i) = beta1s + repmat(a,1,T);
+                tmp_beta = beta1s + repmat(a,1,T);
+                
+                obj.samples(:,:,i) = warp_curve_gamma(tmp_beta,gam_s(i,:));
+                
             end
+            
+            
 
         end
 
