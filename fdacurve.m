@@ -18,6 +18,7 @@ classdef fdacurve
         closed    % closed curve if true
         qun       % cost function
         samples   % random samples
+        gamr      % random warping functions
     end
 
     methods
@@ -404,6 +405,7 @@ classdef fdacurve
                 tmp_beta = beta1s + repmat(a,1,T);
                 
                 obj.samples(:,:,i) = warp_curve_gamma(tmp_beta,gam_s(i,:));
+                obj.gamr = gam_s;
                 
             end
             
@@ -411,18 +413,24 @@ classdef fdacurve
 
         end
 
-        function plot(obj)
+        function plot(obj, color)
             % plot plot curve mean results
             % -------------------------------------------------------------------------
             % Usage: obj.plot()
+            if nargin < 2
+                color = false;
+            end
             figure(1);clf;hold all;
-            K = size(obj.beta,3);
-            n = size(obj.beta,1);
+            [n,T,K] = size(obj.beta);
             for ii = 1:K
                 if n == 2
                     plot(obj.beta(1,:,ii),obj.beta(2,:,ii))
                 elseif n == 3
-                    plot3(obj.beta(1,:,ii),obj.beta(2,:,ii),obj.beta(3,:,ii))
+                    if color
+                        plot3var(obj.beta(1,:,ii),obj.beta(2,:,ii),obj.beta(3,:,ii),linspace(0,1,T),1)
+                    else
+                        plot3(obj.beta(1,:,ii),obj.beta(2,:,ii),obj.beta(3,:,ii))
+                    end
                 else
                     error('Can''t plot dimension > 3')
                 end
@@ -456,7 +464,11 @@ classdef fdacurve
                     if n == 2
                         plot(obj.samples(1,:,ii),obj.samples(2,:,ii))
                     elseif n == 3
-                        plot3(obj.samples(1,:,ii),obj.samples(2,:,ii),obj.samples(3,:,ii))
+                        if color
+                            plot3var(obj.samples(1,:,ii),obj.samples(2,:,ii),obj.samples(3,:,ii),linspace(0,1,T),1)
+                        else
+                            plot3(obj.samples(1,:,ii),obj.samples(2,:,ii),obj.samples(3,:,ii))
+                        end
                     else
                         error('Can''t plot dimension > 3')
                     end
@@ -465,4 +477,10 @@ classdef fdacurve
             end
         end
     end
+end
+
+function plot3var(x,y,z,c,lwd)
+surface('XData',[x(:) x(:)], 'YData',[y(:) y(:)], 'ZData',[z(:) z(:)], ...
+    'CData',[c(:) c(:)], 'FaceColor','none', 'EdgeColor','interp', ...
+    'Marker','none','linew',lwd)
 end
