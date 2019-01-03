@@ -6,7 +6,7 @@ function Nh = mcmc_ess(x)
 x = x(:);
 
 N = length(x);
-g = acf(x,N-1);
+g = acf(x,N-1,0);
 
 d = find((g)<0.05, 1);
 if isempty(d)
