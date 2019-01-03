@@ -1,4 +1,4 @@
-function basismat = create_basis_legendre(x, N)
+function basismat = create_basis_legendre(m, N)
 % CREATE_BASIS_LEGENDRE Create Basis Matrix for Legendre polynomials
 %%% compute the Legendre polynomial coefficients matrix coeff
 % coeff(i,j) gives the polynomial coefficient for term x^{j-1} in P_{i-1}(x)
@@ -13,7 +13,7 @@ else
     % simple case
     coeff = eye(N+1);
 end
-m = length(x);
+x = linspace(-1,1,m);%-1:2/(m-1):1; % Legendre polynomials are supported for |x|<=1
 x = x(:);
 %%% Evaluate the polynomials for every element in X
 basismat = cumprod([ones(m,1) x(:,ones(1,N))], 2) * coeff.';
