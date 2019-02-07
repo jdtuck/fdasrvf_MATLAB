@@ -14,13 +14,10 @@ function gam = rgam(N, sigma, num)
 % gam: matrix of warping functions
 
 gam = zeros(num,N);
-TT = N - 1;
-time = linspace(0,1,TT);
-mu = sqrt(ones(1,N-1)*TT/(N-1));
+time = linspace(0,1,N);
 omega = (2*pi);
 for k = 1:num
-    alpha_i = normrnd(0,sigma);
-    v = alpha_i * ones(1,TT);
+    v = zeros(1,N);
     cnt = 1;
     for l = 2:3
         alpha_i = normrnd(0,sigma);
@@ -32,11 +29,8 @@ for k = 1:num
             v = v + alpha_i*sqrt(2).*sin(cnt.*omega.*time);
         end
     end
-    v = v - ((mu*v.')*mu)/TT;
-    vn = norm(v)/sqrt(TT);
-    psi = cos(vn).*mu + sin(vn).*v./vn;
-    gam0 = [0 cumsum(psi.*psi)]./N;
-    gam(k,:) = (gam0-gam0(1))/(gam0(end)-gam0(1));  % slight change on scale
+    psi = exp_map(ones(1,N), v);
+    gam(k,:) = cumtrapz(time,psi.^2);
 end
 
 end
