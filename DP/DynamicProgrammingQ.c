@@ -213,6 +213,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	}
 
 	free(xy);
+    free(q1L);
 }
 
 int xycompare(const void *x1, const void *x2) {
