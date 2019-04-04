@@ -296,13 +296,8 @@ classdef fdacurve
             obj.C=zeros(n*T);
             for i=1:K
                 w=obj.v(:,:,i);
-                if n == 2
-                    w=[w(1,:) w(2,:)];
-                elseif n == 3
-                    w=[w(1,:) w(2,:) w(3,:)];
-                else
-                    error('Not Implmented for dimension > 3')
-                end
+                [m1,n1] = size(w);
+                w = reshape(w',1,m1*n1);
                 obj.C=obj.C+w'*w;
             end
             obj.C=obj.C/(K-1);
@@ -365,14 +360,7 @@ classdef fdacurve
             for i = 1:N
                 v1 = zeros(n,T);
                 for dir = 1:m
-                    if n == 2
-                        Utemp = [U(1:T,dir)';U(T+1:2*T,dir)'];
-                    elseif n == 3
-                        Utemp = [U(1:T,dir)';U(T+1:2*T,dir)';U(2*T+1:3*T,dir)'];
-                    else
-                        error('Not Implmented for dimension > 3')
-                    end
-
+                    Utemp = reshape(U(:,dir),T,n').';
                     v1 = v1 + randn * sqrt(S(dir,dir))*Utemp;
                 end
 
