@@ -21,7 +21,7 @@ end
 fn = f;
 if spline
     for j=1:n
-        fn(j,:) = interp1(linspace(0,1,T) , f(j,:) ,gamma,'maxima');
+        fn(j,:) = interp1(linspace(0,1,T) , f(j,:) ,gamma,'makima');
     end
 else
     for j=1:n
