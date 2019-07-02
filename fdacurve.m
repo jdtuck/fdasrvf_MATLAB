@@ -19,6 +19,7 @@ classdef fdacurve
         qun       % cost function
         samples   % random samples
         gamr      % random warping functions
+        cent      % center
     end
 
     methods
@@ -39,14 +40,17 @@ classdef fdacurve
             n = size(beta,1);
             q = zeros(n,N,K);
             beta1 = zeros(n,N,K);
+            cent1 = zeros(n,K);
             for ii = 1:K
                 beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N);
                 a=-calculateCentroid(beta1(:,:,ii));
                 beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
                 q(:,:,ii) = curve_to_q(beta1(:,:,ii),scale);
+                cent1(:,ii) = -a;
             end
             obj.q = q;
             obj.beta = beta1;
+            obj.cent = cent1;
         end
 
         function obj = karcher_mean(obj,option)
@@ -392,7 +396,7 @@ classdef fdacurve
                 a = -calculateCentroid(beta1s);
                 tmp_beta = beta1s + repmat(a,1,T);
                 
-                obj.samples(:,:,i) = warp_curve_gamma(tmp_beta,gam_s(i,:));
+                obj.samples(:,:,i) = warp_curve_gamma(tmp_beta,gam_s(i,:))+mean(obj.cent);
                 obj.gamr = gam_s;
                 
             end
