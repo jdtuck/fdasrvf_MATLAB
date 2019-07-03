@@ -396,7 +396,7 @@ classdef fdacurve
                 a = -calculateCentroid(beta1s);
                 tmp_beta = beta1s + repmat(a,1,T);
                 
-                obj.samples(:,:,i) = warp_curve_gamma(tmp_beta,gam_s(i,:))+mean(obj.cent);
+                obj.samples(:,:,i) = warp_curve_gamma(tmp_beta,gam_s(i,:))+repmat(mean(obj.cent,2),1,T);
                 obj.gamr = gam_s;
                 
             end
