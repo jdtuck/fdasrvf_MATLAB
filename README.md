@@ -65,9 +65,10 @@ Lu, Y., R. Herbei, and S. Kurtek, 2017: Bayesian registration of functions with 
 Computational and Graphical Statistics, 26, no. 4, 894–904.
 
 Lee, S. and S. Jung, 2017: Combined analysis of amplitude and phase variations in functional data. arXiv:1603.01775
-[stat.ME], 1–21.
+[stat.ME], 2017.
 
-J. D. Tucker, J. R. Lewis, and A. Srivastava, “Elastic Functional Principal 
-Component Regression,” Statistical Analysis and Data Mining, 10.1002/sam.11399, 2018.
+J. D. Tucker, J. R. Lewis, and A. Srivastava, ?Elastic Functional Principal Component Regression,? Statistical Analysis and Data Mining, vol. 12, no. 2, pp. 101-115, 2019.
+
+J. D. Tucker, J. R. Lewis, C. King, and S. Kurtek, ?A Geometric Approach for Computing Tolerance Bounds for Elastic Functional Data,? Journal of Applied Statistics, 10.1080/02664763.2019.1645818, 2019.
 
   [fex]:            https://www.mathworks.com/matlabcentral/fileexchange/66494-fdasrvf
