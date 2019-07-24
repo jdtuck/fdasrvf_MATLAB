@@ -1,7 +1,9 @@
 
-#include "DriverMexProb.h"
+#include "test/DriverMexProb.h"
 
 #ifdef MATLAB_MEX_FILE
+
+using namespace ROPTLIB;
 
 std::map<integer *, integer> *CheckMemoryDeleted;
 
@@ -15,7 +17,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
 	{
 		if (iter->second != 1)
-			std::cout << "Global address:" << iter->first << ", sharedtimes:" << iter->second << std::endl;
+			printf("Global address: %p, sharedtimes: %d\n", iter->first, iter->second);
 	}
 	delete CheckMemoryDeleted;
 	return;
@@ -42,8 +44,8 @@ void DriverMexProb(int &nlhs, mxArray ** &plhs, int &nrhs, const mxArray ** &prh
 	}
 
 	// Obtain manifold and iterate structure
-	Manifold *domain, **manifolds;
-	Variable *initialX;
+	Manifold *domain = nullptr, **manifolds = nullptr;
+	Variable *initialX = nullptr, *soln = nullptr;
 	Element **elements;
 	integer *powsinterval, numoftype, numoftotal;
 
@@ -61,7 +63,6 @@ void DriverMexProb(int &nlhs, mxArray ** &plhs, int &nrhs, const mxArray ** &prh
 			domain->CheckParams();
 		}
 	}
-
 	bool HasHHR = false;
 	if (nrhs >= 6)
 	{
@@ -75,7 +76,7 @@ void DriverMexProb(int &nlhs, mxArray ** &plhs, int &nrhs, const mxArray ** &prh
 	domain->SetHasHHR(HasHHR);
 	initialX = new ProductElement(elements, numoftotal, powsinterval, numoftype);
 	//initialX->Print("initialX");
-    
+
 	// initialize the initial iterate
 	if (nrhs >= 7)
 	{
@@ -90,24 +91,33 @@ void DriverMexProb(int &nlhs, mxArray ** &plhs, int &nrhs, const mxArray ** &prh
 		initialX->RandInManifold();
 	}
 
-// 	initialX->Print("initialX", false);
+	// 	initialX->Print("initialX", false);
 
+	if (nrhs >= 8)
+	{
+		soln = new ProductElement(elements, numoftotal, powsinterval, numoftype);
+		if (!mxIsStruct(prhs[7]))
+		{
+			mexErrMsgTxt("Seventh input argument is not a structure.");
+		}
+		mexProblem::ObtainElementFromMxArray(soln, prhs[7]);
+	}
 	//mexProblem::ObtainMxArrayFromElement(plhs[0], initialX);
 
 	// Define the problem
 	Problem *Prob = new mexProblem(prhs[0], prhs[1], prhs[2]);
 	Prob->SetDomain(domain);
-//	Vector *egf = initialX->ConstructEmpty();
-//	Prob->EucGrad(initialX, egf);
-//	delete egf;
-
+	//	Vector *egf = initialX->ConstructEmpty();
+	//	Prob->EucGrad(initialX, egf);
+	//	delete egf;
 	// solve the optimization problem
-	ParseSolverParamsAndOptimizing(prhs[3], Prob, initialX, plhs);
+	ParseSolverParamsAndOptimizing(prhs[3], Prob, initialX, soln, plhs);
 
 	delete Prob;
 	delete domain;
 	delete initialX;
-	
+	delete soln;
+
 	for (integer i = 0; i < numoftype; i++)
 	{
 		delete manifolds[i];

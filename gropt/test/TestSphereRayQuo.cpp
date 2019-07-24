@@ -1,16 +1,12 @@
+﻿
+#include "test/TestSphereRayQuo.h"
 
-#include "TestSphereRayQuo.h"
+using namespace ROPTLIB;
 
-#if !defined(MATLAB_MEX_FILE) && defined(TESTSPHERERAYQUO)
-
-std::map<integer *, integer> *CheckMemoryDeleted;
-
-int main(void)
+void testSphereRayQuo(void)
 {
-	init_genrand(0);
-
 	// size of the Sphere
-	integer n = 12;
+	integer n = 40;
 
 	// Generate the matrices in the problem.
 	double *B = new double[n * n + 1];
@@ -19,32 +15,190 @@ int main(void)
 	{
 		for (integer j = i; j < n; j++)
 		{
-			B[i + j * n] = genrand_gaussian();
+			B[i + j * n] = genrandnormal();
 			B[j + i * n] = B[i + j * n];
 		}
 	}
 	D[0] = 1;
 
-	CheckMemoryDeleted = new std::map<integer *, integer>;
-
 	testSphereRayQuo(B, D, n);
-	std::map<integer *, integer>::iterator iter = CheckMemoryDeleted->begin();
-	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
-	{
-		if (iter->second != 1)
-			std::cout << "Global address:" << iter->first << ", sharedtimes:" << iter->second << std::endl;
-	}
-	delete CheckMemoryDeleted;
+
 	delete[] B;
 
-#ifdef _WIN64
-#ifdef _DEBUG
-	_CrtDumpMemoryLeaks();
-#endif
-#endif
-	return 0;
 }
-#endif
+
+void testSphereRayQuo(double *B, double *D, integer n, double *X, double *Xopt)
+{
+	// Obtain an initial iterate by taking the Q factor of qr decomposition
+	// lapack is used
+	SphereVariable SphereX(n);
+	if (X == nullptr)
+	{
+		SphereX.RandInManifold();
+	}
+	else
+	{
+		double *SphereXptr = SphereX.ObtainWriteEntireData();
+		for (integer i = 0; i < n; i++)
+			SphereXptr[i] = X[i];
+	}
+	// Generate the matrices in the Brockett problem with p = 1
+	// In this case, it is the Rayleigh Quotient problem on the Sphere.
+
+	// Define the manifold
+	Sphere Domain(n);
+	Domain.ChooseSphereParamsSet2();
+
+	// Define the Brockett problem with p = 1
+	// In this case, it is the Rayleigh Quotient problem on the Sphere.
+	StieBrockett Prob(B, D, n, 1);
+	Prob.SetDomain(&Domain);
+
+	//Domain.CheckParams();
+	//Prob.CheckGradHessian(&SphereX);
+
+	//Domain.CheckIntrExtr(&SphereX);
+	//Domain.CheckRetraction(&SphereX);
+	//Domain.CheckDiffRetraction(&SphereX);
+	//Domain.CheckLockingCondition(&SphereX);
+	//Domain.CheckcoTangentVector(&SphereX);
+	//Domain.CheckIsometryofVectorTransport(&SphereX);
+	//Domain.CheckIsometryofInvVectorTransport(&SphereX);
+	//Domain.CheckVecTranComposeInverseVecTran(&SphereX);
+	//Domain.CheckTranHInvTran(&SphereX);
+	//Domain.CheckHaddScaledRank1OPE(&SphereX);
+
+	//// test RSD
+	//printf("********************************Check all line search algorithm in RSD*****************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)
+	//{
+	//	RSD *RSDsolver = new RSD(&Prob, &SphereX);
+	//	RSDsolver->LineSearch_LS = static_cast<LSAlgo> (i);
+	//	RSDsolver->Debug = FINALRESULT;
+	//	RSDsolver->CheckParams();
+	//	RSDsolver->Run();
+	//	delete RSDsolver;
+	//}
+
+	//// test RNewton
+	//printf("********************************Check all line search algorithm in RNewton*************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)
+	//{
+	//	RNewton *RNewtonsolver = new RNewton(&Prob, &SphereX);
+	//	RNewtonsolver->LineSearch_LS = static_cast<LSAlgo> (i);
+	//	RNewtonsolver->Debug = FINALRESULT;
+	//	RNewtonsolver->CheckParams();
+	//	RNewtonsolver->Run();
+	//	delete RNewtonsolver;
+	//}
+
+	//// test RCG
+	//printf("********************************Check all Formulas in RCG*************************************\n");
+	//for (integer i = 0; i < RCGMETHODSLENGTH; i++)
+	//{
+	//	RCG *RCGsolver = new RCG(&Prob, &SphereX);
+	//	RCGsolver->RCGmethod = static_cast<RCGmethods> (i);
+	//	RCGsolver->LineSearch_LS = STRONGWOLFE;
+	//	RCGsolver->LS_beta = 0.1;
+	//	RCGsolver->Debug = FINALRESULT;
+	//	RCGsolver->CheckParams();
+	//	RCGsolver->Run();
+	//	delete RCGsolver;
+	//}
+
+	//// test RBroydenFamily
+	//printf("********************************Check all line search algorithm in RBroydenFamily*************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)
+	//{
+	//	RBroydenFamily *RBroydenFamilysolver = new RBroydenFamily(&Prob, &SphereX);
+	//	RBroydenFamilysolver->LineSearch_LS = static_cast<LSAlgo> (i);
+	//	RBroydenFamilysolver->Debug = FINALRESULT;
+	//	RBroydenFamilysolver->CheckParams();
+	//	RBroydenFamilysolver->Run();
+	//	delete RBroydenFamilysolver;
+	//}
+
+	//// test RWRBFGS
+	//printf("********************************Check all line search algorithm in RWRBFGS*************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)
+	//{
+	//	RWRBFGS *RWRBFGSsolver = new RWRBFGS(&Prob, &SphereX);
+	//	RWRBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
+	//	RWRBFGSsolver->Debug = FINALRESULT; //ITERRESULT;//
+	//	RWRBFGSsolver->CheckParams();
+	//	RWRBFGSsolver->Run();
+	//	delete RWRBFGSsolver;
+	//}
+
+	//// test RBFGS
+	//printf("********************************Check all line search algorithm in RBFGS*************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)
+	//{
+	//	RBFGS *RBFGSsolver = new RBFGS(&Prob, &SphereX);
+	//	RBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
+	//	RBFGSsolver->Debug = FINALRESULT;
+	//	RBFGSsolver->CheckParams();
+	//	RBFGSsolver->Run();
+	//	delete RBFGSsolver;
+	//}
+
+	// test LRBFGS
+	//printf("********************************Check all line search algorithm in LRBFGS*************************************\n");
+	for (integer i = 0; i < 1; i++) //INPUTFUN
+	{
+		LRBFGS *LRBFGSsolver = new LRBFGS(&Prob, &SphereX);
+		LRBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
+		LRBFGSsolver->Debug = FINALRESULT;
+		//LRBFGSsolver->CheckParams();
+		LRBFGSsolver->Max_Iteration = 50;
+		LRBFGSsolver->Run();
+		if (LRBFGSsolver->Getnormgfgf0() < 1e-6)
+			printf("SUCCESS!\n");
+		else
+			printf("FAIL!\n");
+		delete LRBFGSsolver;
+	}
+
+	//// test RTRSD
+	//printf("********************************Check RTRSD*************************************\n");
+	//RTRSD RTRSDsolver(&Prob, &SphereX);
+	//RTRSDsolver.Debug = FINALRESULT;
+	//RTRSDsolver.CheckParams();
+	//RTRSDsolver.Run();
+
+	//// test RTRNewton
+	//printf("********************************Check RTRNewton*************************************\n");
+	//RTRNewton RTRNewtonsolver(&Prob, &SphereX);
+	//RTRNewtonsolver.Debug = FINALRESULT;
+	//RTRNewtonsolver.CheckParams();
+	//RTRNewtonsolver.Run();
+
+	//// test RTRSR1
+	//printf("********************************Check RTRSR1*************************************\n");
+	//RTRSR1 RTRSR1solver(&Prob, &SphereX);
+	//RTRSR1solver.Debug = FINALRESULT;
+	//RTRSR1solver.CheckParams();
+	//RTRSR1solver.Run();
+
+	//// test LRTRSR1
+	//printf("********************************Check LRTRSR1*************************************\n");
+	//LRTRSR1 LRTRSR1solver(&Prob, &SphereX);
+	//LRTRSR1solver.Debug = FINALRESULT;
+	//LRTRSR1solver.CheckParams();
+	//LRTRSR1solver.Run();
+
+	//// Check gradient and Hessian
+	//Prob.CheckGradHessian(&SphereX);
+	//const Variable *xopt = RTRNewtonsolver.GetXopt();
+	//Prob.CheckGradHessian(xopt);
+	//   
+	//if (Xopt != nullptr)
+	//{
+	//	const double *xoptptr = xopt->ObtainReadData();
+	//	for (integer i = 0; i < n; i++)
+	//		Xopt[i] = xoptptr[i];
+	//}
+};
 
 #ifdef MATLAB_MEX_FILE
 
@@ -74,13 +228,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mexErrMsgTxt("The size of the initial X is not correct!\n");
     }
     
-	std::cout << "n:" << n << std::endl;
+	printf("n:%d\n", n);
 
 	/*create output matrix*/
 	plhs[0] = mxCreateDoubleMatrix(n, 1, mxREAL);
 	Xopt = mxGetPr(plhs[0]);
 
-	init_genrand(0);
+	genrandseed(0);
 
 	CheckMemoryDeleted = new std::map<integer *, integer>;
 	testSphereRayQuo(B, D, n, X, Xopt);
@@ -88,183 +242,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
 	{
 		if (iter->second != 1)
-			std::cout << "Global address:" << iter->first << ", sharedtimes:" << iter->second << std::endl;
+			printf("Global address: %p, sharedtimes: %d\n", iter->first, iter->second);
 	}
 	delete CheckMemoryDeleted;
 	return;
 }
 
 #endif
-
-void testSphereRayQuo(double *B, double *D, integer n, double *X, double *Xopt)
-{
-	// choose a random seed
-	unsigned tt = (unsigned)time(NULL);
-	tt = 0;
-	init_genrand(tt);
-
-	// Obtain an initial iterate by taking the Q factor of qr decomposition
-	// lapack is used
-	SphereVariable SphereX(n);
-	if (X == nullptr)
-	{
-		SphereX.RandInManifold();
-	}
-	else
-	{
-		double *SphereXptr = SphereX.ObtainWriteEntireData();
-		for (integer i = 0; i < n; i++)
-			SphereXptr[i] = X[i];
-	}
-
-	// Generate the matrices in the Brockett problem with p = 1
-	// In this case, it is the Rayleigh Quotient problem on the Sphere.
-
-	// Define the manifold
-	Sphere Domain(n);
-	Domain.ChooseSphereParamsSet3();
-
-	// Define the Brockett problem with p = 1
-	// In this case, it is the Rayleigh Quotient problem on the Sphere.
-	StieBrockett Prob(B, D, n, 1);
-	Prob.SetDomain(&Domain);
-
-	Domain.CheckParams();
-
-	//Domain.CheckIntrExtr(&SphereX);
-	//Domain.CheckRetraction(&SphereX);
-	//Domain.CheckDiffRetraction(&SphereX);
-	//Domain.CheckLockingCondition(&SphereX);
-	//Domain.CheckcoTangentVector(&SphereX);
-	//Domain.CheckIsometryofVectorTransport(&SphereX);
-	//Domain.CheckIsometryofInvVectorTransport(&SphereX);
-	//Domain.CheckVecTranComposeInverseVecTran(&SphereX);
-	//Domain.CheckTranHInvTran(&SphereX);
-	//Domain.CheckHaddScaledRank1OPE(&SphereX);
-
-	// test RSD
-	std::cout << "********************************Check all line search algorithm in RSD*****************************************" << std::endl;
-	for (integer i = 0; i < LSALGOLENGTH; i++)
-	{
-		RSD *RSDsolver = new RSD(&Prob, &SphereX);
-		RSDsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-		RSDsolver->DEBUG = FINALRESULT;
-		RSDsolver->CheckParams();
-		RSDsolver->Run();
-		delete RSDsolver;
-	}
-
-	// test RNewton
-	std::cout << "********************************Check all line search algorithm in RNewton*************************************" << std::endl;
-	for (integer i = 0; i < LSALGOLENGTH; i++)
-	{
-		RNewton *RNewtonsolver = new RNewton(&Prob, &SphereX);
-		RNewtonsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-		RNewtonsolver->DEBUG = FINALRESULT;
-		RNewtonsolver->CheckParams();
-		RNewtonsolver->Run();
-		delete RNewtonsolver;
-	}
-
-	// test RCG
-	std::cout << "********************************Check all Formulas in RCG*************************************" << std::endl;
-	for (integer i = 0; i < RCGMETHODSLENGTH; i++)
-	{
-		RCG *RCGsolver = new RCG(&Prob, &SphereX);
-		RCGsolver->RCGmethod = static_cast<RCGmethods> (i);
-		RCGsolver->LineSearch_LS = STRONGWOLFE;
-		RCGsolver->LS_beta = 0.1;
-		RCGsolver->DEBUG = FINALRESULT;
-		RCGsolver->CheckParams();
-		RCGsolver->Run();
-		delete RCGsolver;
-	}
-
-	// test RBroydenFamily
-	std::cout << "********************************Check all line search algorithm in RBroydenFamily*************************************" << std::endl;
-	for (integer i = 0; i < LSALGOLENGTH; i++)
-	{
-		RBroydenFamily *RBroydenFamilysolver = new RBroydenFamily(&Prob, &SphereX);
-		RBroydenFamilysolver->LineSearch_LS = static_cast<LSAlgo> (i);
-		RBroydenFamilysolver->DEBUG = FINALRESULT;
-		RBroydenFamilysolver->CheckParams();
-		RBroydenFamilysolver->Run();
-		delete RBroydenFamilysolver;
-	}
-
-	// test RWRBFGS
-	std::cout << "********************************Check all line search algorithm in RWRBFGS*************************************" << std::endl;
-	for (integer i = 0; i < LSALGOLENGTH; i++)
-	{
-		RWRBFGS *RWRBFGSsolver = new RWRBFGS(&Prob, &SphereX);
-		RWRBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-		RWRBFGSsolver->DEBUG = FINALRESULT; //ITERRESULT;//
-		RWRBFGSsolver->CheckParams();
-		RWRBFGSsolver->Run();
-		delete RWRBFGSsolver;
-	}
-
-	// test RBFGS
-	std::cout << "********************************Check all line search algorithm in RBFGS*************************************" << std::endl;
-	for (integer i = 0; i < LSALGOLENGTH; i++)
-	{
-		RBFGS *RBFGSsolver = new RBFGS(&Prob, &SphereX);
-		RBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-		RBFGSsolver->DEBUG = FINALRESULT;
-		RBFGSsolver->CheckParams();
-		RBFGSsolver->Run();
-		delete RBFGSsolver;
-	}
-
-	// test LRBFGS
-	std::cout << "********************************Check all line search algorithm in LRBFGS*************************************" << std::endl;
-	for (integer i = 0; i < LSALGOLENGTH; i++)
-	{
-		LRBFGS *LRBFGSsolver = new LRBFGS(&Prob, &SphereX);
-		LRBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-		LRBFGSsolver->DEBUG = FINALRESULT;
-		LRBFGSsolver->CheckParams();
-		LRBFGSsolver->Run();
-		delete LRBFGSsolver;
-	}
-
-	// test RTRSD
-	std::cout << "********************************Check RTRSD*************************************" << std::endl;
-	RTRSD RTRSDsolver(&Prob, &SphereX);
-	RTRSDsolver.DEBUG = FINALRESULT;
-	RTRSDsolver.CheckParams();
-	RTRSDsolver.Run();
-
-	// test RTRNewton
-	std::cout << "********************************Check RTRNewton*************************************" << std::endl;
-	RTRNewton RTRNewtonsolver(&Prob, &SphereX);
-	RTRNewtonsolver.DEBUG = FINALRESULT;
-	RTRNewtonsolver.CheckParams();
-	RTRNewtonsolver.Run();
-
-	// test RTRSR1
-	std::cout << "********************************Check RTRSR1*************************************" << std::endl;
-	RTRSR1 RTRSR1solver(&Prob, &SphereX);
-	RTRSR1solver.DEBUG = FINALRESULT;
-	RTRSR1solver.CheckParams();
-	RTRSR1solver.Run();
-
-	// test LRTRSR1
-	std::cout << "********************************Check LRTRSR1*************************************" << std::endl;
-	LRTRSR1 LRTRSR1solver(&Prob, &SphereX);
-	LRTRSR1solver.DEBUG = FINALRESULT;
-	LRTRSR1solver.CheckParams();
-	LRTRSR1solver.Run();
-
-	// Check gradient and Hessian
-	Prob.CheckGradHessian(&SphereX);
-	const Variable *xopt = RTRNewtonsolver.GetXopt();
-	Prob.CheckGradHessian(xopt);
-    
-	if (Xopt != nullptr)
-	{
-		const double *xoptptr = xopt->ObtainReadData();
-		for (integer i = 0; i < n; i++)
-			Xopt[i] = xoptptr[i];
-	}
-};

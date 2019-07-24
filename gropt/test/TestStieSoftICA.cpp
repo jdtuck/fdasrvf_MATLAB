@@ -1,24 +1,14 @@
 
-#include "TestStieSoftICA.h"
+#include "test/TestStieSoftICA.h"
 
-#if !defined(MATLAB_MEX_FILE) && defined(TESTSTIESOFTICA)
+using namespace ROPTLIB;
 
-std::map<integer *, integer> *CheckMemoryDeleted;
-
-void testStieSoftICA(double *Cs, integer n, integer p, integer N, double *X = nullptr, double *Xopt = nullptr);
-
-int main(void)
+void testStieSoftICA(void)
 {
-	// choose a random seed
-	unsigned tt = (unsigned)time(NULL);
-	tt = 0;
-	std::cout << "seed:" << tt << std::endl;
-	init_genrand(tt);
-
 	// size of the Stiefel manifold
-	integer n = 5, p = 2;
+	integer n = 32, p = 16;
 	// number of covariance matrices
-	integer N = 4;
+	integer N = 32;
 
 	// Generate the matrices in the joint diagonalization (JD) problem (Soft ICA problem).
 	// Use the same approach as the experiments in paper "A Riemannian symmetric rank-one trust-region method".
@@ -29,7 +19,7 @@ int main(void)
 		{
 			for (integer k = 0; k < n; k++)
 			{
-				Cs[i * n * n + j * n + k] = genrand_gaussian();
+				Cs[i * n * n + j * n + k] = genrandnormal();
 			}
 		}
 		for (integer j = 0; j < n; j++)
@@ -50,33 +40,12 @@ int main(void)
 		}
 	}
 
-	CheckMemoryDeleted = new std::map<integer *, integer>;
-
 	testStieSoftICA(Cs, n, p, N);
-	std::map<integer *, integer>::iterator iter = CheckMemoryDeleted->begin();
-	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
-	{
-		if (iter->second != 1)
-			std::cout << "Global address:" << iter->first << ", sharedtimes:" << iter->second << std::endl;
-	}
-	delete CheckMemoryDeleted;
 	delete[] Cs;
-
-#ifdef _WIN64
-#ifdef _DEBUG
-	_CrtDumpMemoryLeaks();
-#endif
-#endif
-	return 0;
 }
 
 void testStieSoftICA(double *Cs, integer n, integer p, integer N, double *X, double *Xopt)
 {
-	// choose a random seed
-	unsigned tt = (unsigned)time(NULL);
-	tt = 0;
-	init_genrand(tt);
-
 	// Obtain an initial iterate by taking the Q factor of qr decomposition
 	StieVariable StieX(n, p);
 	StieX.RandInManifold();
@@ -84,13 +53,13 @@ void testStieSoftICA(double *Cs, integer n, integer p, integer N, double *X, dou
 	// Define the manifold
 	Stiefel Domain(n, p);
 	Domain.ChooseStieParamsSet2();
-	Domain.SetHasHHR(true);
+	Domain.SetHasHHR(false);
 
 	// Define the Brockett problem
 	StieSoftICA Prob(Cs, n, p, N);
 	Prob.SetDomain(&Domain);
 
-	Domain.CheckParams();
+	//Domain.CheckParams();
 
 	//Domain.CheckIntrExtr(&StieX);
 	//Domain.CheckRetraction(&StieX);
@@ -107,129 +76,137 @@ void testStieSoftICA(double *Cs, integer n, integer p, integer N, double *X, dou
 	//Prob.CheckGradHessian(&StieX);
 
 	//// test RSD
-	//std::cout << "********************************Check all line search algorithm in RSD*****************************************" << std::endl;
-	//for (integer i = 0; i < LSALGOLENGTH; i++)
+	//printf("********************************Check all line search algorithm in RSD*****************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)
 	//{
 	//	RSD *RSDsolver = new RSD(&Prob, &StieX);
 	//	RSDsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-	//	RSDsolver->DEBUG = FINALRESULT;
+	//	RSDsolver->Debug = FINALRESULT;
+	//	RSDsolver->Max_Iteration = 20;
 	//	RSDsolver->CheckParams();
 	//	RSDsolver->Run();
 	//	delete RSDsolver;
 	//}
 
 	//// test RNewton
-	//std::cout << "********************************Check all line search algorithm in RNewton*************************************" << std::endl;
-	//for (integer i = 0; i < LSALGOLENGTH; i++)
+	//printf("********************************Check all line search algorithm in RNewton*************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)
 	//{
 	//	RNewton *RNewtonsolver = new RNewton(&Prob, &StieX);
 	//	RNewtonsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-	//	RNewtonsolver->DEBUG = FINALRESULT;
+	//	RNewtonsolver->Debug = FINALRESULT;
 	//	RNewtonsolver->CheckParams();
 	//	RNewtonsolver->Run();
 	//	delete RNewtonsolver;
 	//}
 
 	//// test RCG
-	//std::cout << "********************************Check all Formulas in RCG*************************************" << std::endl;
+	//printf("********************************Check all Formulas in RCG*************************************\n");
 	//for (integer i = 0; i < RCGMETHODSLENGTH; i++)
 	//{
 	//	RCG *RCGsolver = new RCG(&Prob, &StieX);
 	//	RCGsolver->RCGmethod = static_cast<RCGmethods> (i);
 	//	RCGsolver->LineSearch_LS = STRONGWOLFE;
 	//	RCGsolver->LS_beta = 0.1;
-	//	RCGsolver->DEBUG = FINALRESULT;
+	//	RCGsolver->Debug = FINALRESULT;
 	//	RCGsolver->CheckParams();
 	//	RCGsolver->Run();
 	//	delete RCGsolver;
 	//}
 
 	//// test RBroydenFamily
-	//std::cout << "********************************Check all line search algorithm in RBroydenFamily*************************************" << std::endl;
-	//for (integer i = 0; i < LSALGOLENGTH; i++)
+	//printf("********************************Check all Formulas in RCG*************************************\n")
+	//for (integer i = 0; i < INPUTFUN; i++)
 	//{
 	//	RBroydenFamily *RBroydenFamilysolver = new RBroydenFamily(&Prob, &StieX);
 	//	RBroydenFamilysolver->LineSearch_LS = static_cast<LSAlgo> (i);
-	//	RBroydenFamilysolver->DEBUG = FINALRESULT;
+	//	RBroydenFamilysolver->Debug = FINALRESULT;
 	//	RBroydenFamilysolver->CheckParams();
 	//	RBroydenFamilysolver->Run();
 	//	delete RBroydenFamilysolver;
 	//}
 
 	//// test RWRBFGS
-	//std::cout << "********************************Check all line search algorithm in RWRBFGS*************************************" << std::endl;
-	//for (integer i = 0; i < LSALGOLENGTH; i++)
+	//printf("********************************Check all line search algorithm in RWRBFGS*************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)
 	//{
 	//	RWRBFGS *RWRBFGSsolver = new RWRBFGS(&Prob, &StieX);
 	//	RWRBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-	//	RWRBFGSsolver->DEBUG = FINALRESULT; //ITERRESULT;//
+	//	RWRBFGSsolver->Debug = FINALRESULT; //ITERRESULT;//
 	//	RWRBFGSsolver->CheckParams();
 	//	RWRBFGSsolver->Run();
 	//	delete RWRBFGSsolver;
 	//}
 
-	// test RBFGS
-	std::cout << "********************************Check all line search algorithm in RBFGS*************************************" << std::endl;
-	for (integer i = 0; i < 1; i++)//LSALGOLENGTH
-	{
-		RBFGS *RBFGSsolver = new RBFGS(&Prob, &StieX);
-		RBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-		RBFGSsolver->DEBUG = FINALRESULT;
-		//RBFGSsolver->OutputGap = 20;
-		//RBFGSsolver->LS_alpha = 0.1;
-		RBFGSsolver->LS_ratio1 = 1.0/64;
-		//RBFGSsolver->LS_ratio2 = 0.25;
-		RBFGSsolver->CheckParams();
-		RBFGSsolver->Run();
-		delete RBFGSsolver;
-	}
+	//// test RBFGS
+	//printf("********************************Check all line search algorithm in RBFGS*************************************\n");
+	//for (integer i = 0; i < INPUTFUN; i++)//LSALGOLENGTH
+	//{
+	//	RSD *RBFGSsolver = new RSD(&Prob, &StieX);
+	//	RBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
+	//	RBFGSsolver->Debug = ITERRESULT;//-- FINALRESULT;
+	//	//RBFGSsolver->OutputGap = 20;
+	//	//RBFGSsolver->LS_alpha = 0.1;
+	//	//RBFGSsolver->InitSteptype = ONESTEP;
+	//	RBFGSsolver->LS_ratio1 = 1.0/64;
+	//	//RBFGSsolver->LS_ratio2 = 0.25;
+	//	RBFGSsolver->CheckParams();
+	//	RBFGSsolver->Run();
+
+	//	delete RBFGSsolver;
+	//}
 
 	//RBFGS *RBFGSsolver = new RBFGS(&Prob, &StieX);
 	//Domain.HasHHR = true;
 	//RBFGSsolver->LineSearch_LS = WOLFE;
-	//RBFGSsolver->DEBUG = ITERRESULT;
+	//RBFGSsolver->Debug = ITERRESULT;
 	//RBFGSsolver->OutputGap = 20;
 	//RBFGSsolver->CheckParams();
 	//RBFGSsolver->Run();
 	//delete RBFGSsolver;
 
-	//// test LRBFGS
-	//std::cout << "********************************Check all line search algorithm in LRBFGS*************************************" << std::endl;
-	//for (integer i = 0; i < 1; i++)//LSALGOLENGTH
-	//{
-	//	LRBFGS *LRBFGSsolver = new LRBFGS(&Prob, &StieX);
-	//	LRBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
-	//	LRBFGSsolver->DEBUG = FINALRESULT; //ITERRESULT;// 
-	//	LRBFGSsolver->CheckParams();
-	//	LRBFGSsolver->Run();
-	//	delete LRBFGSsolver;
-	//}
+	// test LRBFGS
+	//printf("********************************Check all line search algorithm in LRBFGS*************************************\n");
+	for (integer i = 0; i < 1; i++)//LSALGOLENGTH INPUTFUN
+	{
+		LRBFGS *LRBFGSsolver = new LRBFGS(&Prob, &StieX);
+		LRBFGSsolver->LineSearch_LS = static_cast<LSAlgo> (i);
+		LRBFGSsolver->Debug = FINALRESULT; //ITERRESULT;//
+		LRBFGSsolver->Max_Iteration = 450;
+		//LRBFGSsolver->CheckParams();
+		LRBFGSsolver->Run();
+		if (LRBFGSsolver->Getnormgfgf0() < 1e-6)
+			printf("SUCCESS!\n");
+		else
+			printf("FAIL!\n");
+		delete LRBFGSsolver;
+	}
 
 	//// test RTRSD
-	//std::cout << "********************************Check RTRSD*************************************" << std::endl;
+	//printf("********************************Check RTRSD*************************************\n");
 	//RTRSD RTRSDsolver(&Prob, &StieX);
-	//RTRSDsolver.DEBUG = FINALRESULT;
+	//RTRSDsolver.Debug = FINALRESULT;
 	//RTRSDsolver.CheckParams();
 	//RTRSDsolver.Run();
 
 	//// test RTRNewton
-	//std::cout << "********************************Check RTRNewton*************************************" << std::endl;
+	//printf("********************************Check RTRNewton*************************************\n");
 	//RTRNewton RTRNewtonsolver(&Prob, &StieX);
-	//RTRNewtonsolver.DEBUG = FINALRESULT;
+	//RTRNewtonsolver.Debug = FINALRESULT;
 	//RTRNewtonsolver.CheckParams();
 	//RTRNewtonsolver.Run();
 	//
 	//// test RTRSR1
-	//std::cout << "********************************Check RTRSR1*************************************" << std::endl;
+	//printf("********************************Check RTRSR1*************************************\n");
 	//RTRSR1 RTRSR1solver(&Prob, &StieX);
-	//RTRSR1solver.DEBUG = FINALRESULT;
+	//RTRSR1solver.Debug = FINALRESULT;
 	//RTRSR1solver.CheckParams();
 	//RTRSR1solver.Run();
 
 	//// test LRTRSR1
-	//std::cout << "********************************Check LRTRSR1*************************************" << std::endl;
+	//printf("********************************Check LRTRSR1*************************************\n");
 	//LRTRSR1 LRTRSR1solver(&Prob, &StieX);
-	//LRTRSR1solver.DEBUG = FINALRESULT;
+	//LRTRSR1solver.Debug = FINALRESULT;
 	//LRTRSR1solver.CheckParams();
 	//LRTRSR1solver.Run();
 
@@ -246,8 +223,6 @@ void testStieSoftICA(double *Cs, integer n, integer p, integer N, double *X, dou
 	//		Xopt[i] = xoptptr[i];
 	//}
 }
-
-#endif
 
 #ifdef MATLAB_MEX_FILE
 
@@ -276,28 +251,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mexErrMsgTxt("The size of matrix C is not correct.\n");
     }
 
-	if (ParamSet == 1)
+	if (mxGetM(prhs[1]) != n || mxGetN(prhs[1]) != p)
 	{
-		if (mxGetM(prhs[1]) != n || mxGetN(prhs[1]) != p)
-		{
-			mexErrMsgTxt("The size of the initial X is not correct!\n");
-		}
-	}
-	else
-	{
-		if (mxGetM(prhs[1]) != n || mxGetN(prhs[1]) != n)
-		{
-			mexErrMsgTxt("The size of the initial X is not correct!\n");
-		}
+		mexErrMsgTxt("The size of the initial X is not correct!\n");
 	}
     
-	std::cout << "(n, p, N):" << n << "," << p << "," << N << std::endl;
+	printf("(n, p, N):%d, %d, %d\n", n, p, N);
 
 	///*create output matrix*/
 	//plhs[0] = mxCreateDoubleMatrix(n, p, mxREAL);
 	//Xopt = mxGetPr(plhs[0]);
 
-	init_genrand(0);
+	genrandseed(0);
 
 	CheckMemoryDeleted = new std::map<integer *, integer>;
 	//testStieSoftICA(Cs, n, p, N, X, Xopt);
@@ -306,19 +271,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	// Obtain an initial iterate by taking the Q factor of qr decomposition
 	StieVariable *StieX = nullptr;
 
-	if (ParamSet == 1)
+	StieX = new StieVariable(n, p);
+	double *StieXptr = StieX->ObtainWriteEntireData();
+	for (integer i = 0; i < n * p; i++)
+		StieXptr[i] = X[i];
+
+	StieVariable *Stiesoln = nullptr;
+	if (nrhs >= 8)
 	{
-		StieX = new StieVariable(n, p);
-		double *StieXptr = StieX->ObtainWriteEntireData();
+		double *soln = mxGetPr(prhs[7]);
+		Stiesoln = new StieVariable(n, p);
+		double *Stiesolnptr = Stiesoln->ObtainWriteEntireData();
 		for (integer i = 0; i < n * p; i++)
-			StieXptr[i] = X[i];
-	}
-	else
-	{
-		StieX = new StieVariable(n, n);
-		double *StieXptr = StieX->ObtainWriteEntireData();
-		for (integer i = 0; i < n * n; i++)
-			StieXptr[i] = X[i];
+		{
+			Stiesolnptr[i] = soln[i];
+		}
 	}
 
 	// Define the manifold
@@ -330,19 +297,32 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if (ParamSet == 1)
 		Domain.ChooseStieParamsSet1();
 	else
+    if (ParamSet == 2)
 		Domain.ChooseStieParamsSet2();
+	else
+    if (ParamSet == 3)
+		Domain.ChooseStieParamsSet3();
+	else
+    if (ParamSet == 4)
+		Domain.ChooseStieParamsSet4();
+	else
+    {
+        printf("error: ParamSet parameter!");
+        return;
+    }
 	Domain.SetHasHHR((HasHHR != 0));
-
 	//Domain.CheckParams();
-	ParseSolverParamsAndOptimizing(prhs[6], &Prob, StieX, plhs);
+	//Domain.CheckParams();
+	ParseSolverParamsAndOptimizing(prhs[6], &Prob, StieX, Stiesoln, plhs);
 	std::map<integer *, integer>::iterator iter = CheckMemoryDeleted->begin();
 	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
 	{
 		if (iter->second != 1)
-			std::cout << "Global address:" << iter->first << ", sharedtimes:" << iter->second << std::endl;
+			printf("Global address: %p, sharedtimes: %d\n", iter->first, iter->second);
 	}
 	delete CheckMemoryDeleted;
 	delete StieX;
+	delete Stiesoln;
 	return;
 }
 

@@ -1,9 +1,9 @@
 
-#include "TestElasticCurvesRO.h"
+#include "test/TestElasticCurvesRO.h"
 
-#if !defined(MATLAB_MEX_FILE) && defined(TESTELASTICCURVESRO)
+using namespace ROPTLIB;
 
-void main()
+void testElasticCurvesRO(void)
 {
 	std::ifstream fdata;
 	fdata.open("Curves1020");
@@ -22,15 +22,10 @@ void main()
 			}
 		}
 	}
-	// choose a random seed
-	unsigned tt = (unsigned)time(NULL);
-	tt = 1425718285;
-	std::cout << "rand seed:" << tt << std::endl;//--
-	init_genrand(tt);
-	integer idx1 = static_cast<integer> (floor(genrand_real2() * 1020)), idx2 = static_cast<integer> (floor(genrand_real2() * 1020));
+	integer idx1 = static_cast<integer> (floor(genrandreal() * 1020)), idx2 = static_cast<integer> (floor(genrandreal() * 1020));
 	//idx1 = 0;
 	//idx2 = 2;
-	std::cout << "idx1:" << idx1 << ", idx2:" << idx2 << std::endl;//--
+	printf("idx1:%d, idx2:%d\n", idx1, idx2);
 	for (integer i = 0; i < n; i++)
 	{
 		for (integer j = 0; j < d; j++)
@@ -89,19 +84,12 @@ void main()
 	delete OGV;
 	delete EucV;
 	delete Xopt;
-
-#ifdef _WIN64
-#ifdef _DEBUG
-	_CrtDumpMemoryLeaks();
-#endif
-#endif
 };
 
-#endif
 
 #ifdef MATLAB_MEX_FILE
 
-#define TESTELASTICCURVESRO
+//#define TESTELASTICCURVESRO
 
 std::map<integer *, integer> *CheckMemoryDeleted;
 
@@ -109,7 +97,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	if (nrhs < 9)
 	{
-		mexErrMsgTxt("The number of arguments should be nine.\n");
+		mexErrMsgTxt("The number of arguments should be at least nine.\n");
 	}
 	double *C1, *C2;
 	double w = 0;
@@ -120,7 +108,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	n = mxGetM(prhs[0]);
 	d = mxGetN(prhs[0]);
 
-	std::cout << "(n, d):" << n << "," << d << std::endl;
+	printf("(n, d):%d,%d\n", n, d);
 
 	if (mxGetM(prhs[1]) != n || mxGetN(prhs[1]) != d)
 	{
@@ -134,8 +122,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	char methodname[30] = "";
 	mxGetString(prhs[7], methodname, 30);
 	autoselectC = static_cast<integer> (mxGetScalar(prhs[8]));
+	double *Q1 = nullptr, *Q2 = nullptr;
+	if(nrhs == 11)
+	{
+		Q1 = mxGetPr(prhs[9]);
+		Q2 = mxGetPr(prhs[10]);
+		if (mxGetM(prhs[9]) != n || mxGetN(prhs[9]) != d)
+		{
+			mexErrMsgTxt("The size of matrix Q1 does not match the size of C1.\n");
+		}
+		if (mxGetM(prhs[10]) != n || mxGetN(prhs[10]) != d)
+		{
+			mexErrMsgTxt("The size of matrix Q2 does not match the size of C1.\n");
+		}
+	}
 
-	init_genrand(0);
+	genrandseed(0);
 
 	CheckMemoryDeleted = new std::map<integer *, integer>;
 
@@ -155,7 +157,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	integer ns, lms;
 
 	DriverElasticCurvesRO(C1, C2, d, n, w, rotated != 0, isclosed != 0, onlyDP != 0, skipm, methodname,
-		autoselectC, Xopt, swap, fopts, comtime, ns, lms);
+		autoselectC, Xopt, swap, fopts, comtime, ns, lms, Q1, Q2);
 
 	/*create output matrix*/
 	integer sizex = n + d * d + 1;
@@ -170,12 +172,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	dcopy_(&sizex, const_cast<double *> (Xoptptr), &inc, opt, &inc);
 
 	delete Xopt;
-
+	
 	std::map<integer *, integer>::iterator iter = CheckMemoryDeleted->begin();
 	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
 	{
 		if (iter->second != 1)
-			std::cout << "Global address:" << iter->first << ", sharedtimes:" << iter->second << std::endl;
+			printf("Global address: %p, sharedtimes: %d\n", iter->first, iter->second);
 	}
 	delete CheckMemoryDeleted;
 	return;

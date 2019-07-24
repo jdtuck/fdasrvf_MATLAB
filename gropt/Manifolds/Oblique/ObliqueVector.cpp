@@ -1,65 +1,69 @@
 
-#include "ObliqueVector.h"
+#include "Manifolds/Oblique/ObliqueVector.h"
 
-ObliqueVector::ObliqueVector(integer n, integer num)
-{
-	SphereVector SV(n);
+/*Define the namespace*/
+namespace ROPTLIB{
 
-	Element **SVs = new Element *[num];
-	for (integer i = 0; i < num; i++)
+	ObliqueVector::ObliqueVector(integer n, integer num)
 	{
-		SVs[i] = &SV;
-	}
-	integer *powsintev = new integer[2];
-	powsintev[0] = 0;
-	powsintev[1] = num;
+		SphereVector SV(n);
 
-	ProductElementInitialization(SVs, num, powsintev, 1);
-
-	delete[] powsintev;
-	delete[] SVs;
-};
-
-ObliqueVector::~ObliqueVector(void)
-{
-};
-
-ObliqueVector *ObliqueVector::ConstructEmpty(void) const
-{
-	return new ObliqueVector(elements[0]->Getlength(), numofelements);
-};
-
-void ObliqueVector::Print(const char *name, bool isonlymain) const
-{
-	if (isonlymain)
-	{
-		if (Space == nullptr)
+		Element **SVs = new Element *[num];
+		for (integer i = 0; i < num; i++)
 		{
-			if (size == nullptr)
+			SVs[i] = &SV;
+		}
+		integer *powsintev = new integer[2];
+		powsintev[0] = 0;
+		powsintev[1] = num;
+
+		ProductElementInitialization(SVs, num, powsintev, 1);
+
+		delete[] powsintev;
+		delete[] SVs;
+	};
+
+	ObliqueVector::~ObliqueVector(void)
+	{
+	};
+
+	ObliqueVector *ObliqueVector::ConstructEmpty(void) const
+	{
+		return new ObliqueVector(elements[0]->Getlength(), numofelements);
+	};
+
+	void ObliqueVector::Print(const char *name, bool isonlymain) const
+	{
+		if (isonlymain)
+		{
+			if (Space == nullptr)
 			{
-				std::cout << name << " is an empty data with size 0";
+				if (size == nullptr)
+				{
+					printf("%s is an empty data with size 0", name);
+				}
+				else
+				{
+					printf("%s is an empty data with size %d", name, size[0]);
+				}
+				for (integer i = 1; i < ls; i++)
+					printf(" x %d", size[i]);
+				printf("\n");
+				return;
 			}
-			else
+			printf("%s , shared times:%d, shared times address:%p\n", name, *sharedtimes, sharedtimes);
+			integer n = elements[0]->Getlength();
+			integer num = numofelements;
+			for (integer i = 0; i < n; i++)
 			{
-				std::cout << name << " is an empty data with size " << size[0];
+				for (integer j = 0; j < num; j++)
+				{
+					printf("%f\t", elements[j]->GetSpace()[i]);
+				}
+				printf("\n");
 			}
-			for (integer i = 1; i < ls; i++)
-				std::cout << " x " << size[i];
-			std::cout << std::endl;
 			return;
 		}
-		std::cout << name << ", shared times:" << *sharedtimes << ", shared times address:" << sharedtimes << std::endl;
-		integer n = elements[0]->Getlength();
-		integer num = numofelements;
-		for (integer i = 0; i < n; i++)
-		{
-			for (integer j = 0; j < num; j++)
-			{
-				std::cout << elements[j]->GetSpace()[i] << "\t";
-			}
-			std::cout << std::endl;
-		}
-		return;
-	}
-	ProductElement::Print(name, isonlymain);
-};
+		ProductElement::Print(name, isonlymain);
+	};
+}; /*end of ROPTLIB namespace*/

@@ -1,17 +1,19 @@
 
-#include "OrthGroup.h"
+#include "Manifolds/OrthGroup/OrthGroup.h"
 
-OrthGroup::OrthGroup(integer inn) :Stiefel(inn, inn)
-{
-	name.assign("OrthGroup");
-	delete EMPTYEXTR;
-	delete EMPTYINTR;
-	EMPTYEXTR = new OrthGroupVector(n, n);
-	//std::cout << "n:" << n << std::endl;//---
-	//std::cout << "IntrinsicDim:" << IntrinsicDim << std::endl;//---
-	EMPTYINTR = new OrthGroupVector(IntrinsicDim);
-};
+/*Define the namespace*/
+namespace ROPTLIB{
 
-OrthGroup::~OrthGroup(void)
-{
-};
+	OrthGroup::OrthGroup(integer inn) :Stiefel(inn, inn)
+	{
+		name.assign("OrthGroup");
+		delete EMPTYEXTR;
+		delete EMPTYINTR;
+		EMPTYEXTR = new OrthGroupVector(n, n);
+		EMPTYINTR = new OrthGroupVector(IntrinsicDim);
+	};
+
+	OrthGroup::~OrthGroup(void)
+	{
+	};
+}; /*end of ROPTLIB namespace*/

@@ -1,4 +1,7 @@
-function GenerateMyMex
+function GenerateMyMex(include_fftw)
+    if(nargin < 1)
+        include_fftw = false;
+    end
     GROPTCBase=pwd;
     fprintf('Generate MyMex.m file...\n',GROPTCBase);
    
@@ -16,7 +19,7 @@ function GenerateMyMex
         separate = '/';
     end
     for i = 1 : length(paths)
-        paths{i} = strrep(paths{i}, pwd, '.');
+%         paths{i} = strrep(paths{i}, pwd, '.');
         paths{i} = [paths{i} separate];
     end
    
@@ -27,7 +30,6 @@ function GenerateMyMex
     fprintf(fid, 'if(nargin == 0)\n');
     fprintf(fid, '\tfilename = ''TestStieBrockett'';\n');
     fprintf(fid, 'end\n');
-    
     fprintf(fid, 'mex(');
     for i = 1 : length(paths)
         path = ['-I' paths{i}];
@@ -47,7 +49,22 @@ function GenerateMyMex
             end
         end
     end
-    str = ['''-lmwblas'', ''-lmwlapack'', ''-output'', [''.' separate 'BinaryFiles' separate ''' filename ]);'];
+    if(length(findstr(lower(computer('arch')), 'mac')) > 0 || length(findstr(lower(computer('arch')), 'glnxa')) > 0)
+        blaslib = '''-lmwblas''';
+        lapacklib = '''-lmwlapack''';
+        fftwlib = '''-lfftw3''';
+    end
+    
+    if(length(findstr(lower(computer('arch')), 'win')) > 0)
+        blaslib = ['''', fullfile(matlabroot,'extern','lib',computer('arch'),'microsoft','libmwblas.lib'), ''''];
+        lapacklib = ['''', fullfile(matlabroot,'extern','lib',computer('arch'),'microsoft','libmwlapack.lib'), ''''];
+        fftwlib = ['''-L.\BinaryFiles\'', ''-llibfftw3-3'', ''-llibfftw3f-3'', ''-llibfftw3l-3'''];
+    end
+    if(~include_fftw)
+        str = ['[''-D'' upper(filename)], ', blaslib, ', ', lapacklib,  ', ''-largeArrayDims'', ''-output'', [''.' separate 'BinaryFiles' separate ''' filename ]);'];
+    else
+        str = ['[''-D'' upper(filename)], ', '''-DROPTLIB_WITH_FFTW'', ', fftwlib, ', ', blaslib, ', ', lapacklib,  ', ''-largeArrayDims'', ''-output'', [''.' separate 'BinaryFiles' separate ''' filename ]);'];
+    end
     fprintf(fid, ['%s\n'], str);
     fprintf(fid, 'end');
     fclose(fid);

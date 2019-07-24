@@ -1,64 +1,13 @@
-#include "TestWeightedLowRank.h"
+#include "test/TestWeightedLowRank.h"
 
-#if !defined(MATLAB_MEX_FILE) && defined(TESTWEIGHTEDLOWRANK)
-
-std::map<integer *, integer> *CheckMemoryDeleted;
-
-int main(void)
-{
-	long seed = static_cast<long> (time(NULL));
-	//seed = 1417791199;//---
-	seed = 0;
-	std::cout << "seed:" << seed << std::endl;
-	init_genrand(seed);
-	
-	CheckMemoryDeleted = new std::map<integer *, integer>;
-    
-	testWeightedLowRank();
-	
-	std::map<integer *, integer>::iterator iter = CheckMemoryDeleted->begin();
-	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
-	{
-		if (iter->second != 1)
-			std::cout << "Global address:" << iter->first << ", sharedtimes:" << iter->second << std::endl;
-	}
-	delete CheckMemoryDeleted;
-	
-#ifdef _WIN64
-#ifdef _DEBUG
-	_CrtDumpMemoryLeaks();
-#endif
-#endif	
-	
-	return 0;
-}
-#endif
-
-#ifdef MATLAB_MEX_FILE
-
-std::map<integer *, integer> *CheckMemoryDeleted;
-
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
-	init_genrand(0);
-	
-	CheckMemoryDeleted = new std::map<integer *, integer>;
-	testWeightedLowRank();
-	std::map<integer *, integer>::iterator iter = CheckMemoryDeleted->begin();
-	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
-	{
-		if (iter->second != 1)
-			std::cout << "Global address:" << iter->first << ", sharedtimes:" << iter->second << std::endl;
-	}
-	delete CheckMemoryDeleted;
-	return;
-}
-
-#endif
+using namespace ROPTLIB;
 
 void testWeightedLowRank(void)
 {
-	integer m = 5, n = 4, r = 2;
+	//	FILE *ttt = nullptr;
+	//	freopen_s(&ttt, "./log.txt", "w", stdout);
+	integer m = 10, n = 8, r = 3;
+	//integer m = 100, n = 15, r = 5;
 	LowRank Domain(m, n, r);
 	Domain.SetHasHHR(true);
 	LowRankVariable InitialX(m, n, r);
@@ -74,36 +23,38 @@ void testWeightedLowRank(void)
 	//Domain.CheckIsometryofInvVectorTransport(&InitialX);
 	//Domain.CheckVecTranComposeInverseVecTran(&InitialX);
 	//Domain.CheckTranHInvTran(&InitialX);
+	//return;
 
 	//InitialX.Print("initialX:");
-	//return;
+
 	// Generate the matrices in the Low rank approximation problem.
-    integer mn = m * n, mr = m * r, nr = n * r;
+	integer mn = m * n, mr = m * r, nr = n * r;
 	double *A = new double[mn];
-    double *A_U = new double[mr];
+	double *A_U = new double[mr];
 	double *A_V = new double[nr];
-    for (integer i = 0; i < m * r; i++)
-    {
-       A_U[i] = genrand_gaussian();
-    }
+	for (integer i = 0; i < m * r; i++)
+	{
+		A_U[i] = genrandnormal();
+	}
 	for (integer i = 0; i < n * r; i++)
 	{
-		A_V[i] = genrand_gaussian();
+		A_V[i] = genrandnormal();
 	}
 	char *transn = const_cast<char *> ("n");
-  	char *transt = const_cast<char *> ("t");
+	char *transt = const_cast<char *> ("t");
 	double one = 1, zero = 0;
+	// A <- A_U * A_V^T, details: http://www.netlib.org/lapack/explore-html/d7/d2b/dgemm_8f.html
 	dgemm_(transn, transt, &m, &n, &r, &one, A_U, &m, A_V, &n, &zero, A, &m);
-	delete []A_U;
-	delete []A_V;
-    
-    double *W_temp = new double[mn * mn];
+	delete[]A_U;
+	delete[]A_V;
+
+	double *W_temp = new double[mn * mn];
 	double *W = new double[mn * mn];
-    for (integer i = 0; i < mn; i++)
-    {
-        for (integer j = 0; j < mn; j++)
-        {
-            W_temp[i + j * mn] = genrand_gaussian();
+	for (integer i = 0; i < mn; i++)
+	{
+		for (integer j = 0; j < mn; j++)
+		{
+			W_temp[i + j * mn] = genrandnormal();
 			//if (i == j)
 			//{
 			//	W_temp[i + i * mn] = 1;
@@ -112,36 +63,63 @@ void testWeightedLowRank(void)
 			//{
 			//	W_temp[i + j * mn] = 0;
 			//}
-        }
-    }
-    dgemm_(transn, transt, &mn, &mn, &mn, &one, W_temp, &mn, W_temp, &mn, &zero, W, &mn);
-	delete []W_temp;
-	
+		}
+	}
+
+	// W <- W_temp * W_temp^T, details: http://www.netlib.org/lapack/explore-html/d7/d2b/dgemm_8f.html
+	dgemm_(transn, transt, &mn, &mn, &mn, &one, W_temp, &mn, W_temp, &mn, &zero, W, &mn);
+	delete[]W_temp;
+
 	Stiefel mani1(m, r);
 	Euclidean mani2(r, r);
 	Stiefel mani3(n, r);
-	
-    WeightedLowRank Prob(A, W, m, n, r);
-    Prob.SetDomain(&Domain);
-	
+	WeightedLowRank Prob(A, W, m, n, r);
+	Prob.SetDomain(&Domain);
+
 	//Prob.CheckGradHessian(&InitialX);
-    
+
 	LRBFGS *RSDsolver = new LRBFGS(&Prob, &InitialX);
-	RSDsolver->LineSearch_LS = ARMIJO;
+	//->LineSearch_LS = ARMIJO;
 	//RSDsolver->LS_beta = 0.01;
 	//RSDsolver->RCGmethod = DAI_YUAN;
-	RSDsolver->DEBUG = ITERRESULT;
+	RSDsolver->Debug = FINALRESULT;
 	RSDsolver->OutputGap = 100;
-	RSDsolver->Max_Iteration = 10000;
-	RSDsolver->CheckParams();
+	RSDsolver->Max_Iteration = 70;
+	//RSDsolver->CheckParams();
+	//RSDsolver->Accuracy = 1e-6;
+	RSDsolver->Tolerance = 1e-6;
 	RSDsolver->Run();
-	Prob.CheckGradHessian(&InitialX);//--
-	Prob.CheckGradHessian(RSDsolver->GetXopt());//--
-
+	if (RSDsolver->Getnormgfgf0() < 1e-6)
+		printf("SUCCESS!\n");
+	else
+		printf("FAIL!\n");
+	//Prob.CheckGradHessian(&InitialX);//--
+	//Prob.CheckGradHessian(RSDsolver->GetXopt());//--
+	//RSDsolver->GetXopt()->Print("Xopt");
 	delete RSDsolver;
-	
-	delete []A;
-    delete []W;
+
+	delete[]A;
+	delete[]W;
 };
 
+#ifdef MATLAB_MEX_FILE
 
+std::map<integer *, integer> *CheckMemoryDeleted;
+
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+	genrandseed(0);
+	
+	CheckMemoryDeleted = new std::map<integer *, integer>;
+	testWeightedLowRank();
+	std::map<integer *, integer>::iterator iter = CheckMemoryDeleted->begin();
+	for (iter = CheckMemoryDeleted->begin(); iter != CheckMemoryDeleted->end(); iter++)
+	{
+		if (iter->second != 1)
+			printf("Global address: %p, sharedtimes: %d\n", iter->first, iter->second);
+	}
+	delete CheckMemoryDeleted;
+	return;
+}
+
+#endif

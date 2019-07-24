@@ -76,8 +76,25 @@ switch upper(method)
             gam0 = invertGamma(gam0);
         end
     case 'RBFGS'
+        onlyDP = 0;
+        [opt,swap,fopts,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
+            rotated, isclosed, skipm, method, auto);
+        
+        
+        if (fopts(1) == 1000)
+            onlyDP = 1;
+            [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
+                rotated, isclosed, skipm, method, auto);
+        end
+        
+        gam0 = opt(1:end-2);
+        
+        if swap
+            gam0 = invertGamma(gam0);
+        end
+    case 'RBFGSM'
         t1 = linspace(0,1,length(t));
-        n = 20;  % number of basis elements
+        n = 4;  % number of basis elements
         [c,ctilde]=basis_tangent_id(n,t1);
         options.verbosity=0;
         M = infspherefactory(t1);
