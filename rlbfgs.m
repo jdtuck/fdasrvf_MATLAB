@@ -166,32 +166,8 @@ timetic = tic();
 
 %
 %     Initialize starting point as identity
-%     q2Cur=q2;
 hOpt=hid;
 gammaOpt=M.t;
-%     figure(100); clf; plot(M.t,q1,M.t,q2);
-%     pause;
-
-%     % Or initialize randomly
-%     Ninit=10;
-%     q2try{Ninit}=[];
-%     gammatry=zeros(Ninit,M.T);
-%     costtry=zeros(Ninit,1);
-%     for i=1:Ninit
-%         [N,~]=size(c);
-%         coeffs=0.01*randn(1,N);
-%         v=coeffs*c;
-%         h0=M.exp(hid,v,1);
-%         gamma0=cumtrapz(M.t,h0.^2);
-%         gamma0=gamma0/gamma0(end);
-%         h0=sqrt(gradient(gamma0,1/(T-1)));
-%         q2try{i}=spline(M.t,q2,gamma0).*h0;
-%         gammatry(i,:)=gamma0;
-%         costtry(i)=alignment_cost(h0,q1,q2try{i},M,lambda);
-%     end
-%     [~,idx]=min(costtry);
-%     q2Cur=q2try{idx};
-%     gammaOpt=gammatry(idx,:);
 
 % __________Initialization of variables______________
 % Number of iterations since the last restart
