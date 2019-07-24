@@ -51,7 +51,7 @@ c2 = srvf_to_f(q2,t,f2o);
 rotated = 0;
 isclosed = 0;
 skipm = 0;
-auto = 4;
+auto = 0;
 switch upper(method)
     case 'DP'
         [G,T] = DynamicProgrammingQ2(q1',t',q2',t',t',t',lambda);
@@ -78,13 +78,13 @@ switch upper(method)
     case 'RBFGS'
         onlyDP = 0;
         [opt,swap,fopts,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
-            rotated, isclosed, skipm, method, auto);
+            rotated, isclosed, skipm, 'LRBFGS', auto);
         
         
         if (fopts(1) == 1000)
             onlyDP = 1;
             [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
-                rotated, isclosed, skipm, method, auto);
+                rotated, isclosed, skipm, 'LRBFGS', auto);
         end
         
         gam0 = opt(1:end-2);

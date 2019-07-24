@@ -197,7 +197,7 @@ namespace ROPTLIB{
 			GetCurveSmall(C1, C1s, d, n, ns, isclosed);
 			CurveToQ(C1s, d, ns, q1s, isclosed);
 		}
-		printf("lms:%d, ns:%d\n", lms, ns);
+		// printf("lms:%d, ns:%d\n", lms, ns);
 
 		double *Xoptptr = Xopt->ObtainWriteEntireData();
 		Xoptptr[n + d * d] = 0;
@@ -210,7 +210,7 @@ namespace ROPTLIB{
 
 		for (integer i = 0; i < lms; i++) //lms
 		{
-			printf("%d, ", ms[i]);
+			// printf("%d, ", ms[i]);
 			starttime = getTickCount();
 			// obtain initial reparameterization
 			ShiftC(C2, d, n, C2shift, ms[i]);
@@ -261,7 +261,7 @@ namespace ROPTLIB{
 						}
 						ECRO = new ElasticCurvesRO(q1, Rotq2shift, d, n, w, rotated, isclosed);
 						ECRO->SetDomain(Domain);
-						printf("CD1 func:%g\n", ECRO->f(InitialX));
+						// printf("CD1 func:%g\n", ECRO->f(InitialX));
 					}
 
 					if (isclosed)
@@ -313,7 +313,7 @@ namespace ROPTLIB{
 			{ // if only DP is used, then output the CD1H cost function
 				ECRO->w = 0;
 				msV[i] = ECRO->f(InitialX);
-				printf("CD1H func:%g\n", msV[i]);
+				// printf("CD1H func:%g\n", msV[i]);
 			}
 			if (!onlyDP)
 			{ // if a Riemannian method is used, then Xinitial is the initial iterate and a method is used.
@@ -387,7 +387,7 @@ namespace ROPTLIB{
 				ECRO->w = 0;
 				//--Xopt->RemoveAllFromTempData();
 				msV[i] = ECRO->f(const_cast<Element *> (solver->GetXopt()));
-				printf("%s func:%g, num of iter:%d\n", solverstr.c_str(), msV[i], solver->GetIter());
+				// printf("%s func:%g, num of iter:%d\n", solverstr.c_str(), msV[i], solver->GetIter());
 			}
 			delete ECRO;
 
@@ -463,8 +463,8 @@ namespace ROPTLIB{
 			}
 		}
 
-		printf("min f:%3.2e\n", minmsV);
-		printf("time:%3.2e\n", comtime[0]);
+		// printf("min f:%3.2e\n", minmsV);
+		// printf("time:%3.2e\n", comtime[0]);
 		delete[] C2shift;
 		if (C2_coefs != nullptr)
 		{
