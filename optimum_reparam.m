@@ -19,7 +19,7 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
 % w: controls LRBFGS (default = 0.01)
 % f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
-% 
+%
 % Output:
 % gam: warping function
 if nargin < 4
@@ -71,27 +71,19 @@ switch upper(method)
         [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
             rotated, isclosed, skipm, 'DP', auto);
         gam0 = opt(1:end-2);
-
+        
         if swap
             gam0 = invertGamma(gam0);
         end
     case 'RBFGS'
-        onlyDP = 0;
-        [opt,swap,fopts,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
-            rotated, isclosed, skipm, method, auto);
-
-
-        if (fopts(1) == 1000)
-            onlyDP = 1;
-            [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
-                rotated, isclosed, skipm, method, auto);
-        end
-
-        gam0 = opt(1:end-2);
-
-        if swap
-            gam0 = invertGamma(gam0);
-        end
+        t1 = linspace(0,1,length(t));
+        n = 20;  % number of basis elements
+        [c,ctilde]=basis_tangent_id(n,t1);
+        options.verbosity=0;
+        M = infspherefactory(t1);
+        
+        [~,gam0,~, ~, ~]=rlbfgs(q1.',q2.',c,ctilde,M,lambda,options);
+        
     otherwise
         error('Invalid Method')
 end
