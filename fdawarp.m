@@ -280,7 +280,7 @@ classdef fdawarp
             obj.fn = f1(:,:,r+1);
             obj.qn = q(:,:,r+1);
             obj.q0 = q(:,:,1);
-            std_f0 = std(f1, 0, 2);
+            std_f0 = std(f1(:,:,1), 0, 2);
             std_fn = std(obj.fn, 0, 2);
             obj.mqn = mq(:,r+1);
             obj.fmean = mean(obj.f(1,:))+cumtrapz(obj.time,obj.mqn.*abs(obj.mqn));
