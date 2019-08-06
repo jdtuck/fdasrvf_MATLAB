@@ -69,7 +69,7 @@ switch upper(method)
     case 'DP2'
         onlyDP = 1;
         [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
-            rotated, isclosed, skipm, 'DP', auto);
+            rotated, isclosed, skipm, 'LRBFGS', auto);
         gam0 = opt(1:end-2);
         
         if swap
