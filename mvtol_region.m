@@ -7,7 +7,7 @@ function tol = mvtol_region(x, alpha, P, B )
 % Usage: tol = mvtol_region(x, alpha, P, B )
 %
 % Inputs:
-% x (M,N): matrix defining N varaibles of M samples
+% x (M,N): matrix defining N variables of M samples
 % alpha: confidence level
 % P: coverage level
 % B: number of bootstrap samples
