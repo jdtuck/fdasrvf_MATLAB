@@ -45,6 +45,11 @@ classdef phbox
         median_x       % median warping function
         psi_median     % median srvf of warping function
         plt            % surface plot mesh
+        Q1_index       % index of quartiles
+        Q3_index       % index of quartiles
+        Q1a_index      % index of quantiles
+        Q3a_index      % index of quantiles
+        dist           % distances
     end
     
     methods
@@ -96,6 +101,7 @@ classdef phbox
                 v(:,i) = inv_exp_map(obj.psi_median,psi(:,i));
                 dx(i) = sqrt(trapz(t,v(:,i).^2));
             end
+            obj.dist = dx;
             [~, dx_ordering] = sort(dx);
             CR_50 = dx_ordering(1:ceil(N/2));   % 50% Central Region
             m = max(dx(CR_50));                 % Maximal phase distance within 50% Central Region
@@ -116,10 +122,10 @@ classdef phbox
             [~, maxloc] = max(energy(:));
             [maxloc_row, maxloc_col] = ind2sub(size(energy), maxloc);
             
-            Q1_index = CR_50(maxloc_row);
-            Q3_index = CR_50(maxloc_col);
-            obj.Q1 = gam(:, Q1_index);
-            obj.Q3 = gam(:, Q3_index);
+            obj.Q1_index = CR_50(maxloc_row);
+            obj.Q3_index = CR_50(maxloc_col);
+            obj.Q1 = gam(:, obj.Q1_index);
+            obj.Q3 = gam(:, obj.Q3_index);
             Q1_psi = sqrt(gradient(obj.Q1,1/(M-1)))';
             Q3_psi = sqrt(gradient(obj.Q3,1/(M-1)))';
             
@@ -143,24 +149,24 @@ classdef phbox
             [~, maxloc] = max(energy(:));
             [maxloc_row, maxloc_col] = ind2sub(size(energy), maxloc);
             
-            Q1a_index = CR_alpha(maxloc_row);
-            Q3a_index = CR_alpha(maxloc_col);
-            obj.Q1a = gam(:, Q1a_index);
-            obj.Q3a = gam(:, Q3a_index);
+            obj.Q1a_index = CR_alpha(maxloc_row);
+            obj.Q3a_index = CR_alpha(maxloc_col);
+            obj.Q1a = gam(:, obj.Q1a_index);
+            obj.Q3a = gam(:, obj.Q3a_index);
             Q1a_psi = sqrt(gradient(obj.Q1a,1/(M-1)))';
             Q3a_psi = sqrt(gradient(obj.Q3a,1/(M-1)))';
             
             % check quartile and quatnile going same direction
-            tst = trapz(t, v(:,Q1a_index).*v(:,Q1_index));
+            tst = trapz(t, v(:,obj.Q1a_index).*v(:,obj.Q1_index));
             if (tst < 0)
-                obj.Q1a = gam(:,Q3a_index);
-                obj.Q3a = gam(:,Q1a_index);
+                obj.Q1a = gam(:,obj.Q3a_index);
+                obj.Q3a = gam(:,obj.Q1a_index);
             end
             
             % compute phase whiskers
-            IQR = dx(Q1_index) + dx(Q3_index);
-            v3 = v(:, Q3_index);
-            v1 = v(:, Q1_index);
+            IQR = dx(obj.Q1_index) + dx(obj.Q3_index);
+            v3 = v(:, obj.Q3_index);
+            v1 = v(:, obj.Q1_index);
             upper_v = v3 + k_p *IQR * v3 / sqrt(trapz(t,v3.^2));
             lower_v = v1 + k_p *IQR * v1 / sqrt(trapz(t,v1.^2));
             
