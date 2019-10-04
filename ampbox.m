@@ -42,9 +42,14 @@ classdef ampbox
         minn           % minimum extreme function
         maxx           % maximum extreme function
         outlier_index  % indexes of outlier functions
-        f_median        % median function
-        q_median        % median srvf
+        f_median       % median function
+        q_median       % median srvf
         plt            % surface plot mesh
+        Q1_index       % index of quartiles
+        Q3_index       % index of quartiles
+        Q1a_index      % index of quantiles
+        Q3a_index      % index of quantiles
+        dist           % distances
     end
     
     methods
@@ -97,6 +102,7 @@ classdef ampbox
             for i = 1:N
                 dy(i) = sqrt(trapz(t,(obj.q_median-q_tilde(:,i)).^2));
             end
+            obj.dist = dy;
             [~, dy_ordering] = sort(dy);
             CR_50 = dy_ordering(1:ceil(N/2));       % 50% Central Region
             m = max(dy(CR_50));                     % Maximal amplitude distance within 50% Central Region
@@ -117,12 +123,12 @@ classdef ampbox
             [~, maxloc] = max(energy(:));
             [maxloc_row, maxloc_col] = ind2sub(size(energy), maxloc);
             
-            Q1_index = CR_50(maxloc_row);
-            Q3_index = CR_50(maxloc_col);
-            Q1_q = q_tilde(:,Q1_index);
-            Q3_q = q_tilde(:,Q3_index);
-            obj.Q1 = f_tilde(:,Q1_index);
-            obj.Q3 = f_tilde(:,Q3_index);
+            obj.Q1_index = CR_50(maxloc_row);
+            obj.Q3_index = CR_50(maxloc_col);
+            Q1_q = q_tilde(:,obj.Q1_index);
+            Q3_q = q_tilde(:,obj.Q3_index);
+            obj.Q1 = f_tilde(:,obj.Q1_index);
+            obj.Q3 = f_tilde(:,obj.Q3_index);
             
             % identify amplitude quantiles
             [~, dy_ordering] = sort(dy);
@@ -143,15 +149,15 @@ classdef ampbox
             [~, maxloc] = max(energy(:));
             [maxloc_row, maxloc_col] = ind2sub(size(energy), maxloc);
             
-            Q1a_index = CR_alpha(maxloc_row);
-            Q3a_index = CR_alpha(maxloc_col);
-            Q1a_q = q_tilde(:,Q1a_index);
-            Q3a_q = q_tilde(:,Q3a_index);
-            obj.Q1a = f_tilde(:,Q1a_index);
-            obj.Q3a = f_tilde(:,Q3a_index);
+            obj.Q1a_index = CR_alpha(maxloc_row);
+            obj.Q3a_index = CR_alpha(maxloc_col);
+            Q1a_q = q_tilde(:,obj.Q1a_index);
+            Q3a_q = q_tilde(:,obj.Q3a_index);
+            obj.Q1a = f_tilde(:,obj.Q1a_index);
+            obj.Q3a = f_tilde(:,obj.Q3a_index);
             
             % compute amplitude whiskers
-            IQR = dy(Q1_index)+dy(Q3_index);
+            IQR = dy(obj.Q1_index)+dy(obj.Q3_index);
             v1 = Q1_q - obj.q_median;
             v3 = Q3_q - obj.q_median;
             upper_q = Q3_q + k_a * IQR * v3 / sqrt(trapz(t,v3.^2));
