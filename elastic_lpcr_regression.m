@@ -258,10 +258,10 @@ classdef elastic_lpcr_regression
                     y_pred = phi(y_pred);
                     obj.y_labels = ones(1,n);
                     obj.y_labels(y_pred < 0.5) = -1;
-                    TP = sum(option.y(y_labels == 1) == 1);
-                    FP = sum(option.y(y_labels == -1) == 1);
-                    TN = sum(option.y(y_labels == -1) == -1);
-                    FN = sum(option.y(y_labels == 1) == -1);
+                    TP = sum(newdata.y(y_labels == 1) == 1);
+                    FP = sum(newdata.y(y_labels == -1) == 1);
+                    TN = sum(newdata.y(y_labels == -1) == -1);
+                    FN = sum(newdata.y(y_labels == 1) == -1);
                     obj.PC = (TP+TN)/(TP+FP+FN+TN);
                 end
             else
@@ -274,10 +274,10 @@ classdef elastic_lpcr_regression
                 y_pred = phi(y_pred);
                 obj.y_labels = ones(1,n);
                 obj.y_labels(y_pred < 0.5) = -1;
-                TP = sum(option.y(y_labels == 1) == 1);
-                FP = sum(option.y(y_labels == -1) == 1);
-                TN = sum(option.y(y_labels == -1) == -1);
-                FN = sum(option.y(y_labels == 1) == -1);
+                TP = sum(obj.y(y_labels == 1) == 1);
+                FP = sum(obj.y(y_labels == -1) == 1);
+                TN = sum(obj.y(y_labels == -1) == -1);
+                FN = sum(obj.y(y_labels == 1) == -1);
                 obj.PC = (TP+TN)/(TP+FP+FN+TN);
             end
         end

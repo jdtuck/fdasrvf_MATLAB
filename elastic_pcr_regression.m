@@ -221,7 +221,7 @@ classdef elastic_pcr_regression
                         
                     case 'fdahpca'
                         a = zeros(n,no);
-                        mu_psi = model.pca.mu;
+                        mu_psi = obj.pca.mu;
                         vec = zeros(M,n);
                         TT = length(obj.time);
                         psi = zeros(TT,n);
