@@ -1,5 +1,8 @@
 function [c,ctilde] = basis_tangent_id(n,t)
 
+% Compute the truncated Fourier basis of the tangent space of the unit
+% hypersphere in L^2([0,1],R) at the idenity element h_{id}(t)=1. 
+
 T=length(t);
 N=2*n;
 c=zeros(N,T);

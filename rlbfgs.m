@@ -1,25 +1,23 @@
-function [q2new, gammaOpt, cost, info, options] = rlbfgs(q1,q2,c,ctilde,M,lambda,options)
+function [q2Opt,gammaOpt,cost,info,options] = rlbfgs(q1,q2,M,options)
 % Riemannian limited memory BFGS solver for elastic function registration.
-%
-% function [q2new,gammaOpt,cost,info,options] = alignment_rlbfgs(q1,q2,c,ctilde,M)
-% function [q2new,gammaOpt,cost,info,options] = alignment_rlbfgs(q1,q2,c,ctilde,M,options)
-%
-%
-% This is a Riemannian limited memory BFGS solver (quasi-Newton method),
-% which aims to minimize the cost function in the given problem structure.
-% It requires access to the gradient of the cost function.
-%
-% Parameter options.memory can be used to specify the number of iterations
-% the algorithm remembers and uses to approximate the inverse Hessian of
-% the cost. Default value is 30.
-% For unlimited memory, set options.memory = Inf.
-%
+% The solver is designed to operate on the positive orthant of the unit
+% hypersphere in L^2([0,1],R). The set of all functions
+% h=\sqrt{\dot{\gamma}}, where \gamma is a diffeomorphism, is that
+% manifold.
 %
 % For a description of the algorithm and theorems offering convergence
 % guarantees, see the references below.
 %
+% function [q2new,gammaOpt,cost,info,options] = alignment_rlbfgs(q1,q2,c,ctilde,M,lambda)
+% function [q2new,gammaOpt,cost,info,options] = alignment_rlbfgs(q1,q2,c,ctilde,M,lambda,options)
+%
+% The inputs q1 and q2 are the square root velocity functions of curves in
+% R^n to be aligned. Here, q2 will be aligned to q1. M is the manifold
+% factory for the unit hypersphere in L^2([0,1],R).
+%
+%
 % The two outputs 'gammaOpt' and 'cost' are the optimal diffeomorphism
-% and its cost, respectively.
+% and its cost, respectively. q2new is the optimally warped q2 to q1.
 %
 % The output 'info' is a struct-array which contains information about the
 % iterations:
@@ -45,7 +43,7 @@ function [q2new, gammaOpt, cost, info, options] = rlbfgs(q1,q2,c,ctilde,M,lambda
 % optionname is one of the following and the default value is indicated
 % between parentheses:
 %
-%   tolgradnorm (1e-6)
+%   tolgradnorm (1e-3)
 %       The algorithm terminates if the norm of the gradient drops below
 %       this. For well-scaled problems, a rule of thumb is that you can
 %       expect to reduce the gradient norm by 8 orders of magnitude
@@ -55,7 +53,7 @@ function [q2new, gammaOpt, cost, info, options] = rlbfgs(q1,q2,c,ctilde,M,lambda
 %       limit the final accuracy. If tolgradnorm is set too low, the
 %       algorithm may end up iterating forever (or at least until another
 %       stopping criterion triggers).
-%   maxiter (1000)
+%   maxiter (100)
 %       The algorithm terminates if maxiter iterations were executed.
 %   maxtime (Inf)
 %       The algorithm terminates if maxtime seconds elapsed.
@@ -77,6 +75,15 @@ function [q2new, gammaOpt, cost, info, options] = rlbfgs(q1,q2,c,ctilde,M,lambda
 %     and  is strictly increasing. See details in Wen Huang's paper
 %     "A Riemannian BFGS Method without Differentiated Retraction for
 %     Nonconvex Optimization Problems"
+%   inittype ('id')
+%     The type of initialization to be input into the function
+%     initialize.m. So far, options are 'id' the identity element, 'rand' a
+%     random initialization generated in some optimal sense, and 'dp' the
+%     solution to a downsampled version of the optimization problem using
+%     dynamic programming.
+%   plotevol (false)
+%     This flag can be set true to plot the cumulative warped q2 at each
+%     iteration along with a fixed q1.
 %   statsfun (none)
 %       Function handle to a function that will be called after each
 %       iteration to provide the opportunity to log additional statistics.
@@ -100,12 +107,6 @@ function [q2new, gammaOpt, cost, info, options] = rlbfgs(q1,q2,c,ctilde,M,lambda
 %       that these additional computations appear in the algorithm timings
 %       too, and may interfere with operations such as counting the number
 %       of cost evaluations, etc. (the debug calls get storedb too).
-%   storedepth (2)
-%       Maximum number of different points x of the manifold for which a
-%       store structure will be kept in memory in the storedb for caching.
-%       If memory usage is an issue, you may try to lower this number.
-%       Profiling may then help to investigate if a performance hit was
-%       incurred as a result.
 %
 %
 % Please cite the Manopt paper as well as the research paper:
@@ -131,18 +132,20 @@ function [q2new, gammaOpt, cost, info, options] = rlbfgs(q1,q2,c,ctilde,M,lambda
 % This file is a modified version of rlbfgs.m in Manopt: www.manopt.org.
 % Original author: Changshuo Liu, July 19, 2017.
 % Contributors: Nicolas Boumal
+% Modified by: Darshan Bryner, August 1, 2019.
 
 % Local defaults for the program
 localdefaults.minstepsize = 1e-10;
-localdefaults.maxiter = 1000;
-localdefaults.tolgradnorm = 1e-6;
+localdefaults.maxiter = 100;
+localdefaults.tolgradnorm = 1e-3;
 localdefaults.memory = 30;
 localdefaults.strict_inc_func = @(t) 1e-4*t;
 localdefaults.ls_max_steps = 25;
-localdefaults.storedepth = 2;
+localdefaults.plotevol = false;
+localdefaults.verbosity = 3;
+localdefaults.maxtime = inf;
 
-% Merge global and local defaults, then merge w/ user options, if any.
-localdefaults = mergeOptions(getGlobalDefaults(), localdefaults);
+% Merge local defaults w/ user specified options, if any.
 if ~exist('options', 'var') || isempty(options)
     options = struct();
 end
@@ -160,42 +163,33 @@ if options.memory == Inf
     end
 end
 
-T=M.T;
-hid=ones(1,T);
 timetic = tic();
 
-%
-%     Initialize starting point as identity
-hOpt=hid;
-gammaOpt=M.t;
-
 % __________Initialization of variables______________
-% Number of iterations since the last restart
-k = 0;
-% Total number of BFGS iterations
-iter = 0;
 
-% This cell stores step vectors which point from x_{t} to x_{t+1} for t
+% Initialize sequential update variables
+htilde = ones(1,M.T);
+q2tilde = q2;
+
+% Number of iterations since the last restart
+j = 0;
+
+% Total number of BFGS iterations
+k = 0;
+
+% This cell stores step vectors which point from h_id to h_{k+1} for k
 % indexing the last iterations, capped at options.memory.
 % That is, it stores up to options.memory of the most recent step
-% vectors. However, the implementation below does not need step vectors
-% in their respective tangent spaces at x_{t}'s. Rather, it requires
-% them transported to the current point's tangent space by vector
-% tranport. For details regarding the requirements on the the vector
-% tranport, see the reference paper by Huang et al.
-% In this implementation, those step vectors are iteratively
-% transported to the current point's tangent space after every
-% iteration. Thus, at every iteration, vectors in sHistory are in the
-% current point's tangent space.
+% vectors in the tangent space of identity
 sHistory = cell(1, options.memory);
 
-% This cell stores the differences for latest t's of the gradient at
-% x_{t+1} and the gradient at x_{t}, transported to x_{t+1}'s tangent
-% space. The memory is also capped at options.memory.
+% This cell stores the differences for latest k's of the gradient at
+% time k+1 and the gradient at time k. The memory is also capped at
+% options.memory.
 yHistory = cell(1, options.memory);
 
-% rhoHistory{t} stores the reciprocal of the inner product between
-% sHistory{t} and yHistory{t}.
+% rhoHistory{k} stores the reciprocal of the inner product between
+% sHistory{k} and yHistory{k}.
 rhoHistory = cell(1, options.memory);
 
 % Scaling of direction given by getDirection for acceptable step
@@ -210,8 +204,8 @@ stepsize = 1;
 % Stores whether the step is accepted by the cautious update check.
 accepted = true;
 
-% Query the cost function and its gradient
-[hCurCost,hCurGradient] = alignment_costgrad(hOpt,q1,q2,c,ctilde,M,lambda);
+% Compute cost function and its gradient
+[hCurCost,hCurGradient] = alignment_costgrad(q1,q2tilde,M);
 hCurGradNorm = M.norm(hCurGradient);
 
 % Line-search statistics for recording in info.
@@ -223,10 +217,18 @@ ultimatum = false;
 % Save stats in a struct array info, and preallocate.
 stats = savestats();
 info(1) = stats;
-info(min(10000, options.maxiter+1)).iter = [];
+info(min(10000,options.maxiter+1)).iter = [];
 
 if options.verbosity >= 2
     fprintf(' iter                   cost val            grad. norm           alpha\n');
+end
+
+% Plot the evolution of q2 being iteratively warped to optimally
+% match q1.
+if options.plotevol
+    figure(100); clf; plot(M.t,q1,'b',M.t,q2tilde,'r');
+    %         figure(101); clf; plot(M.t,htilde);
+    pause;
 end
 
 % Main iteration
@@ -235,14 +237,14 @@ while true
     % Display iteration information
     if options.verbosity >= 2
         fprintf('%5d    %+.16e        %.8e      %.4e\n', ...
-            iter, hCurCost, hCurGradNorm, alpha);
+            k, hCurCost, hCurGradNorm, alpha);
     end
     
     % Start timing this iteration
     timetic = tic();
     
     % Run standard stopping criterion checks
-    [stop, reason] = stoppingcriterion(options, info, iter+1);
+    [stop, reason] = stoppingcriterion(options, info, k+1);
     
     % If none triggered, run specific stopping criterion check
     if ~stop
@@ -258,7 +260,7 @@ while true
                     fprintf(['stepsize is too small, restarting ' ...
                         'the bfgs procedure at the current point.\n']);
                 end
-                k = 0;
+                j = 0;
                 ultimatum = true;
             else
                 stop = true;
@@ -279,21 +281,17 @@ while true
         break;
     end
     
-    
     % Compute BFGS direction
-    p = getDirection(M, hCurGradient, sHistory,...
-        yHistory, rhoHistory, scaleFactor, min(k, options.memory));
+    p = getDirection(M,hCurGradient,sHistory,yHistory,rhoHistory,...
+        scaleFactor,min(j,options.memory));
     
     % Execute line-search
-    [stepsize, hNext, lsstats] = linesearch_hint(M, p, hCurCost, iter,...
-        M.inner(hCurGradient, p), q1, q2, lambda, hOpt, options);
+    [stepsize,hNext,lsstats] = linesearch_hint(M,p,hCurCost,...
+        M.inner(hCurGradient,p),q1,q2tilde,options);
     
-    % Iterative update of optimal diffeomorphism gammaOpt via function
-    % composition.
-    gammaNext=cumtrapz(M.t,hNext.^2);
-    gammaNext=gammaNext/gammaNext(end);
-    gammaOpt=spline(M.t,gammaOpt,gammaNext);
-    hOpt=spline(M.t,hOpt,gammaNext).*hNext;
+    % Iterative update of optimal diffeomorphism and q2 via group action
+    htilde=group_action_SRVF(htilde,hNext,M);
+    q2tilde=group_action_SRVF(q2tilde,hNext,M);
     
     % Record the BFGS step-multiplier alpha which was effectively
     % selected. Toward convergence, we hope to see alpha = 1.
@@ -301,11 +299,11 @@ while true
     step = alpha*p;
     
     % Query cost and gradient at the candidate new point.
-    [hNextCost,hNextGradient] = alignment_costgrad(hOpt,q1,q2,c,ctilde,M,lambda);
+    [hNextCost,hNextGradient] = alignment_costgrad(q1,q2tilde,M);
     
     % Compute sk and yk
     sk = step;
-    yk = hNextGradient - hCurGradient;
+    yk = hNextGradient-hCurGradient;
     
     % Computation of the BFGS step is invariant under scaling of sk and
     % yk by a common factor. For numerical reasons, we scale sk and yk
@@ -314,41 +312,41 @@ while true
     sk = sk/norm_sk;
     yk = yk/norm_sk;
     
-    inner_sk_yk = M.inner(sk, yk);
+    inner_sk_yk = M.inner(sk,yk);
     inner_sk_sk = M.norm(sk)^2;    % ensures nonnegativity
     
     
     % If the cautious step is accepted (which is the intended
-    % behavior), we record sk, yk and rhok and need to do some
+    % behavior), we record sk, yk, and rhok and need to do some
     % housekeeping. If the cautious step is rejected, these are not
     % recorded. In all cases, hNext is the next iterate: the notion of
     % accept/reject here is limited to whether or not we keep track of
     % sk, yk, rhok to update the BFGS operator.
     cap = options.strict_inc_func(hCurGradNorm);
-    if inner_sk_sk ~= 0 && (inner_sk_yk / inner_sk_sk) >= cap
+    if inner_sk_sk~=0 && (inner_sk_yk/inner_sk_sk)>=cap
         
         accepted = true;
         
         rhok = 1/inner_sk_yk;
         
-        scaleFactor = inner_sk_yk / M.norm(yk)^2;
+        scaleFactor = inner_sk_yk/M.norm(yk)^2;
         
         % Time to store the vectors sk, yk and the scalar rhok.
         
         % If we are out of memory
-        if k >= options.memory
+        if j>=options.memory
             
             % sk and yk are saved from 1 to the end with the most
             % current recorded to the rightmost hand side of the cells
             % that are occupied. When memory is full, do a shift so
             % that the rightmost is earliest and replace it with the
             % most recent sk, yk.
-            if options.memory > 1
-                sHistory = sHistory([2:end, 1]);
-                yHistory = yHistory([2:end, 1]);
-                rhoHistory = rhoHistory([2:end 1]);
+            if options.memory>1
+                sHistory = sHistory([2:end,1]);
+                yHistory = yHistory([2:end,1]);
+                rhoHistory = rhoHistory([2:end,1]);
             end
-            if options.memory > 0
+            if options.memory>0
                 sHistory{options.memory} = sk;
                 yHistory{options.memory} = yk;
                 rhoHistory{options.memory} = rhok;
@@ -357,13 +355,13 @@ while true
             % If we are not out of memory
         else
             
-            sHistory{k+1} = sk;
-            yHistory{k+1} = yk;
-            rhoHistory{k+1} = rhok;
+            sHistory{j+1} = sk;
+            yHistory{j+1} = yk;
+            rhoHistory{j+1} = rhok;
             
         end
         
-        k = k + 1;
+        j = j+1;
         
         % The cautious step is rejected: we do not store sk, yk, rhok.
     else
@@ -376,25 +374,29 @@ while true
     hCurGradient = hNextGradient;
     hCurGradNorm = M.norm(hNextGradient);
     hCurCost = hNextCost;
-    %         lambda=0.8*lambda;
     
-    %         q2new = group_action_SRVF(q2,hOpt,M);
-    %         figure(100); clf; plot(M.t,q1,M.t,q2new);
-    %         pause;
+    % Plot the evolution of q2 being iteratively warped to optimally
+    % match q1.
+    if options.plotevol
+        figure(100); clf; plot(M.t,q1,'b',M.t,q2tilde,'r');
+        %         figure(101); clf; plot(M.t,hk);
+        pause;
+    end
     
     % iter is the number of iterations we have accomplished.
-    iter = iter + 1;
+    k = k+1;
     
     % Log statistics for freshly executed iteration
     stats = savestats();
-    info(iter+1) = stats;
+    info(k+1) = stats;
     
 end
 
-
 % Housekeeping before we return
-info = info(1:iter+1);
-q2new = group_action_SRVF(q2,hOpt,M);
+info = info(1:k+1);
+gammaOpt = cumtrapz(M.t,htilde.^2);
+gammaOpt = gammaOpt/gammaOpt(end);
+q2Opt = q2tilde;
 cost = hCurCost;
 
 if options.verbosity >= 1
@@ -405,16 +407,16 @@ end
 
 % Routine in charge of collecting the current iteration stats
     function stats = savestats()
-        stats.iter = iter;
+        stats.iter = k;
         stats.cost = hCurCost;
         stats.gradnorm = hCurGradNorm;
-        if iter == 0
+        if k==0
             stats.stepsize = NaN;
             stats.time = toc(timetic);
             stats.accepted = NaN;
         else
             stats.stepsize = stepsize;
-            stats.time = info(iter).time + toc(timetic);
+            stats.time = info(k).time + toc(timetic);
             stats.accepted = accepted;
         end
         stats.linesearch = lsstats;
@@ -426,169 +428,27 @@ end
 
 % BFGS step, see Wen's paper for details. This functon takes in a tangent
 % vector g, and applies an approximate inverse Hessian P to it to get Pg.
-% Then, -Pg is returned.
-function dir = getDirection(M, hCurGradient, sHistory, yHistory, ...
-    rhoHistory, scaleFactor, k)
+% Then, -Pg is returned. Parallel transport is not needed for this problem
+% since we always work in the tangent space of identity.
+function dir = getDirection(M,hCurGradient,sHistory,yHistory,rhoHistory,...
+    scaleFactor,j)
 
-q = hCurGradient;
+q=hCurGradient;
+inner_s_q=zeros(1,j);
 
-inner_s_q = zeros(1, k);
-
-for i = k : -1 : 1
-    inner_s_q(1, i) = rhoHistory{i} * M.inner(sHistory{i}, q);
+for i=j:-1:1
+    inner_s_q(1,i)=rhoHistory{i}*M.inner(sHistory{i},q);
     q=q-inner_s_q(1,i)*yHistory{i};
 end
 
 r=scaleFactor*q;
 
-for i = 1 : k
-    omega = rhoHistory{i} * M.inner(yHistory{i}, r);
+for i=1:j
+    omega=rhoHistory{i}*M.inner(yHistory{i},r);
     r=r+(inner_s_q(1,i)-omega)*sHistory{i};
 end
 
 dir=-r;
-
-end
-
-function f = alignment_cost(h,h0,q1,q2,M,lambda)
-
-t=M.t;
-gamma=cumtrapz(t,h.^2);
-gamma=gamma/gamma(end);
-hnew=spline(t,h0,gamma).*h;
-[q2new,~]=group_action_SRVF(q2,hnew,M);
-f=M.norm(q1-q2new)^2; % Cost
-if lambda~=0
-    z2=hnew.^2;
-    z4=hnew.^4;
-    zterm=sqrt(1+z4);
-    f=f+lambda*trapz(t,(z2+1./z2).*zterm); % Cost + penalty
-end
-end
-
-function [f,g] = alignment_costgrad(h0,q1,q2,c,ctilde,M,lambda)
-
-t=M.t;
-T=M.T;
-
-[q2new,~]=group_action_SRVF(q2,h0,M);
-f=M.norm(q1-q2new)^2; % Cost
-
-[N,~]=size(c);
-q2dot=gradient(q2new,1/(T-1));
-integrand=repmat(q1-q2new,N,1).*(2*repmat(q2dot,N,1).*ctilde+repmat(q2new,N,1).*c); % Cost directional derivative
-
-if lambda~=0
-    
-    z=h0;
-    z2=h0.^2;
-    z4=h0.^4;
-    zterm=sqrt(1+z4);
-    f=f+lambda*trapz(t,(z2+1./z2).*zterm); % Cost + penalty
-    
-    integrand=integrand+lambda*2*c.*repmat(z.*(2-1./z4).*zterm,N,1); % Penalty directional derivative
-    
-end
-
-g=-sum(c.*repmat(trapz(t,integrand,2),1,T)); % cost gradient + penalty gradient
-
-end
-
-function [stepsize, newh, lsstats] = linesearch_hint(M, d, f0, iter, df0, q1, q2, lambda, h0, options)
-% Armijo line-search based on the line-search hint in the problem structure.
-%
-% function [stepsize, newh, lsstats] =
-%            linesearch_hint(M, d, f0, iter, df0, q1, q2, options)
-%
-% Base line-search algorithm for descent methods, based on a simple
-% backtracking method. The search direction provided has to be a descent
-% direction, as indicated by a negative df0 = directional derivative of f
-% at the identity element along d.
-%
-% The algorithm selects a hardcoded initial step size. If that
-% step does not fulfill the Armijo sufficient decrease criterion, that step
-% size is reduced geometrically until a satisfactory step size is obtained
-% or until a failure criterion triggers.
-%
-% Below, the step is constructed as alpha*d, and the step size is the norm
-% of that vector, thus: stepsize = alpha*norm_d. The step is executed by
-% computing the exponential mapping exp_{hid}(alpha*d), giving newh.
-%
-% Inputs/Outputs : see help for linesearch
-%
-% See also: steepestdescent conjugategradients linesearch
-
-% This file is a modified version of linesearch_hint.m in Manopt: www.manopt.org.
-% Original author: Nicolas Boumal, July 17, 2014.
-
-
-% Backtracking default parameters. These can be overwritten in the
-% options structure which is passed to the solver.
-default_options.ls_contraction_factor = .5;
-default_options.ls_suff_decr = 1e-6;
-default_options.ls_max_steps = 25;
-default_options.ls_backtrack = true;
-default_options.ls_force_decrease = true;
-
-if ~exist('options', 'var') || isempty(options)
-    options = struct();
-end
-options = mergeOptions(default_options, options);
-
-contraction_factor = options.ls_contraction_factor;
-suff_decr = options.ls_suff_decr;
-max_ls_steps = options.ls_max_steps;
-
-% Initialize alpha. For elastic alignment, it seems the first iteration
-% can be a bit unstable, so start with alpha=0.01.
-if iter==0
-    alpha=0.01;
-else
-    alpha=1;
-end
-
-% Identity element, i.e. where we are located on the manifold.
-hid=ones(1,M.T);
-
-% Make the chosen step and compute the cost there.
-newh = M.exp(hid, d, alpha);
-newf = alignment_cost(newh,h0,q1,q2,M,lambda);
-cost_evaluations = 1;
-
-% Backtrack while the Armijo criterion is not satisfied.
-while options.ls_backtrack && newf > f0 + suff_decr*alpha*df0
-    
-    % Reduce the step size,
-    alpha = contraction_factor * alpha;
-    
-    % and look closer down the line.
-    newh = M.exp(hid, d, alpha);
-    newf = alignment_cost(newh,h0,q1,q2,M,lambda);
-    cost_evaluations = cost_evaluations + 1;
-    
-    % Make sure we don't run out of budget.
-    if cost_evaluations >= max_ls_steps
-        break;
-    end
-    
-end
-
-% If we got here without obtaining a decrease, we reject the step.
-if options.ls_force_decrease && newf > f0
-    alpha = 0;
-    newh = hid;
-    newf = f0; %#ok<NASGU>
-end
-
-% As seen outside this function, stepsize is the size of the vector we
-% retract to make the step from h to newh. Since the step is alpha*d:
-norm_d = M.norm(d);
-stepsize = alpha * norm_d;
-
-% Return some statistics also, for possible analysis.
-lsstats.costevals = cost_evaluations;
-lsstats.stepsize = stepsize;
-lsstats.alpha = alpha;
 
 end
 
@@ -628,61 +488,41 @@ end
 
 end
 
-function [qnew,gamma] = group_action_SRVF(q,h,M)
-gamma=cumtrapz(M.t,h.^2);
-gamma=gamma/gamma(end);
-h=sqrt(gradient(gamma,M.t));
-qnew=spline(M.t,q,gamma).*h;
-end
+function f = alignment_cost(h,q1,q2k,M)
 
-function opts = getGlobalDefaults()
-% Returns a structure with default option values for Manopt.
-%
-% function opts = getGlobalDefaults()
-%
-% Returns a structure opts containing the global default options such as
-% verbosity level etc. Typically, global defaults are overwritten by solver
-% defaults, which are in turn overwritten by user-specified options.
-% See the online Manopt documentation for details on options.
-%
-% See also: mergeOptions
+% Evaluate the cost function f = ||q1 - ((q2,hk),h)||^2.
+% h=sqrt{\dot{\gamma}} is a sequential update of cumulative warping hk
 
-% This file is part of Manopt: www.manopt.org.
-% Original author: Nicolas Boumal, Dec. 30, 2012.
-% Contributors:
-% Change log:
-%
-%   Aug. 2, 2018 (NB):
-%       Changed default storedepth to 2 from 20, since solvers should now
-%       use storedb.erase() to keep the cache lean.
-
-
-% There should be no reason to modify this file.
-% For better compatibility with future Manopt versions,
-% use the options structure of solvers.
-%
-% Really: don't modify it.
-
-
-% Verbosity level: 0 is no output at all. The higher the verbosity, the
-% more info is printed / displayed during solver execution.
-opts.verbosity = 3;
-
-% If debug is set to true, additional computations may be performed and
-% debugging information is outputed during solver execution.
-opts.debug = false;
-
-% Maximum number of store structures to store. If set to 0, caching
-% capabilities are not disabled, but the cache will be emptied at each
-% iteration of iterative solvers (more specifically: every time the
-% solver calls to purge the storedb).
-opts.storedepth = 2;
-
-% Maximum amount of time a solver may execute, in seconds.
-opts.maxtime = inf;
+t=M.t;
+q2new=group_action_SRVF(q2k,h,M);
+f=normL2(q1-q2new,t)^2; % Cost
 
 end
 
+function [f,g] = alignment_costgrad(q1,q2k,M)
+
+% Evaluate the cost function f = ||q1 - (q2,hk)||^2, and
+% evaluate the gradient g = grad f in the tangent space of identity.
+% hk=sqrt{\dot{\gamma_k}} is the cumulative warping of q2 produced by an
+% iterative sequential optimization algorithm.
+
+t=M.t;
+T=M.T;
+
+% Compute cost
+f=normL2(q1-q2k,t)^2;
+
+% Compute cost gradient
+q2kdot=gradient(q2k,1/(T-1));
+dq=q1-q2k;
+v=2*cumtrapz(t,sum(dq.*q2kdot,1))-sum(dq.*q2k,1);
+g=v-trapz(t,v);
+end
+
+function val = normL2(f,t)
+
+val=sqrt(innerProdL2(f,f,t));
+end
 
 function [stop, reason] = stoppingcriterion(options, info, last)
 % Checks for standard stopping criteria, as a helper to solvers.
@@ -788,4 +628,111 @@ end
 %         end
 %     end
 
+end
+
+function [stepsize,newh,lsstats] = linesearch_hint(M,d,f0,df0,q1,q2k,options)
+
+% Armijo line-search based on the line-search hint in the problem structure.
+%
+% Base line-search algorithm for descent methods, based on a simple
+% backtracking method. The search direction provided has to be a descent
+% direction, as indicated by a negative df0 = directional derivative of f
+% at the identity element along d.
+%
+% The algorithm selects a hardcoded initial step size. If that
+% step does not fulfill the Armijo sufficient decrease criterion, that step
+% size is reduced geometrically until a satisfactory step size is obtained
+% or until a failure criterion triggers.
+%
+% Below, the step is constructed as alpha*d, and the step size is the norm
+% of that vector, thus: stepsize = alpha*norm_d. The step is executed by
+% computing the exponential mapping exp_{hid}(alpha*d), giving newh.
+%
+% Inputs/Outputs : see help for linesearch
+%
+% See also: steepestdescent conjugategradients linesearch
+
+% This file is a modified version of linesearch_hint.m in Manopt: www.manopt.org.
+% Original author: Nicolas Boumal, July 17, 2014.
+% Modified by: Darshan Bryner, August 1, 2019.
+
+
+% Backtracking default parameters. These can be overwritten in the
+% options structure which is passed to the solver.
+default_options.ls_contraction_factor = .5;
+default_options.ls_suff_decr = 1e-6;
+default_options.ls_max_steps = 25;
+default_options.ls_backtrack = true;
+default_options.ls_force_decrease = true;
+
+if ~exist('options', 'var') || isempty(options)
+    options = struct();
+end
+options = mergeOptions(default_options, options);
+
+contraction_factor = options.ls_contraction_factor;
+suff_decr = options.ls_suff_decr;
+max_ls_steps = options.ls_max_steps;
+
+% Initialize alpha.
+alpha=1;
+
+% Identity element, i.e. where we are located on the manifold.
+hid=ones(1,M.T);
+
+% Make the chosen step and compute the cost there.
+newh = M.exp(hid, d, alpha);
+newf = alignment_cost(newh,q1,q2k,M);
+cost_evaluations = 1;
+
+% Backtrack while the Armijo criterion is not satisfied or if newh goes outside positive orthant.
+while options.ls_backtrack && (newf > f0 + suff_decr*alpha*df0 || sum(newh<=0)>0)
+    
+    % Reduce the step size,
+    alpha = contraction_factor * alpha;
+    
+    % and look closer down the line.
+    newh = M.exp(hid, d, alpha);
+    newf = alignment_cost(newh,q1,q2k,M);
+    cost_evaluations = cost_evaluations + 1;
+    
+    % Make sure we don't run out of budget.
+    if cost_evaluations >= max_ls_steps
+        break;
+    end
+    
+end
+
+% If we got here without obtaining a decrease, we reject the step.
+if options.ls_force_decrease && newf > f0
+    alpha = 0;
+    newh = hid;
+    newf = f0; %#ok<NASGU>
+end
+
+% As seen outside this function, stepsize is the size of the vector we
+% retract to make the step from h to newh. Since the step is alpha*d:
+norm_d = M.norm(d);
+stepsize = alpha * norm_d;
+
+% Return some statistics also, for possible analysis.
+lsstats.costevals = cost_evaluations;
+lsstats.stepsize = stepsize;
+lsstats.alpha = alpha;
+
+end
+
+function [qnew,gamma] = group_action_SRVF(q,h,M)
+
+    % Computes the diffeomorphis group action on an SRVF given by 
+    % (q,\gamma) = q(\gamma(t))h(t), where h=\sqrt{\dot{\gamma}}. 
+    
+    [p,~]=size(q);
+    gamma=cumtrapz(M.t,h.^2);
+    gamma=gamma/gamma(end);
+    h=sqrt(gradient(gamma,M.t));
+    if p>1
+        h=repmat(h,p,1);
+    end
+    qnew=spline(M.t,q,gamma).*h;
 end
