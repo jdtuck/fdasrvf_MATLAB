@@ -392,9 +392,10 @@ for i = 1:(2*numBasis)
     if (mod(i,2) == 0)
         result(:,i) = sqrt(2) * cos(2*j*pi*f_domain./fourier_p);
     end
+end
+    
     out.x = f_domain;
     out.matrix = result;
-end
 end
 
 %##########################################################################
