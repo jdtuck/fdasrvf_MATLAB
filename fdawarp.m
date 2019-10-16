@@ -171,7 +171,7 @@ classdef fdawarp
             end
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(obj.f,obj.time);
+            q = f_to_srvf(f1,obj.time);
 
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
