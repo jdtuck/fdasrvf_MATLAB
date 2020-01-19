@@ -29,7 +29,7 @@ if nargin < 4
     f1o = 0.0;
     f2o = 0.0;
 elseif nargin < 5
-    method = 'DP1';
+    method = 'DP';
     w = 0.0;
     f1o = 0.0;
     f2o = 0.0;

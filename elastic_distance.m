@@ -22,9 +22,9 @@ if nargin < 4
 end
 q1 = f_to_srvf(f1,time);
 q2 = f_to_srvf(f2,time);
-gam = optimum_reparam(q1,q2,time,lambda);
-fw = warp_f_gamma(f2,gam,time);
-qw = f_to_srvf(fw,time);
+gam = optimum_reparam(q1,q2,time.',lambda,'DP');
+fw = warp_f_gamma(f2,gam,time.');
+qw = f_to_srvf(fw.',time);
 dy = sqrt(trapz(time,(q1-qw).^2));
 
 time1 = linspace(0,1,length(time));
