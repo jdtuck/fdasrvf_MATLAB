@@ -9,8 +9,9 @@ function [dy, dx] = elastic_distance_curve(beta1, beta2, closed)
 %        [dy, dx] = elastic_distance_curve(beta1, beta2, closed)
 %
 % Input:
-% beta1: sample function 1
-% beta2: sample function 1
+% beta1: sample curve 1 (nxN matrix) n is dimension and N is number of
+% amples
+% beta2: sample curve 1
 % closed: boolean if curve is closed (default = false)
 %
 % Output
