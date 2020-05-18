@@ -45,7 +45,7 @@ classdef fdacurve
                 beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N);
                 a=-calculateCentroid(beta1(:,:,ii));
                 beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
-                q(:,:,ii) = curve_to_q(beta1(:,:,ii),scale);
+                q(:,:,ii) = curve_to_q(beta1(:,:,ii),scale,closed);
                 cent1(:,ii) = -a;
             end
             obj.q = q;
@@ -136,7 +136,6 @@ classdef fdacurve
                         % Compute shooting vector from mu to q_i
                         [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
                         gamma(:,i) = gamI;
-                        [qn_t,~] = Find_Best_Rotation(mu,qn_t);
 
                         q1dotq2=InnerProd_Q(mu,qn_t);
 
@@ -279,6 +278,7 @@ classdef fdacurve
             obj.gams = gamma;
             obj.v = v1;
             obj.qun = sumd(1:iter);
+            obj.E = normvbar(iter);
 
         end
 

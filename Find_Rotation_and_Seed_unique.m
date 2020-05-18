@@ -62,8 +62,8 @@ for ctr = 0:end_idx
     end
     Ec = acos(InnerProd_Q(q1,q2new));
     if Ec < minE
-        Rbest=R;
-        q2best  = q2new;
+        Rbest = R;
+        q2best = q2new;
         gamIbest = gamI;
         minE = Ec;
     end

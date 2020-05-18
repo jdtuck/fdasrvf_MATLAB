@@ -21,7 +21,7 @@ end
 
 qnorm = zeros(1,T);
 for i = 1:T
-    qnorm(i) = norm(q(:,i));
+    qnorm(i) = norm(q(:,i),'fro');
 end
 
 p = zeros(n,T);
