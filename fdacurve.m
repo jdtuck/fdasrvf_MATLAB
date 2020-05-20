@@ -21,6 +21,7 @@ classdef fdacurve
         gamr      % random warping functions
         cent      % center
         scale     % scale
+        E         % energy
     end
 
     methods
@@ -285,7 +286,7 @@ classdef fdacurve
             obj.gams = gamma;
             obj.v = v1;
             obj.qun = sumd(1:iter);
-            obj.E = normvbar(iter);
+            obj.E = normvbar(1:iter);
 
         end
 
@@ -435,6 +436,7 @@ classdef fdacurve
                 end
                 title('Curves')
             end
+            axis equal ij off;
 
             if (~isempty(obj.gams))
                 figure(2); clf
@@ -446,6 +448,7 @@ classdef fdacurve
                     error('Can''t plot dimension > 3')
                 end
                 title('Karcher Mean')
+                axis equal ij off;
 
                 figure(3); clf;
                 M = size(obj.beta,2);
@@ -473,6 +476,7 @@ classdef fdacurve
                     end
                     title('Sample Curves')
                 end
+                axis equal ij off;
             end
         end
     end
