@@ -20,6 +20,7 @@ classdef fdacurve
         samples   % random samples
         gamr      % random warping functions
         cent      % center
+        scale     % scale
     end
 
     methods
@@ -34,6 +35,7 @@ classdef fdacurve
             if nargin < 4
                 scale = true;
             end
+            obj.scale = scale;
             obj.closed = closed;
 
             K = size(beta,3);
@@ -42,10 +44,10 @@ classdef fdacurve
             beta1 = zeros(n,N,K);
             cent1 = zeros(n,K);
             for ii = 1:K
-                beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N);
+                beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N,closed);
                 a=-calculateCentroid(beta1(:,:,ii));
                 beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
-                q(:,:,ii) = curve_to_q(beta1(:,:,ii),scale,closed);
+                q(:,:,ii) = curve_to_q(beta1(:,:,ii),obj.scale,closed);
                 cent1(:,ii) = -a;
             end
             obj.q = q;
@@ -122,7 +124,7 @@ classdef fdacurve
                 end
                 mu=mu/sqrt(InnerProd_Q(mu,mu));
                 if obj.closed
-                    obj.basis=Basis_Normal_A(mu);
+                    obj.basis=findBasisNormal(mu);
                 end
 
                 sumv=zeros(n,T);
@@ -135,6 +137,9 @@ classdef fdacurve
 
                         % Compute shooting vector from mu to q_i
                         [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                        if obj.scale
+                            qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
+                        end
                         gamma(:,i) = gamI;
 
                         q1dotq2=InnerProd_Q(mu,qn_t);
@@ -156,7 +161,7 @@ classdef fdacurve
 
                         % Project to tangent space of manifold to obtain v_i
                         if obj.closed
-                            v1(:,:,i)=projectTangent(w,q1);
+                            v1(:,:,i)=projectTangent(w,q1,obj.basis);
                         else
                             v1(:,:,i)=w;
                         end
@@ -170,8 +175,10 @@ classdef fdacurve
 
                         % Compute shooting vector from mu to q_i
                         [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                        if obj.scale
+                            qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
+                        end
                         gamma(:,i) = gamI;
-                        [qn_t,~] = Find_Best_Rotation(mu,qn_t);
 
                         q1dotq2=InnerProd_Q(mu,qn_t);
 
@@ -192,7 +199,7 @@ classdef fdacurve
 
                         % Project to tangent space of manifold to obtain v_i
                         if obj.closed
-                            v1(:,:,i)=projectTangent(w,q1);
+                            v1(:,:,i)=projectTangent(w,q1,obj.basis);
                         else
                             v1(:,:,i)=w;
                         end
@@ -204,7 +211,7 @@ classdef fdacurve
                 sumd(iter+1) = sumnd_t;
 
                 % Compute average direction of tangent vectors v_i
-                vbar=sumv/T;
+                vbar=sumv/K;
                 normvbar(iter)=sqrt(InnerProd_Q(vbar,vbar));
                 normv=normvbar(iter);
 
