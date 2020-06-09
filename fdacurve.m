@@ -523,6 +523,10 @@ classdef fdacurve
         end
         
         function plot_pca(obj)
+            
+            if isempty(obj.s)
+                error('Calculate PCA')
+            end
             figure(5)
             plot(obj.s)
             title('Singular Values')
@@ -533,9 +537,10 @@ classdef fdacurve
             for j = 1:4
                 figure(20+j); clf; hold on;
                 for i=1:10
-                    tmp = VM + 0.5*(i-5)*sqrt(ss(j))*obj.U(:,j);
-                    v1 = reshape(tmp,2,41);
-                    q2n = ElasticShooting(obj.mu,v1);
+                    tmp = VM + 0.5*(i-5)*sqrt(obj.s(j))*obj.U(:,j);
+                    [m,n] = size(obj.q_mean);
+                    v1 = reshape(tmp,m,n);
+                    q2n = ElasticShooting(obj.q_mean,v1);
                     
                     p = q_to_curve(q2n);
                     if i == 5
