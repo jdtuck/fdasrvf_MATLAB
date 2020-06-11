@@ -306,16 +306,14 @@ classdef fdacurve
             % Output:
             % fdacurve object
             
-            [n,T,K] = size(obj.v);
-            
-            obj.C=zeros(n*T);
-            for i=1:K
-                w=obj.v(:,:,i);
-                [m1,n1] = size(w);
-                w = reshape(w',1,m1*n1);
-                obj.C=obj.C+w'*w;
+            [M,N,K] = size(obj.v);
+            tmpv = zeros(M*N,K);
+            for i = 1:K
+                tmp = obj.v(:,:,i);
+                tmpv(:,i) = tmp(:);
             end
-            obj.C=obj.C/(K-1);
+            obj.C = cov(tmpv');
+            
         end
         
         function obj = shape_pca(obj, no)
