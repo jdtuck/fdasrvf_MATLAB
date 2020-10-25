@@ -1,5 +1,5 @@
 function qo = warp_q_gamma(q,gamma,t,spline)
-% WARP_F_GAMMA Warp SRVF by gamma
+% WARP_Q_GAMMA Warp SRVF by gamma
 % -------------------------------------------------------------------------
 % This function warps SRVF \eqn{q} by \eqn{\gamma}
 %
@@ -21,7 +21,7 @@ if nargin < 4
 end
 
 if spline
-    qo = interp1(t, q, (t(end)-t(1)).*gamma + t(1), 'maxima')'.*sqrt(gam_dev');
+    qo = interp1(t, q, (t(end)-t(1)).*gamma + t(1), 'makima')'.*sqrt(gam_dev');
 else
     qo = interp1(t, q, (t(end)-t(1)).*gamma + t(1))'.*sqrt(gam_dev');
 end
