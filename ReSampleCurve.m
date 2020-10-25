@@ -29,7 +29,7 @@ newdel = linspace(0,1,N);
 
 Xn = zeros(n,N);
 for j=1:n
-    Xn(j,:) = interp1(cumdel,X(j,:),newdel,'maxima');
+    Xn(j,:) = interp1(cumdel,X(j,:),newdel,'makima');
 end
 
 if closed
