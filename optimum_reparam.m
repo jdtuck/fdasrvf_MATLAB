@@ -15,7 +15,7 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
 % lambda: controls amount of warping (default = 0)
 % method: controls which optimization method (default="DP") options are
 % Dynamic Programming ("DP"), Coordinate Descent ("DP2"), and Riemannian BFGS
-% ("RBFGS")
+% ("RBFGSM")
 % w: controls LRBFGS (default = 0.01)
 % f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
