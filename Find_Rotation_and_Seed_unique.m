@@ -1,4 +1,4 @@
-function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFlag,closed)
+function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFlag,closed,method)
 % FIND_ROTATION_AND_SEED_UNIQUE find roation and seed of two curves
 % -------------------------------------------------------------------------
 % find roation and seed of closed curve
@@ -11,6 +11,9 @@ function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFl
 % q2: matrix (n,T) defining T points on n dimensional SRVF
 % reparamFlag: flag to calculate reparametrization (default F)
 % closed: flag if closed curve (default F)
+% method: controls which optimization method (default="DP") options are
+% Dynamic Programming ("DP") and Riemannian BFGS
+% ("RBFGSM")
 %
 % Output:
 % q2best: best aligned and rotated and seeded SRVF
@@ -20,6 +23,12 @@ function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFl
 if nargin < 3
     reparamFlag = false;
     closed = false;
+    method = 'DP';
+elseif nargin < 4
+    closed = false;
+    method = 'DP';
+elseif nargin < 5
+    method = 'DP';
 end
 
 [~,T] = size(q1);
@@ -43,7 +52,7 @@ for ctr = 0:end_idx
     if(reparamFlag)
         
         if norm(q1-q2n,'fro') > 0.0001
-            gam = DynamicProgrammingQ(q1/sqrt(InnerProd_Q(q1,q1)),q2n/sqrt(InnerProd_Q(q2n,q2n)),0,0);
+            gam = optimum_reparam_curve(q2,q1,method);
             gamI = invertGamma(gam);
             gamI = (gamI-gamI(1))/(gamI(end)-gamI(1));
             p2n = q_to_curve(q2n);

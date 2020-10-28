@@ -1,4 +1,4 @@
-function [dy, dx] = elastic_distance_curve(beta1, beta2, closed)
+function [dy, dx] = elastic_distance_curve(beta1, beta2, closed, method)
 % ELASTIC_DISTANCE_CURVE Calculates the two elastic distances between two
 % curves
 % -------------------------------------------------------------------------
@@ -13,12 +13,18 @@ function [dy, dx] = elastic_distance_curve(beta1, beta2, closed)
 % amples
 % beta2: sample curve 1
 % closed: boolean if curve is closed (default = false)
+% method: controls which optimization method (default="DP") options are
+% Dynamic Programming ("DP") and Riemannian BFGS
+% ("RBFGSM")
 %
 % Output
 % dy: amplitude distance
 % dx: phase distance
 if nargin < 3
     closed = false;
+    method = 'DP';
+elseif nargin < 4
+    method = 'DP';
 end
 
 N = size(beta1,2);
@@ -30,7 +36,7 @@ q1 = curve_to_q(beta1);
 q2 = curve_to_q(beta2);
 
 % Compute shooting vector from mu to q_i
-[qn_t,~,gam] = Find_Rotation_and_Seed_unique(q1,q2,true,closed);
+[qn_t,~,gam] = Find_Rotation_and_Seed_unique(q1,q2,true,closed, method);
 [qn_t,~] = Find_Best_Rotation(q1,qn_t);
 
 q1dotq2=InnerProd_Q(q1,qn_t);
