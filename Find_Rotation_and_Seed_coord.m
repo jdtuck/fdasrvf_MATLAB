@@ -1,4 +1,4 @@
-function [beta2best,q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_coord(beta1,beta2,reparamFlag,closed)
+function [beta2best,q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_coord(beta1,beta2,reparamFlag,closed,method)
 % FIND_ROTATION_AND_SEED_COORD find roation and seed of two curves
 % -------------------------------------------------------------------------
 % find roation and seed of curves
@@ -20,10 +20,16 @@ function [beta2best,q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_coord(beta1,
 if nargin < 3
     reparamFlag = false;
     closed = false;
+    method = 'DP';
+elseif nargin < 4
+    closed = false;
+    method = 'DP';
+elseif nargin < 5
+    method = 'DP';
 end
 
 [~,T] = size(beta1);
-q1 = curve_to_q(q1)
+q1 = curve_to_q(beta1);
 
 scl = 4;
 minE = 1000;
@@ -40,12 +46,12 @@ for ctr = 0:end_idx
         beta2n = beta2;
     end
     [beta2n,R] = Find_Best_Rotation(beta1,beta2n);
-    q2n = curve_to_q(beta2n)
+    q2n = curve_to_q(beta2n);
     
     if(reparamFlag)
         
         if norm(q1-q2n,'fro') > 0.0001
-            gam = DynamicProgrammingQ(q1/sqrt(InnerProd_Q(q1,q1)),q2n/sqrt(InnerProd_Q(q2n,q2n)),0,0);
+            gam = optimum_reparam_curve(q2n,q1,method);
             gamI = invertGamma(gam);
             gamI = (gamI-gamI(1))/(gamI(end)-gamI(1));
             beta2n = warp_curve_gamma(beta2n,gamI);
@@ -53,6 +59,8 @@ for ctr = 0:end_idx
             if closed
                 q2n = ProjectC(q2n);
             end
+            q2new = q2n;
+            beta2new = beta2n;
         else
             q2new = q2n;
             beta2new = beta2n;
