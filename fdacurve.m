@@ -25,6 +25,7 @@ classdef fdacurve
         cent      % center
         scale     % scale
         E         % energy
+        len       % scale of srvf
     end
     
     methods
@@ -47,16 +48,19 @@ classdef fdacurve
             q = zeros(n,N,K);
             beta1 = zeros(n,N,K);
             cent1 = zeros(n,K);
+            len1 = zeros(1,K);
             for ii = 1:K
                 beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N,closed);
                 a=-calculateCentroid(beta1(:,:,ii));
-                beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
+                beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N);
+                len1(ii) = norm(beta1(:,:,ii));
                 q(:,:,ii) = curve_to_q(beta1(:,:,ii),obj.scale,closed);
                 cent1(:,ii) = -a;
             end
             obj.q = q;
             obj.beta = beta1;
             obj.cent = cent1;
+            obj.len = len1;
         end
         
         function obj = karcher_mean(obj,option)
@@ -75,6 +79,10 @@ classdef fdacurve
             % parallel processing toolbox)
             % option.closepool = 0; % determines wether to close matlabpool
             % option.MaxItr = 20;  % maximum iterations
+            % option.method = 'DP'; % reparam method
+            % controls which optimization method (default="DP") options are
+            % Dynamic Programming ("DP") and Riemannian BFGS
+            % ("RBFGSM")
             %
             % Output:
             % fdacurve object
@@ -83,6 +91,7 @@ classdef fdacurve
                 option.parallel = 0;
                 option.closepool = 0;
                 option.MaxItr = 20;
+                option.method = 'DP';
             end
             
             % time warping on a set of functions
@@ -140,7 +149,7 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
                         if obj.scale
                             qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         end
@@ -178,7 +187,7 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
                         if obj.scale
                             qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         end
@@ -248,7 +257,7 @@ classdef fdacurve
                     beta1 = betan1(:,:,i);
                     
                     % Compute shooting vector from mu to q_i
-                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
                     beta1 = R*beta1;
                     beta1n = warp_curve_gamma(beta1,gamI);
                     q1n = curve_to_q(beta1n);
@@ -267,7 +276,7 @@ classdef fdacurve
                     beta1 = obj.beta(:,:,i);
                     
                     % Compute shooting vector from mu to q_i
-                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed);
+                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
                     beta1 = R*beta1;
                     beta1n = warp_curve_gamma(beta1,gamI);
                     q1n = curve_to_q(beta1n);

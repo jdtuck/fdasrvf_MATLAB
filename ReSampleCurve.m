@@ -20,6 +20,10 @@ end
 [n,T] = size(X);
 del = zeros(1,T);
 del(1) = 0;
+tst = X(:,2)-X(:,1);
+if tst(1) < 0
+    X = fliplr(X);
+end
 for r = 2:T
     del(r) = norm(X(:,r) - X(:,r-1));
 end
@@ -29,7 +33,7 @@ newdel = linspace(0,1,N);
 
 Xn = zeros(n,N);
 for j=1:n
-    Xn(j,:) = interp1(cumdel,X(j,:),newdel,'maxima');
+    Xn(j,:) = interp1(cumdel,X(j,:),newdel,'makima');
 end
 
 if closed
