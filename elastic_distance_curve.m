@@ -30,8 +30,7 @@ q1 = curve_to_q(beta1);
 q2 = curve_to_q(beta2);
 
 % Compute shooting vector from mu to q_i
-[qn_t,~,gam] = Find_Rotation_and_Seed_unique(q1,q2,true,closed);
-[qn_t,~] = Find_Best_Rotation(q1,qn_t);
+[beta2n,qn_t,~,gam] = Find_Rotation_and_Seed_coord(beta1,beta2,true,closed);
 
 q1dotq2=InnerProd_Q(q1,qn_t);
 
