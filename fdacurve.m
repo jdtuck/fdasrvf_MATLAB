@@ -25,6 +25,7 @@ classdef fdacurve
         cent      % center
         scale     % scale
         E         % energy
+        len       % scale of srvf
     end
     
     methods
@@ -47,12 +48,14 @@ classdef fdacurve
             q = zeros(n,N,K);
             beta1 = zeros(n,N,K);
             cent1 = zeros(n,K);
+            len1 = zeros(1,K);
             for ii = 1:K
                 if size(beta,2) ~= N
                     beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N,closed);
                 else
                     beta1(:,:,ii) = beta(:,:,ii);
                 end
+                len1(ii) = norm(beta1(:,:,ii));
                 a=-calculateCentroid(beta1(:,:,ii));
                 beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
                 q(:,:,ii) = curve_to_q(beta1(:,:,ii),obj.scale,closed);
@@ -61,6 +64,7 @@ classdef fdacurve
             obj.q = q;
             obj.beta = beta1;
             obj.cent = cent1;
+            obj.len = len1;
         end
         
         function obj = karcher_mean(obj,option)
