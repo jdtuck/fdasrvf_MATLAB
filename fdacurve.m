@@ -25,7 +25,6 @@ classdef fdacurve
         cent      % center
         scale     % scale
         E         % energy
-        len       % scale of srvf
     end
     
     methods
@@ -48,19 +47,20 @@ classdef fdacurve
             q = zeros(n,N,K);
             beta1 = zeros(n,N,K);
             cent1 = zeros(n,K);
-            len1 = zeros(1,K);
             for ii = 1:K
-                beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N,closed);
+                if size(beta,2) ~= N
+                    beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N,closed);
+                else
+                    beta1(:,:,ii) = beta(:,:,ii);
+                end
                 a=-calculateCentroid(beta1(:,:,ii));
-                beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N);
-                len1(ii) = norm(beta1(:,:,ii));
+                beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
                 q(:,:,ii) = curve_to_q(beta1(:,:,ii),obj.scale,closed);
                 cent1(:,ii) = -a;
             end
             obj.q = q;
             obj.beta = beta1;
             obj.cent = cent1;
-            obj.len = len1;
         end
         
         function obj = karcher_mean(obj,option)
@@ -228,7 +228,9 @@ classdef fdacurve
                 normvbar(iter)=sqrt(InnerProd_Q(vbar,vbar));
                 normv=normvbar(iter);
                 
-                if (normv>tolv) && abs(sumd(iter+1)-sumd(iter))>told
+                if (sumd(iter)-sumd(iter+1)) < 0
+                    break
+                elseif (normv>tolv) && abs(sumd(iter+1)-sumd(iter))>told
                     % Update mu in direction of vbar
                     mu=cos(delta*normvbar(iter))*mu+sin(delta*normvbar(iter))*vbar/normvbar(iter);
                     
@@ -240,7 +242,7 @@ classdef fdacurve
                     x=q_to_curve(mu);
                     a=-calculateCentroid(x);
                     betamean=x+repmat(a,1,T);
-                    
+                
                 else
                     break
                 end
