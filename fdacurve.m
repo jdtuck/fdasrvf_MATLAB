@@ -535,19 +535,23 @@ classdef fdacurve
             end
         end
         
-        function plot_pca(obj)
+        function plot_pca(obj, n)
             
+            if nargin < 2
+                n = 4;
+            end
             if isempty(obj.s)
                 error('Calculate PCA')
             end
             figure(5)
-            plot(obj.s)
-            title('Singular Values')
+            plot(cumsum(obj.s)/sum(obj.s)*100)
+            title('Variability Explained')
+            xlabel('PC')
             
             % plot principal modes of variability
             VM = mean(obj.v,3);
             VM = VM(:);
-            for j = 1:4
+            for j = 1:n
                 figure(20+j); clf; hold on;
                 for i=1:10
                     tmp = VM + 0.5*(i-5)*sqrt(obj.s(j))*obj.U(:,j);
