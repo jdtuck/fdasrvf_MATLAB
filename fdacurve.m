@@ -567,6 +567,7 @@ classdef fdacurve
                     end
                     axis equal ij off;
                 end
+                title(sprintf('PC: %d',j))
             end
         end
     end
