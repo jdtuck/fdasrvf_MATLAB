@@ -33,10 +33,9 @@ beta1 = beta1 + repmat(a,1,N);
 a=-calculateCentroid(beta2);
 beta2 = beta2 + repmat(a,1,N);
 q1 = curve_to_q(beta1);
-q2 = curve_to_q(beta2);
 
 % Compute shooting vector from mu to q_i
-[beta2n,qn_t,~,gam] = Find_Rotation_and_Seed_coord(beta1,beta2,true,closed,method);
+[~,qn_t,~,gam] = Find_Rotation_and_Seed_coord(beta1,beta2,true,closed,method);
 
 q1dotq2=InnerProd_Q(q1,qn_t);
 
