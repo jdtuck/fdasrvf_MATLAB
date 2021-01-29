@@ -19,7 +19,7 @@ function [dy, dx] = elastic_distance_curve(beta1, beta2, closed, scale, method)
 % ("RBFGSM")
 %
 % Output
-% dy: amplitude distance
+% dy: shape distance
 % dx: phase distance
 if nargin < 3
     closed = false; 
