@@ -9,7 +9,6 @@ function [q,len,lenq] = curve_to_q(p,closed)
 %
 % Input:
 % p: matrix (n,T) defining T points on n dimensional curve
-% scale: scale curve to length 1
 % closed: if curve is closed
 % 
 % Output:
