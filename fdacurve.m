@@ -346,7 +346,15 @@ classdef fdacurve
                     tmpv(:,i) = tmp(:);
                 end
             end
-            obj.C = cov(tmpv');
+            
+            if obj.scale
+                VM = mean(obj.v,3);
+                VM = [VM(:); obj.mean_scale];
+                tmpv = tmpv - repmat(VM,1,size(tmpv,2));
+                obj.C = cov(tmpv');
+            else
+                obj.C = cov(tmpv');
+            end
             
         end
         
@@ -382,7 +390,7 @@ classdef fdacurve
             K = size(obj.beta,3);
             if obj.scale
                 VM = mean(obj.v,3);
-                VM = [VM(:); mean(obj.len_q)];
+                VM = [VM(:); obj.mean_scale];
             else
                 VM = mean(obj.v,3);
                 VM = VM(:);
@@ -582,7 +590,7 @@ classdef fdacurve
             % plot principal modes of variability
             VM = mean(obj.v,3);
             if obj.scale
-                VM = [VM(:); mean(obj.len)];
+                VM = [VM(:); obj.mean_scale];
             else
                 VM = VM(:);
             end
