@@ -19,7 +19,7 @@ function [v,d,q2n] = ElasticShootingVector(q1,q2,reparamFlag,scale)
 % q2n: aligned srvf
 
 if nargin < 4
-    ifscale = false;
+    scale = 0;
 end
 if scale == 0
     ifscale = false;
