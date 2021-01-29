@@ -25,10 +25,10 @@ classdef fdacurve
         cent            % center
         scale           % scale
         E               % energy
-        len             % scale of curve
-        len_q           % scale of SRVF
-        mean_scale      % mean scale
-        mean_scale_q    % mean scale
+        len             % length of curves
+        len_q           % length of SRVFs
+        mean_scale      % mean length
+        mean_scale_q    % mean length SRVF
     end
     
     methods
@@ -610,7 +610,7 @@ classdef fdacurve
                     
                     p = q_to_curve(q2n,tmp_scale);
                     if obj.scale
-                        mv = 0.2*mean(obj.len);
+                        mv = 0.2*obj.mean_scale;
                     else
                         mv = 0.2;
                     end
