@@ -26,5 +26,7 @@ end
 
 p = zeros(n,T);
 for i = 1:n
-    p(i,:) = cumtrapz( q(i,:).*qnorm*scale )/(T);
+    p(i,:) = cumtrapz(q(i,:).*qnorm)/(T);
 end
+
+p = scale*p;

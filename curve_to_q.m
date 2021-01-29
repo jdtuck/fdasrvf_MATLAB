@@ -1,4 +1,4 @@
-function [q,len] = curve_to_q(p,scale,closed)
+function [q,len,lenq] = curve_to_q(p,closed)
 % CURVE_TO_Q Convert curve to Square-Root Velocity Function
 % -------------------------------------------------------------------------
 % Convert to SRVF
@@ -15,13 +15,9 @@ function [q,len] = curve_to_q(p,scale,closed)
 % Output:
 % q: matrix of SRVF
 % len: length of curve
+% lenq: length of SRVF
 
 if nargin < 2
-    scale = true;
-end
-
-if nargin < 3
-    scale = true;
     closed = false;
 end
 
@@ -30,6 +26,7 @@ v=gradient(p,1/(T-1));
 
 
 q=zeros(n,T);
+len = sqrt(InnerProd_Q(v,v));
 for i = 1:T
     L = sqrt(norm(v(:,i),'fro'));
     if L > 0.0001
@@ -39,10 +36,8 @@ for i = 1:T
     end
 end
 
-len = sqrt(InnerProd_Q(q,q));
-if scale
-    q = q/len;
-end
+lenq = sqrt(InnerProd_Q(q,q));
+q = q/lenq;
 
 if closed
     q = ProjectC(q);

@@ -5,27 +5,30 @@ classdef fdacurve
     % SRVF framework
     
     properties
-        beta      % (n,T,K) matrix defining n dimensional curve on T samples with K curves
-        q         % (n,T,K) matrix defining n dimensional srvf on T samples with K srvfs
-        betan     % aligned curves
-        qn        % aligned srvfs
-        basis     % calculated basis
-        beta_mean % karcher mean curve
-        q_mean    % karcher mean srvf
-        gams      % warping functions
-        v         % shooting vectors
-        C         % karcher covariance
-        s         % pca singular values
-        U         % pca singular vectors
-        coef      % pca coefficients
-        closed    % closed curve if true
-        qun       % cost function
-        samples   % random samples
-        gamr      % random warping functions
-        cent      % center
-        scale     % scale
-        E         % energy
-        len       % scale of srvf
+        beta            % (n,T,K) matrix defining n dimensional curve on T samples with K curves
+        q               % (n,T,K) matrix defining n dimensional srvf on T samples with K srvfs
+        betan           % aligned curves
+        qn              % aligned srvfs
+        basis           % calculated basis
+        beta_mean       % karcher mean curve
+        q_mean          % karcher mean srvf
+        gams            % warping functions
+        v               % shooting vectors
+        C               % karcher covariance
+        s               % pca singular values
+        U               % pca singular vectors
+        coef            % pca coefficients
+        closed          % closed curve if true
+        qun             % cost function
+        samples         % random samples
+        gamr            % random warping functions
+        cent            % center
+        scale           % scale
+        E               % energy
+        len             % scale of curve
+        len_q           % scale of SRVF
+        mean_scale      % mean scale
+        mean_scale_q    % mean scale
     end
     
     methods
@@ -35,10 +38,10 @@ classdef fdacurve
             %   beta: (n,T,K) matrix defining n dimensional curve on T samples with K curves
             %   closed: true or false if closed curve
             %   N: resample curve to N points
-            %   scale: scale curve to length 1 (true/false)
+            %   scale: include scale (true/false)
             
             if nargin < 4
-                scale = true;
+                scale = false;
             end
             obj.scale = scale;
             obj.closed = closed;
@@ -49,22 +52,23 @@ classdef fdacurve
             beta1 = zeros(n,N,K);
             cent1 = zeros(n,K);
             len1 = zeros(1,K);
+            lenq1 = zeros(1,K);
             for ii = 1:K
                 if size(beta,2) ~= N
                     beta1(:,:,ii) = ReSampleCurve(beta(:,:,ii),N,closed);
                 else
                     beta1(:,:,ii) = beta(:,:,ii);
                 end
-                len1(ii) = norm(beta1(:,:,ii));
                 a=-calculateCentroid(beta1(:,:,ii));
                 beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
-                q(:,:,ii) = curve_to_q(beta1(:,:,ii),obj.scale,closed);
+                [q(:,:,ii), len1(ii), lenq1(ii)] = curve_to_q(beta1(:,:,ii),closed);
                 cent1(:,ii) = -a;
             end
             obj.q = q;
             obj.beta = beta1;
             obj.cent = cent1;
             obj.len = len1;
+            obj.len_q = lenq1;
         end
         
         function obj = karcher_mean(obj,option)
@@ -154,9 +158,8 @@ classdef fdacurve
                         
                         % Compute shooting vector from mu to q_i
                         [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
-                        if obj.scale
-                            qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
-                        end
+                        qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
+                        
                         gamma(:,i) = gamI;
                         
                         q1dotq2=InnerProd_Q(mu,qn_t);
@@ -192,9 +195,8 @@ classdef fdacurve
                         
                         % Compute shooting vector from mu to q_i
                         [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
-                        if obj.scale
-                            qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
-                        end
+                        qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
+                        
                         gamma(:,i) = gamI;
                         
                         q1dotq2=InnerProd_Q(mu,qn_t);
@@ -254,7 +256,16 @@ classdef fdacurve
                 iter=iter+1;
                 
             end
-            
+
+            % compute average length
+            if obj.scale
+                % compute geometric mean
+                obj.mean_scale = (prod(obj.len))^(1/length(obj.len));
+                obj.mean_scale_q = (prod(obj.len_q))^(1/length(obj.len_q));
+                betamean = obj.mean_scale.*betamean; 
+            end
+
+            % align to mean
             betan1 = obj.beta;
             qn1 = obj.q;
             if option.parallel
@@ -322,10 +333,18 @@ classdef fdacurve
             % fdacurve object
             
             [M,N,K] = size(obj.v);
-            tmpv = zeros(M*N,K);
+            if obj.scale
+                tmpv = zeros(M*N+1,K);
+            else
+                tmpv = zeros(M*N,K);
+            end
             for i = 1:K
                 tmp = obj.v(:,:,i);
-                tmpv(:,i) = tmp(:);
+                if obj.scale
+                    tmpv(:,i) = [tmp(:); obj.len(i)];
+                else
+                    tmpv(:,i) = tmp(:);
+                end
             end
             obj.C = cov(tmpv');
             
@@ -361,11 +380,23 @@ classdef fdacurve
             
             % express shapes as coefficients
             K = size(obj.beta,3);
-            VM = mean(obj.v,3);
+            if obj.scale
+                VM = mean(obj.v,3);
+                VM = [VM(:); mean(obj.len_q)];
+            else
+                VM = mean(obj.v,3);
+                VM = VM(:);
+            end
             x = zeros(no,K);
             for ii = 1:K
-                tmpv = obj.v(:,:,ii);
-                x(:,ii) = obj.U'*(tmpv(:) - VM(:));
+                if obj.scale
+                    tmpv = obj.v(:,:,ii);
+                    tmpv = [tmpv(:); obj.len(ii)];
+                else
+                    tmpv = obj.v(:,:,ii);
+                    tmpv = tmpv(:);
+                end
+                x(:,ii) = obj.U'*(tmpv - VM);
             end
             obj.coef = x;
         end
@@ -550,20 +581,35 @@ classdef fdacurve
             
             % plot principal modes of variability
             VM = mean(obj.v,3);
-            VM = VM(:);
+            if obj.scale
+                VM = [VM(:); mean(obj.len)];
+            else
+                VM = VM(:);
+            end
             for j = 1:n
                 figure(20+j); clf; hold on;
                 for i=1:10
                     tmp = VM + 0.5*(i-5)*sqrt(obj.s(j))*obj.U(:,j);
                     [m,n] = size(obj.q_mean);
+                    if obj.scale
+                        tmp_scale = tmp(end);
+                        tmp = tmp(1:end-1);
+                    else
+                        tmp_scale = 1;
+                    end
                     v1 = reshape(tmp,m,n);
                     q2n = ElasticShooting(obj.q_mean,v1);
                     
-                    p = q_to_curve(q2n);
-                    if i == 5
-                        plot(0.2*i + p(1,:),p(2,:), 'k','LineWidth',3);
+                    p = q_to_curve(q2n,tmp_scale);
+                    if obj.scale
+                        mv = 0.2*mean(obj.len);
                     else
-                        plot(0.2*i + p(1,:),p(2,:),'LineWidth',2);
+                        mv = 0.2;
+                    end
+                    if i == 5
+                        plot(mv*i + p(1,:),p(2,:), 'k','LineWidth',3);
+                    else
+                        plot(mv*i + p(1,:),p(2,:),'LineWidth',2);
                     end
                     axis equal ij off;
                 end
