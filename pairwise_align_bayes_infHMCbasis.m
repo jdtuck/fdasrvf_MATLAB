@@ -1,5 +1,5 @@
 function [out, chains] = pairwise_align_bayes_infHMCbasis(y1i, y2i, time, mcmcopts)
-% PAIRWISE_ALIGN_BAYES_INFHMCBASIS Align two trajectories using hierarchichal
+% PAIRWISE_ALIGN_BAYES_INFHMCBASIS Align two trajectories using hierarchical
 % Bayesian framework assuming measuring error
 % -------------------------------------------------------------------------
 %
