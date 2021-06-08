@@ -386,7 +386,6 @@ result.L2 = zeros(1,iter);
 result.logl = zeros(1,iter);
 result.SSE = zeros(1,iter);
 result.theta_accept = zeros(1,iter);
-result.accept_betas = zeros(1,iter);
 result.f2_accept = zeros(1,iter);
 result.f1_accept = zeros(1,iter);
 result.L2_accept = zeros(1,iter);
@@ -678,7 +677,7 @@ if (isfinite(logRatio) && (log(rand) < min([0,logRatio])))
     SSE_curr = SSEv;
 else
     nll = nll_cur; g = g_cur;
-    theta_accept = 0;
+    theta_accept = false;
 end
 end
 
