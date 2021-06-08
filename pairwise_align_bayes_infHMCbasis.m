@@ -269,9 +269,7 @@ end
 % thining
 out.f1 = out.f1(1:mcmcopts.thin:end,:);
 out.f2 = out.f2(1:mcmcopts.thin:end,:);
-out.gamma(:,i) = chains{i}.gamma;
 out.v_coef = out.v_coef(1:mcmcopts.thin:end,:);
-out.psi(:,i) = chains{i}.psi;
 out.sigma = out.sigma(1:mcmcopts.thin:end);
 out.sigma1 = out.sigma1(1:mcmcopts.thin:end);
 out.sigma2 = out.sigma2(1:mcmcopts.thin:end);
@@ -279,7 +277,6 @@ out.s1 = out.s1(1:mcmcopts.thin:end);
 out.s2 = out.s2(1:mcmcopts.thin:end);
 out.L1 = out.L1(1:mcmcopts.thin:end);
 out.L2 = out.L2(1:mcmcopts.thin:end);
-out.f2_warped_mu(:,i) = chains{i}.f2_warped_mu;
 
 if (mcmcopts.extrainfo)
     out.theta_accept = out.theta_accept(1:mcmcopts.thin:end);
@@ -288,7 +285,7 @@ if (mcmcopts.extrainfo)
     out.L1_accept = out.L1_accept(1:mcmcopts.thin:end);
     out.L2_accept = out.L2_accept(1:mcmcopts.thin:end);
     out.gamma_mat = out.gamma_mat(:,1:mcmcopts.thin:end);
-    out.SS = out.SSE(1:mcmcopts.thin:end);
+    out.SSE = out.SSE(1:mcmcopts.thin:end);
     out.logl = out.logl(1:mcmcopts.thin:end);
     out.f2_warped = out.f2_warped(1:mcmcopts.thin:end,:);
     out.phasedist = out.phasedist(1:mcmcopts.thin:end);
