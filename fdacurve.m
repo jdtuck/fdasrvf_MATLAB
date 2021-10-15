@@ -29,19 +29,28 @@ classdef fdacurve
         len_q           % length of SRVFs
         mean_scale      % mean length
         mean_scale_q    % mean length SRVF
+        center          % centering of curves done
     end
     
     methods
-        function obj = fdacurve(beta, closed, N, scale)
+        function obj = fdacurve(beta, closed, N, scale, center)
             %fdacurve Construct an instance of this class
             % Input:
             %   beta: (n,T,K) matrix defining n dimensional curve on T samples with K curves
             %   closed: true or false if closed curve
-            %   N: resample curve to N points
-            %   scale: include scale (true/false)
+            %   N: resample curve to N points (default = T)
+            %   scale: include scale (true/false (default))
+            %   center: center curve (true (default)/false)
             
-            if nargin < 4
+            if nargin < 3
+                N = size(beta,2);
                 scale = false;
+                center = true;
+            elseif nargin < 4
+                scale = false;
+                center = true;
+            elseif nargin < 5
+                center = true;
             end
             obj.scale = scale;
             obj.closed = closed;
@@ -59,7 +68,11 @@ classdef fdacurve
                 else
                     beta1(:,:,ii) = beta(:,:,ii);
                 end
-                a=-calculateCentroid(beta1(:,:,ii));
+                if (center)
+                    a=-calculateCentroid(beta1(:,:,ii));
+                else
+                    a=zeros(n,1);
+                end
                 beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
                 [q(:,:,ii), len1(ii), lenq1(ii)] = curve_to_q(beta1(:,:,ii),closed);
                 cent1(:,ii) = -a;
@@ -69,6 +82,7 @@ classdef fdacurve
             obj.cent = cent1;
             obj.len = len1;
             obj.len_q = lenq1;
+            obj.center = center;
         end
         
         function obj = karcher_mean(obj,option)
@@ -83,6 +97,8 @@ classdef fdacurve
             % Input:
             %
             % default options
+            % option.reparam = true; % computes optimal reparamertization
+            % option.rotation = true; % computes optimal rotation
             % option.parallel = 0; % turns on MATLAB parallel processing (need
             % parallel processing toolbox)
             % option.closepool = 0; % determines wether to close matlabpool
@@ -96,6 +112,8 @@ classdef fdacurve
             % fdacurve object
             
             if nargin < 2
+                option.reparam = true;
+                option.rotation = true;
                 option.parallel = 0;
                 option.closepool = 0;
                 option.MaxItr = 20;
@@ -157,7 +175,7 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
+                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.method);
                         qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         
                         gamma(:,i) = gamI;
@@ -194,7 +212,7 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
+                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.method);
                         qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         
                         gamma(:,i) = gamI;
@@ -246,8 +264,12 @@ classdef fdacurve
                     end
                     
                     x=q_to_curve(mu);
-                    a=-calculateCentroid(x);
-                    betamean=x+repmat(a,1,T);
+                    if (obj.center)
+                        a=-calculateCentroid(x);
+                        betamean=x+repmat(a,1,T);
+                    else
+                        betamean = x;
+                    end
                 
                 else
                     break
@@ -274,7 +296,7 @@ classdef fdacurve
                     beta1 = betan1(:,:,i);
                     
                     % Compute shooting vector from mu to q_i
-                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
+                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.method);
                     beta1 = R*beta1;
                     beta1n = warp_curve_gamma(beta1,gamI);
                     q1n = curve_to_q(beta1n);
@@ -293,7 +315,7 @@ classdef fdacurve
                     beta1 = obj.beta(:,:,i);
                     
                     % Compute shooting vector from mu to q_i
-                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,true,obj.closed,option.method);
+                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.method);
                     beta1 = R*beta1;
                     beta1n = warp_curve_gamma(beta1,gamI);
                     q1n = curve_to_q(beta1n);

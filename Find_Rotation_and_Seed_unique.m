@@ -1,4 +1,4 @@
-function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFlag,closed,method)
+function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFlag,rotFlag,closed,method)
 % FIND_ROTATION_AND_SEED_UNIQUE find roation and seed of two curves
 % -------------------------------------------------------------------------
 % find roation and seed of closed curve
@@ -21,17 +21,22 @@ function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFl
 % gamI: best reparameterization
 
 if nargin < 3
-    reparamFlag = false;
+    reparamFlag = true;
+    rotFlag = true;
     closed = false;
     method = 'DP';
 elseif nargin < 4
+    rotFlag = true;
     closed = false;
     method = 'DP';
 elseif nargin < 5
+    closed = false;
+    method = 'DP';
+elseif nargin < 6
     method = 'DP';
 end
 
-[~,T] = size(q1);
+[n,T] = size(q1);
 
 scl = 4;
 minE = 1000;
@@ -47,7 +52,12 @@ for ctr = 0:end_idx
     else
         q2n = q2;
     end
-    [q2n,R] = Find_Best_Rotation(q1,q2n);
+    
+    if (rotFlag)
+        [q2n,R] = Find_Best_Rotation(q1,q2n);
+    else
+        R = eye(n);
+    end
     
     if(reparamFlag)
         
