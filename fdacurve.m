@@ -17,6 +17,7 @@ classdef fdacurve
         C               % karcher covariance
         s               % pca singular values
         U               % pca singular vectors
+        pca             % principal directions
         coef            % pca coefficients
         closed          % closed curve if true
         qun             % cost function
