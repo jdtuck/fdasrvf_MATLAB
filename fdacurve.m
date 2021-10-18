@@ -430,6 +430,33 @@ classdef fdacurve
                 x(:,ii) = obj.U'*(tmpv - VM);
             end
             obj.coef = x;
+            
+            % principal modes of variability
+            VM = mean(obj.v,3);
+            if obj.scale
+                VM = [VM(:); obj.mean_scale];
+            else
+                VM = VM(:);
+            end
+            [n,T,~] = size(obj.beta);
+            p = zeros(n,T,no,10);
+            for j = 1:no
+                for i=1:10
+                    tmp = VM + 0.5*(i-5)*sqrt(obj.s(j))*obj.U(:,j);
+                    [m,n] = size(obj.q_mean);
+                    if obj.scale
+                        tmp_scale = tmp(end);
+                        tmp = tmp(1:end-1);
+                    else
+                        tmp_scale = 1;
+                    end
+                    v1 = reshape(tmp,m,n);
+                    q2n = ElasticShooting(obj.q_mean,v1);
+                    
+                    p(:,:,j,i) = q_to_curve(q2n,tmp_scale);
+                end
+            end
+            obj.pca = p;
         end
         
         function obj = sample_shapes(obj, N, m)
@@ -647,6 +674,7 @@ classdef fdacurve
                 title(sprintf('PC: %d',j))
             end
         end
+        
     end
 end
 
