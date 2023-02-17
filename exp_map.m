@@ -3,4 +3,8 @@ function [expgam] = exp_map(psi, v)
 psi = psi(:);
 v = v(:);
 v_norm = L2norm(v);
-expgam = cos(v_norm) * psi + sin(v_norm) * v / v_norm;
+if sum(v_norm) == 0
+    expgam = cos(v_norm) * psi;
+else
+    expgam = cos(v_norm) * psi + sin(v_norm) * v / v_norm;
+end
