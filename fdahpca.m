@@ -110,7 +110,7 @@ classdef fdahpca
             obj.vec = obj.vec.';
             vm = mean(obj.vec,2);
             for jj = 1:no
-                for ii = 1:size(gam,2)
+                for ii = 1:size(gam,1)
                     c(ii,jj) = (obj.vec(:,ii)-vm).'*obj.U(:,jj);
                 end
             end
