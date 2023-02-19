@@ -102,7 +102,7 @@ classdef fdajpca
             qn1 = [qn; m_new];
             
             % calculate vector space of warping functions
-            [obj.mu_psi,~,~,vec] = SqrtMean(gam.');
+            [obj.mu_psi,~,~,vec] = SqrtMean(gam);
             vec = vec.';
             
             % joint fPCA
