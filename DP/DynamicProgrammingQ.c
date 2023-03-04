@@ -44,7 +44,7 @@ const int Nbrs[NNBRS][2] = {
 
 
 int xycompare(const void *x1, const void *x2);
-double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl);
+double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl, double lam);
 void thomas(double *x, const double *a, const double *b, double *c, int n);
 void spline(double *D, const double *y, int n);
 void lookupspline(double *t, int *k, double dist, double len, int n);
@@ -79,6 +79,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	yy = mxGetPr(plhs[0]);
 	q1 = mxGetPr(prhs[0]);
 	q2 = mxGetPr(prhs[1]);
+    lam = mxGetScalar(prhs[2]);
 
 	M = scl*(N-1)+1;
 	q1L = malloc(n*M*sizeof(double));
@@ -140,7 +141,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 				l = j - Nbrs[Num][1];
 
 				if (k >= 0 && l >= 0) {
-					Etmp = E[N*l + k] + CostFn2(q1L,q2L,k,l,i,j,n,scl);
+					Etmp = E[N*l + k] + CostFn2(q1L,q2L,k,l,i,j,n,scl,lam);
 					if (Num == 0 || Etmp < Emin) {
 						Emin = Etmp;
 						Eidx = Num;
@@ -220,10 +221,11 @@ int xycompare(const void *x1, const void *x2) {
 	return (*(int *)x1 > *(int *)x2) - (*(int *)x1 < *(int *)x2);
 }
 
-double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl) {
-	double m = (j-l)/(double)(i-k), sqrtm = sqrt(m), E = 0, y, tmp, ip, fp;
+double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl, double lam) {
+	double m = (j-l)/(double)(i-k), sqrtm = sqrt(m), E = 0, y, tmp, tmp_pen, ip, fp;
 	int x, idx, d, iL=i*scl, kL=k*scl, lL=l*scl;
 
+    tmp_pen = (1-sqrtm)*(1-sqrtm);
 	for (x = kL; x <= iL; ++x) {
 		y = (x-kL)*m + lL;
 		fp = modf(y, &ip);
@@ -231,7 +233,7 @@ double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j,
 
 		for (d = 0; d < n; ++d) {
 			tmp = q1L[n*x + d] - sqrtm*q2L[n*idx + d];
-			E += tmp*tmp;
+			E += (tmp*tmp + lam*tmp_pen);
 		}
 	}
 
