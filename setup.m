@@ -3,7 +3,7 @@ setup_paths
 
 % Dynamic Programming
 fprintf('Compiling DP files...\n');
-mex -outdir DP/ DP/DynamicProgrammingQ2.c DP/dp_grid.c 
+mex -outdir DP/ DP/DynamicProgrammingQ2.c DP/dp_grid.c DP/dp_nbhd.c
 mex -outdir DP/ DP/DynamicProgrammingQ.c
 
 % Bayesian

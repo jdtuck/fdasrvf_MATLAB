@@ -1,4 +1,4 @@
-function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
+function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o,nbhd_dim)
 % OPTIMUM_REPARAM Calculates Warping for two SRVFs
 % -------------------------------------------------------------------------%
 % This function aligns two SRSF functions using Dynamic Programming
@@ -6,7 +6,7 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
 % Usage:  gam = optimum_reparam(q1,q2,t)
 %         gam = optimum_reparam(q1,q2,t,lambda)
 %         gam = optimum_reparam(q1,q2,t,lambda,method)
-%         gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
+%         gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o,nbhd_dim)
 %
 % Input:
 % q1: srsf of function 1
@@ -19,29 +19,20 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o)
 % w: controls LRBFGS (default = 0.01)
 % f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
+% nbhd_dim: size of the grid (default = 7)
 %
 % Output:
 % gam: warping function
-if nargin < 4
+arguments
+    q1
+    q2
+    t
     lambda = 0.0;
     method = 'DP1';
     w = 0.0;
     f1o = 0.0;
     f2o = 0.0;
-elseif nargin < 5
-    method = 'DP';
-    w = 0.0;
-    f1o = 0.0;
-    f2o = 0.0;
-elseif nargin < 6
-    w = 0.0;
-    f1o = 0.0;
-    f2o = 0.0;
-elseif nargin < 7
-    f1o = 0.0;
-    f2o = 0.0;
-elseif nargin < 8
-    f2o = 0.0;
+    nbhd_dim = 7;
 end
 
 q1 = q1/norm(q1);
@@ -54,7 +45,7 @@ skipm = 0;
 auto = 0;
 switch upper(method)
     case 'DP'
-        [G,T] = DynamicProgrammingQ2(q1',t',q2',t',t',t',lambda);
+        [G,T] = DynamicProgrammingQ2(q1',t',q2',t',t',t',lambda,nbhd_dim);
         gam0 = interp1(T,G,t);
     case 'DP1'
         [gam0] = DynamicProgrammingQ(q2',q1',lambda,0);

@@ -1,6 +1,7 @@
 #include "mex.h"
 #include <math.h>
 #include "dp_grid.h"
+#include "dp_nbhd.h"
 
 
 /* Signature:
@@ -32,6 +33,8 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   int tr, tc; /* target row and column index */
   int Galloc_size;
   double *pres;
+  size_t nbhd_dim;
+  size_t nbhd_count; /* Number of indexes */
 
   /* [G T dist] = dp_mex( Q1, T1, Q2, T2, tv1, tv2 ); */
   Q1 = mxGetPr( prhs[0] );
@@ -42,6 +45,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   tv2 = mxGetPr( prhs[5] );
   lam1 = mxGetPr( prhs[6] );
   lam = *lam1;
+  nbhd_dim = mxGetScalar( prhs[7] );
 
   dim = mxGetM( prhs[0] );
   nsamps1 = mxGetN( prhs[1] ); /* = columns(T1) = columns(Q1)+1 */
@@ -91,13 +95,19 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   T = mxGetPr( plhs[1] );
   pres = mxGetPr( plhs[2] );
 
+  Pair * dp_nbhd = dp_generate_nbhd(nbhd_dim, &nbhd_count);
+
   /* dp_costs() needs indexes for gridpoints precomputed */
   dp_all_indexes( T1, nsamps1, tv1, ntv1, idxv1 );
   dp_all_indexes( T2, nsamps2, tv2, ntv2, idxv2 );
 
   /* Compute cost of best path from (0,0) to every other grid point */
   *pres = dp_costs( Q1, T1, nsamps1, Q2, T2, nsamps2, 
-    dim, tv1, idxv1, ntv1, tv2, idxv2, ntv2, E, P, lam );
+    dim, tv1, idxv1, ntv1, tv2, idxv2, ntv2, E, P, lam,
+	nbhd_count, dp_nbhd );
+
+  /* Reconstruct best path from (0,0) to (1,1) */
+  Gsize = dp_build_gamma( P, tv1, ntv1, tv2, ntv2, G, T );
 
   /* Reconstruct best path from (0,0) to (1,1) */
   Gsize = dp_build_gamma( P, tv1, ntv1, tv2, ntv2, G, T );
@@ -105,6 +115,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   mxSetN( plhs[1], Gsize );
 
 cleanup:
+  if ( dp_nbhd ) mxFree( dp_nbhd );
   if ( idxv1 ) mxFree( idxv1 );
   if ( idxv2 ) mxFree( idxv2 );
   if ( E ) mxFree( E );
