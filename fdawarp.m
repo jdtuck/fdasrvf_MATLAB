@@ -1024,15 +1024,7 @@ classdef fdawarp
                 end
             end
 
-            % center gam (numerics)
             obj.gamI = SqrtMeanInverse(gam1);
-            mq = warp_q_gamma(mq,obj.gamI,obj.time);
-            mu = warp_f_gamma(mu,obj.gamI,obj.time);
-            for k = 1:N
-                qn1(:,k) = warp_q_gamma(qn1(:,k),obj.gamI,obj.time);
-                fn1(:,k) = warp_f_gamma(fn1(:,k),obj.gamI,obj.time);
-                gam1(k,:) = warp_f_gamma(gam1(k,:),obj.gamI,obj.time);
-            end
 
             %% Aligned data & stats
             obj.q0 = q;
@@ -1042,7 +1034,7 @@ classdef fdawarp
             std_f0 = std(obj.f, 0, 2);
             std_fn = std(obj.fn, 0, 2);
             obj.mqn = mq;
-            obj.fmean = mu;
+            obj.fmean = mean(obj.f(1,:))+cumtrapz(obj.time,obj.mqn.*abs(obj.mqn));
 
             fgam = zeros(M,N);
             for ii = 1:N
