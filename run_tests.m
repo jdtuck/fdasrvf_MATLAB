@@ -1,0 +1,1 @@
+result = runtests('test_package');
