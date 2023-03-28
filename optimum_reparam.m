@@ -45,10 +45,25 @@ skipm = 0;
 auto = 0;
 switch upper(method)
     case 'DP'
-        [G,T] = DynamicProgrammingQ2(q1',t',q2',t',t',t',lambda,nbhd_dim);
+        if size(q1,2) == 1
+            q1 = q1';
+        end
+        if size(q2,2) == 1
+            q2 = q2';
+        end 
+        if size(t,2) == 1
+            t = t';
+        end 
+        [G,T] = DynamicProgrammingQ2(q1,t,q2,t,t,t,lambda,nbhd_dim);
         gam0 = interp1(T,G,t);
     case 'DP1'
-        [gam0] = DynamicProgrammingQ(q2',q1',lambda,0);
+        if size(q1,2) == 1
+            q1 = q1';
+        end
+        if size(q2,2) == 1
+            q2 = q2';
+        end 
+        [gam0] = DynamicProgrammingQ(q2,q1,lambda,0);
     case 'SIMUL'
         [s1,s2, g1,g2,~,~,~]  = simul_align(c1,c2);
         u = linspace(0,1,length(g1));
