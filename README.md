@@ -16,6 +16,7 @@ analysis
 1. Download zip or tar.gz of package or clone repository
 2. Run setup.m to setup paths and compile MEX functions
   NOTE: Armadillo c++ library required for bayesian code.
+3. NOTE: After setup.m, you can use setup_paths.m to set paths as needed.
 
 ------------------------------------------------------------------------------
 
