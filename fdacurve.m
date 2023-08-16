@@ -39,7 +39,7 @@ classdef fdacurve
             % Input:
             %   beta: (n,T,K) matrix defining n dimensional curve on T samples with K curves
             %   closed: true or false if closed curve
-            %   N: resample curve to N points (default = T)
+            %   N: resample curve to N points (default to size(beta,2))
             %   scale: include scale (true/false (default))
             %   center: center curve (true (default)/false)
             
