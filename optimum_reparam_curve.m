@@ -1,4 +1,4 @@
-function gam = optimum_reparam_curve(q1,q2,method)
+function gam = optimum_reparam_curve(q1,q2,lam,method)
 % OPTIMUM_REPARAM_CURVE Calculates Warping for two SRVFs
 % -------------------------------------------------------------------------%
 % This function aligns two SRVF functions using Dynamic Programming
@@ -9,6 +9,7 @@ function gam = optimum_reparam_curve(q1,q2,method)
 % Input:
 % q1: srvf of function 1
 % q2: srvf of function 2
+% lam: penalty (default 0.0)
 % method: controls which optimization method (default="DP") options are
 % Dynamic Programming ("DP") and Riemannian BFGS
 % ("RBFGSM")
@@ -16,6 +17,9 @@ function gam = optimum_reparam_curve(q1,q2,method)
 % Output:
 % gam: warping function
 if nargin < 3
+    lam = 0.0;
+    method = 'DP';
+elseif nargin < 4
     method = 'DP';
 end
 
@@ -24,7 +28,7 @@ q2 = q2/sqrt(InnerProd_Q(q2,q2));
 
 switch upper(method)
     case 'DP'
-        gam0 = DynamicProgrammingQ(q2,q1,0,0);
+        gam0 = DynamicProgrammingQ(q2,q1,lam,0);
     case 'RBFGSM'
         t1 = linspace(0,1,size(q1,2));
         options.verbosity=0;

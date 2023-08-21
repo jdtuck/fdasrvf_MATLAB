@@ -3,7 +3,59 @@ classdef fdacurve
     % ---------------------------------------------------------------------
     % This class provides alignment methods for curves in R^n using the
     % SRVF framework
-    
+    %
+    % Usage:  bj = fdacurve(beta, closed, N, scale, center)
+    %
+    % where:
+    %   beta: (n,T,K) matrix defining n dimensional curve on T samples with K curves
+    %   closed: true or false if closed curve
+    %   N: resample curve to N points (default = T)
+    %   scale: include scale (true/false (default))
+    %   center: center curve (true (default)/false)
+    %
+    %
+    % fdacurve Properties:
+    %   beta            % (n,T,K) matrix defining n dimensional curve on T samples with K curves
+    %   q               % (n,T,K) matrix defining n dimensional srvf on T samples with K srvfs
+    %   betan           % aligned curves
+    %   qn              % aligned srvfs
+    %   basis           % calculated basis
+    %   beta_mean       % karcher mean curve
+    %   q_mean          % karcher mean srvf
+    %   gams            % warping functions
+    %   v               % shooting vectors
+    %   C               % karcher covariance
+    %   s               % pca singular values
+    %   U               % pca singular vectors
+    %   pca             % principal directions
+    %   coef            % pca coefficients
+    %   closed          % closed curve if true
+    %   lambda          % warping penalty
+    %   qun             % cost function
+    %   samples         % random samples
+    %   gamr            % random warping functions
+    %   cent            % center
+    %   scale           % scale
+    %   E               % energy
+    %   len             % length of curves
+    %   len_q           % length of SRVFs
+    %   mean_scale      % mean length
+    %   mean_scale_q    % mean length SRVF
+    %   center          % centering of curves done
+    %
+    %
+    % fdacurve Methods:
+    %   fdacurve - class constructor
+    %   karcher_mean - find karcher mean
+    %   karcher_cov - find karcher covariance
+    %   shape_pca - compute shape pca
+    %   sample_shapes - sample shapes from generative model
+    %   plot - plot results and functions in object
+    %   plot_pca - plot shape pca
+    %
+    %
+    % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
+    % Date   :  15-Mar-2020
     properties
         beta            % (n,T,K) matrix defining n dimensional curve on T samples with K curves
         q               % (n,T,K) matrix defining n dimensional srvf on T samples with K srvfs
@@ -20,6 +72,7 @@ classdef fdacurve
         pca             % principal directions
         coef            % pca coefficients
         closed          % closed curve if true
+        lambda          % warping penalty
         qun             % cost function
         samples         % random samples
         gamr            % random warping functions
@@ -100,6 +153,7 @@ classdef fdacurve
             % default options
             % option.reparam = true; % computes optimal reparamertization
             % option.rotation = true; % computes optimal rotation
+            % option.lambda = 0.0;  % penalty
             % option.parallel = 0; % turns on MATLAB parallel processing (need
             % parallel processing toolbox)
             % option.closepool = 0; % determines wether to close matlabpool
@@ -115,6 +169,7 @@ classdef fdacurve
             if nargin < 2
                 option.reparam = true;
                 option.rotation = true;
+                option.lambda = 0.0;
                 option.parallel = 0;
                 option.closepool = 0;
                 option.MaxItr = 20;
@@ -176,7 +231,7 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.method);
+                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.lambda,option.method);
                         qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         
                         gamma(:,i) = gamI;
@@ -213,7 +268,7 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.method);
+                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.lambda,option.method);
                         qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         
                         gamma(:,i) = gamI;
@@ -297,7 +352,7 @@ classdef fdacurve
                     beta1 = betan1(:,:,i);
                     
                     % Compute shooting vector from mu to q_i
-                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.method);
+                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.lambda,option.method);
                     beta1 = R*beta1;
                     beta1n = warp_curve_gamma(beta1,gamI);
                     q1n = curve_to_q(beta1n);
@@ -316,7 +371,7 @@ classdef fdacurve
                     beta1 = obj.beta(:,:,i);
                     
                     % Compute shooting vector from mu to q_i
-                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.method);
+                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.lambda,option.method);
                     beta1 = R*beta1;
                     beta1n = warp_curve_gamma(beta1,gamI);
                     q1n = curve_to_q(beta1n);
@@ -336,6 +391,7 @@ classdef fdacurve
             obj.beta_mean = betamean;
             obj.q_mean = mu;
             obj.gams = gamma;
+            obj.lambda = lambda;
             obj.v = v1;
             obj.qun = sumd(1:iter);
             obj.E = normvbar(1:iter-1);

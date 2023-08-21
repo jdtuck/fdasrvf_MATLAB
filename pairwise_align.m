@@ -1,4 +1,4 @@
-function [f2_align, gam] = pairwise_align(f1,f2,time,lam)
+function [f2_align, gam] = pairwise_align(f1,f2,time,lambda)
 % PAIRWISE_ALIGN Align two functions
 % -------------------------------------------------------------------------
 % This function aligns two functions using SRSF framework. It will align f2
@@ -19,11 +19,11 @@ arguments
     f1 double
     f2 double
     time double
-    lam = 0
+    lambda = 0
 end
 q1 = f_to_srvf(f1,time);
 q2 = f_to_srvf(f2,time);
 
-gam = optimum_reparam(q1,q2,time,lam,'DP1',0.0,0.0,0.0);
+gam = optimum_reparam(q1,q2,time,lambda,'DP1',0.0,0.0,0.0);
 
 f2_align = warp_f_gamma(f2,gam,time);

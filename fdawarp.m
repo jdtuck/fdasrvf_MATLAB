@@ -23,7 +23,7 @@ classdef fdawarp
     %    psi - srvf of warping functions
     %    stats - alignment statistics
     %    qun - cost function
-    %    lambda - lambda
+    %    lambda - warping penalty
     %    method - optimization method
     %    gamI - invserse warping function
     %    rsamps - random samples
