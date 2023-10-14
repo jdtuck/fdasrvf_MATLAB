@@ -1,4 +1,4 @@
-function q = f_to_srvf(f,time,spl)
+function q = f_to_srvf(f,time,smooth,spl)
 % F_TO_SRVF Convert function to Square-Root Velocity Function
 % -------------------------------------------------------------------------
 % Convert to SRSF
@@ -10,18 +10,30 @@ function q = f_to_srvf(f,time,spl)
 % Input:
 % f: matrix of functions
 % time: vector of time samples
-% spl: use b-spline computation (default: true)
+% smooth: use smoothing splines (default: true)
+% spl: use b-spline computation (old behavior)
 %
 % Output:
 % q: matrix of SRSFs
-if nargin < 3
-    spl = true;
+
+arguments
+    f double
+    time double
+    smooth=true
+    spl=false
 end
 
 binsize = mean(diff(time));
 [M, N] = size(f);
 
-if spl
+if smooth
+    fy = zeros(M,N);
+    for ii = 1:N
+        y = fit(time(:), f(:,ii),'smoothingspline');
+        fy(:,ii) = differentiate(y, time);
+    end
+    q = fy./sqrt(abs(fy)+eps);
+elseif spl
     fy = zeros(M,N);
     for ii = 1:N
         y = Bspline(f(:,ii),3);
