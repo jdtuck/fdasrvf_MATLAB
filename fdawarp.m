@@ -1030,7 +1030,7 @@ classdef fdawarp
             obj.q0 = q;
             obj.fn = fn1;
             obj.qn = qn1;
-            obj.gam = gam1;
+            obj.gam = gam1.';
             std_f0 = std(obj.f, 0, 2);
             std_fn = std(obj.fn, 0, 2);
             obj.mqn = mq;
