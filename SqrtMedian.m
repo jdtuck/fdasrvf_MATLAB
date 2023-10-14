@@ -53,3 +53,4 @@ end
 
 vec = v;
 gam_median = cumtrapz(t,psi_median.^2)';
+gam_median = (gam_median-min(gam_median))/(max(gam_median)-min(gam_median));
