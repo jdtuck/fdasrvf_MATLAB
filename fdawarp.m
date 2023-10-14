@@ -1038,7 +1038,7 @@ classdef fdawarp
 
             fgam = zeros(M,N);
             for ii = 1:N
-                fgam(:,ii) = warp_f_gamma(obj.fmean,obj.gam(ii,:),obj.time);
+                fgam(:,ii) = warp_f_gamma(obj.fmean,obj.gam(:,ii),obj.time);
             end
             var_fgam = var(fgam,[],2);
 
