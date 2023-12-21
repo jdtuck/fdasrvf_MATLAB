@@ -8,10 +8,10 @@ mex -outdir DP/ DP/DynamicProgrammingQ.c
 
 % Bayesian
 fprintf('Compiling Bayesian files...\n');
-mex -outdir bayesian/ bayesian/bcalcY.cpp
-mex -outdir bayesian/ bayesian/bcuL2norm2.cpp 
-mex -outdir bayesian/ bayesian/trapzCpp.cpp
-mex -outdir bayesian/ bayesian/border_l2norm.cpp
+mex -outdir armadillo_cpp/ armadillo_cpp/bcalcY.cpp
+mex -outdir armadillo_cpp/ armadillo_cpp/bcuL2norm2.cpp 
+mex -outdir armadillo_cpp/ armadillo_cpp/trapzCpp.cpp
+mex -outdir armadillo_cpp/ armadillo_cpp/border_l2norm.cpp
 
 % minFunc (lbfgs optimizer)
 fprintf('Compiling minFunc files...\n');
@@ -24,8 +24,6 @@ mex -outdir minFunc/compiled minFunc/mex/lbfgsProdC.c
 fprintf('Compiling mlogit files...\n');
 mex -outdir mlogit_warp/ mlogit_warp/mlogit_warp.c mlogit_warp/mlogit_warp_grad.c mlogit_warp/misc_funcs.c
 
-% compiling gropt
-fprintf('Compiling gropt files...\n');
-cd gropt
-MyMex
-cd ..
+% Bayesian
+fprintf('Compiling rbfgs files...\n');
+mex -outdir armadillo_cpp/ armadillo_cpp/c_rlbfgs.cpp -llapack -lblas
