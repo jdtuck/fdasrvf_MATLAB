@@ -108,7 +108,6 @@ classdef elastic_mlpcr_regression
                 option.sparam = 25;
                 option.showplot = 0;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.MaxItr = 20;
             end
             

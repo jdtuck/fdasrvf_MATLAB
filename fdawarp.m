@@ -115,8 +115,7 @@ classdef fdawarp
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP1'; % optimization method (DP, DP2, SIMUL, RBFGS)
-            % option.w = 0.0; % BFGS weight
+            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
             % option.spl = true; % use spline interpolation 
             % option.MaxItr = 20;  % maximum iterations
             %
@@ -129,7 +128,6 @@ classdef fdawarp
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.spl = true;
                 option.MaxItr = 20;
             elseif nargin < 3
@@ -138,7 +136,6 @@ classdef fdawarp
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.spl = true;
                 option.MaxItr = 20;
             end
@@ -188,13 +185,13 @@ classdef fdawarp
             if option.parallel == 1
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
-                    gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method,option.w, ...
+                    gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
                         mf(1), f1(1,k,1));
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
-                    gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method,option.w, ...
+                    gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
                         mf(1), f1(1,k,1));
                 end
             end
@@ -223,7 +220,7 @@ classdef fdawarp
                 if option.parallel == 1
                     parfor k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
-                        gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method,option.w, ...
+                        gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
@@ -232,7 +229,7 @@ classdef fdawarp
                 else
                     for k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
-                        gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method,option.w, ...
+                        gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
@@ -261,13 +258,13 @@ classdef fdawarp
             if option.parallel == 1
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
-                    gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method,option.w, ...
+                    gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
                         mf(1,r), f1(1,k,1));
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
-                    gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method,option.w, ...
+                    gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
                         mf(1,r), f1(1,k,1));
                 end
             end
@@ -677,8 +674,7 @@ classdef fdawarp
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP'; % optimization method (DP, DP2, SIMUL, RBFGS)
-            % option.w = 0.0; % BFGS weight
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
             % option.spl = true; % use spline interpolation
             % option.MaxItr = 20;  % maximum iterations
             %
@@ -691,7 +687,6 @@ classdef fdawarp
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.spl = true;
                 option.MaxItr = 20;
             elseif nargin < 3
@@ -700,7 +695,6 @@ classdef fdawarp
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.spl = true;
                 option.MaxItr = 20;
             end
@@ -751,13 +745,13 @@ classdef fdawarp
             if option.parallel == 1
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
-                    gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                    gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
                         mf(1), f1(1,k,1));
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
-                    gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                    gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
                         mf(1), f1(1,k,1));
                 end
             end
@@ -789,7 +783,7 @@ classdef fdawarp
                 if option.parallel == 1
                     parfor k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
-                        gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                        gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
@@ -802,7 +796,7 @@ classdef fdawarp
                 else
                     for k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
-                        gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                        gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
@@ -842,13 +836,13 @@ classdef fdawarp
             if option.parallel == 1
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
-                    gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                    gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
                         mf(1,r), f1(1,k,1));
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
-                    gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method,option.w, ...
+                    gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
                         mf(1,r), f1(1,k,1));
                 end
             end
@@ -920,8 +914,7 @@ classdef fdawarp
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.showplot = 1; % turns on and off plotting
-            % option.method = 'DP1'; % optimization method (DP, DP2, SIMUL, RBFGS,expBayes)
-            % option.w = 0.0; % BFGS weight
+            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS, expBayes)
             % option.spl = true; % use spline interpolation
             % option.MaxItr = 20;  % maximum iterations
             %
@@ -935,7 +928,6 @@ classdef fdawarp
                 option.sparam = 25;
                 option.showplot = 1;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.spl = true;
                 option.MaxItr = 20;
             elseif nargin < 4
@@ -945,7 +937,6 @@ classdef fdawarp
                 option.sparam = 25;
                 option.showplot = 1;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.spl = true;
                 option.MaxItr = 20;
             end
@@ -1004,7 +995,7 @@ classdef fdawarp
                         out_e = pairwise_align_bayes(mu, obj.f(:,k), obj.time, mcmcopts);
                         gam1(k,:) = out_e.gamma;
                     else
-                        gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method,option.w, ...
+                        gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method, ...
                             mu(1), obj.f(1,k));
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
@@ -1016,7 +1007,7 @@ classdef fdawarp
                         out_e = pairwise_align_bayes(mu, obj.f(:,k), obj.time, mcmcopts);
                         gam1(k,:) = out_e.gamma;
                     else
-                        gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method,option.w, ...
+                        gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method, ...
                             mu(1), obj.f(1,k));
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);

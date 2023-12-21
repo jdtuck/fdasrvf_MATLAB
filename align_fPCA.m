@@ -22,8 +22,7 @@ function out = align_fPCA(f,t,num_comp,lambda,option)
 % option.smooth = 0; % smooth data using standard box filter
 % option.sparam = 25; % number of times to run filter
 % option.showplot = 1; % turns on and off plotting
-% option.method = 'DP1'; % optimization method (DP, DP2, SIMUL, RBFGS)
-% option.w = 0.0; % BFGS weight
+% option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
 % option.MaxItr = 20;  % maximum iterations
 %
 % Output:
@@ -53,7 +52,6 @@ if nargin < 3
     option.sparam = 25;
     option.showplot = 1;
     option.method = 'DP1';
-    option.w = 0.0;
     option.MaxItr = 20;
 elseif nargin < 4
     lambda = 0;
@@ -63,7 +61,6 @@ elseif nargin < 4
     option.sparam = 25;
     option.showplot = 1;
     option.method = 'DP1';
-    option.w = 0.0;
     option.MaxItr = 20;
 elseif nargin < 5
     option.parallel = 0;
@@ -72,7 +69,6 @@ elseif nargin < 5
     option.sparam = 25;
     option.showplot = 1;
     option.method = 'DP1';
-    option.w = 0.0;
     option.MaxItr = 20;
 end
 
@@ -157,12 +153,12 @@ qhat = mq*ones(1,N) + tmp;
 gam = zeros(N,size(q,1));
 if option.parallel == 1
     parfor k = 1:N
-        gam(k,:) = optimum_reparam(qhat(:,k),q(:,k),t,lambda,option.method,option.w, ...
+        gam(k,:) = optimum_reparam(qhat(:,k),q(:,k),t,lambda,option.method, ...
             mf(1), f(1,k));
     end
 else
     for k = 1:N
-        gam(k,:) = optimum_reparam(qhat(:,k),q(:,k),t,lambda,option.method,option.w, ...
+        gam(k,:) = optimum_reparam(qhat(:,k),q(:,k),t,lambda,option.method, ...
             mf(1), f(1,k));
     end
 end
@@ -216,12 +212,12 @@ for r = 1:MaxItr
     gam = zeros(N,size(q,1));
     if option.parallel == 1
         parfor k = 1:N
-            gam(k,:) = optimum_reparam(qhat(:,k),q(:,k,1),t,lambda,option.method,option.w, ...
+            gam(k,:) = optimum_reparam(qhat(:,k),q(:,k,1),t,lambda,option.method, ...
                 mf(1,r+1), f(1,k,r+1));
         end
     else
         for k = 1:N
-            gam(k,:) = optimum_reparam(qhat(:,k),q(:,k,1),t,lambda,option.method,option.w, ...
+            gam(k,:) = optimum_reparam(qhat(:,k),q(:,k,1),t,lambda,option.method, ...
                 mf(1,r+1), f(1,k,r+1));
         end
     end
