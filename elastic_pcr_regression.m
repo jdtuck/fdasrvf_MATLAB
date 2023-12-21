@@ -76,9 +76,9 @@ classdef elastic_pcr_regression
             % parallel processing toolbox)
             % option.closepool = 1; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
-            % option.B = []; % defines basis if empty uses bspline
-            % option.df = 20; % degress of freedom
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
             % option.sparam = 25; % number of times to run filter
+            % option.showplot = 0; % turns on and off plotting
             % option.max_itr = 20; % maximum number of iterations
             %
             % output %
@@ -92,7 +92,6 @@ classdef elastic_pcr_regression
                 option.sparam = 25;
                 option.showplot = 0;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.MaxItr = 20;
             end
             

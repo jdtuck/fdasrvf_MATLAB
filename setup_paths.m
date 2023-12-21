@@ -1,7 +1,7 @@
 % setup paths
 addpath(genpath('minFunc'))
 addpath(genpath('DP'))
-addpath(genpath('bayesian'))
+addpath(genpath('armadillo_cpp'))
 addpath(genpath('bspline_tools'))
 addpath(genpath('basis'))
 addpath(genpath('data'))

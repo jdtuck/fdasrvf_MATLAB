@@ -1,4 +1,4 @@
-function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o,nbhd_dim)
+function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim)
 % OPTIMUM_REPARAM Calculates Warping for two SRVFs
 % -------------------------------------------------------------------------%
 % This function aligns two SRSF functions using Dynamic Programming
@@ -6,7 +6,7 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o,nbhd_dim)
 % Usage:  gam = optimum_reparam(q1,q2,t)
 %         gam = optimum_reparam(q1,q2,t,lambda)
 %         gam = optimum_reparam(q1,q2,t,lambda,method)
-%         gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o,nbhd_dim)
+%         gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim)
 %
 % Input:
 % q1: srsf of function 1
@@ -14,8 +14,7 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,w,f1o,f2o,nbhd_dim)
 % t: sample points of function 2
 % lambda: controls amount of warping (default = 0)
 % method: controls which optimization method (default="DP") options are
-% Dynamic Programming ("DP"), Coordinate Descent ("DP2"), and Riemannian BFGS
-% ("RBFGSM")
+% Dynamic Programming ("DP"), and Riemannian BFGS ("RBFGS")
 % w: controls LRBFGS (default = 0.01)
 % f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
@@ -29,7 +28,6 @@ arguments
     t
     lambda = 0.0;
     method = 'DP1';
-    w = 0.0;
     f1o = 0.0;
     f2o = 0.0;
     nbhd_dim = 7;
@@ -72,32 +70,10 @@ switch upper(method)
         t2 = t;
         t2 = (t2-tmin)/(tmax-tmin);
         gam0 = simul_gam(u,g1,g2,t2,s1,s2,t2);
-    case 'DP2'
-        onlyDP = 1;
-        [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
-            rotated, isclosed, skipm, 'LRBFGS', auto);
-        gam0 = opt(1:end-2);
-        
-        if swap
-            gam0 = invertGamma(gam0);
-        end
     case 'RBFGS'
-        onlyDP = 0;
-        [opt,swap,fopts,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
-            rotated, isclosed, skipm, 'LRBFGS', auto);
-        
-        
-        if (fopts(1) == 1000)
-            onlyDP = 1;
-            [opt,swap,~,~] = ElasticCurvesReparam(c1, c2, w, onlyDP,  ...
-                rotated, isclosed, skipm, 'LRBFGS', auto);
-        end
-        
-        gam0 = opt(1:end-2);
-        
-        if swap
-            gam0 = invertGamma(gam0);
-        end
+        t1 = linspace(0,1,length(t))';
+        gam0 = c_rlbfgs(q1, q2, t1, 30, lambda, 0);
+        gam0 = gam0';
     case 'RBFGSM'
         t1 = linspace(0,1,length(t));
         options.verbosity=0;

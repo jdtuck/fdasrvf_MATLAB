@@ -91,7 +91,6 @@ classdef fdakma
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.method = 'DP1'; % optimization method (DP, DP2, SIMUL, RBFGS)
-            % option.w = 0.0; % BFGS weight
             % option.MaxItr = 20;  % maximum iterations
             % option.thresh = 0.01; % cost function threshold
             %
@@ -107,7 +106,6 @@ classdef fdakma
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             elseif nargin < 3
@@ -118,7 +116,6 @@ classdef fdakma
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             elseif nargin < 4
@@ -129,7 +126,6 @@ classdef fdakma
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             else
@@ -205,7 +201,7 @@ classdef fdakma
                         parfor k = 1:N
                             q_c = q(:,k); mq_c = obj.templates_q(:,i);
                             if (option.alignment)
-                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method,option.w, ...
+                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method, ...
                                     obj.templates(1,i), obj.f(1,k));
                             else
                                 gamt(k,:) = linspace(0,1,M);
@@ -218,7 +214,7 @@ classdef fdakma
                         for k = 1:N
                             q_c = q(:,k); mq_c = obj.templates_q(:,i);
                             if (option.alignment)
-                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method,option.w, ...
+                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method, ...
                                     obj.templates(1,i), obj.f(1,k));
                             else
                                 gamt(k,:) = linspace(0,1,M);
@@ -321,8 +317,7 @@ classdef fdakma
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP1'; % optimization method (DP, DP2, SIMUL, RBFGS)
-            % option.w = 0.0; % BFGS weight
+            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
             % option.MaxItr = 20;  % maximum iterations
             % option.thresh = 0.01; % cost function threshold
             %
@@ -337,7 +332,6 @@ classdef fdakma
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             elseif nargin < 3
@@ -348,7 +342,6 @@ classdef fdakma
                 option.smooth = 0;
                 option.sparam = 25;
                 option.method = 'DP1';
-                option.w = 0.0;
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             end
@@ -417,7 +410,7 @@ classdef fdakma
                         parfor k = 1:N
                             q_c = q(:,k); mq_c = obj.templates_q(:,i);
                             if (option.alignment)
-                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method,option.w, ...
+                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method, ...
                                     obj.templates(1,i), obj.f(1,k));
                             else
                                 gamt(k,:) = linspace(0,1,M);
@@ -430,7 +423,7 @@ classdef fdakma
                         for k = 1:N
                             q_c = q(:,k); mq_c = obj.templates_q(:,i);
                             if (option.alignment)
-                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method,option.w, ...
+                                gamt(k,:) = optimum_reparam(mq_c,q_c,obj.time,obj.lambda,option.method, ...
                                     obj.templates(1,i), obj.f(1,k));
                             else
                                 gamt(k,:) = linspace(0,1,M);
@@ -551,7 +544,7 @@ for i = 2:K
         parfor k = 1:N
             q_c = q(:,k); mq_c = mu(:,i-1);
             if (option.alignment)
-                gamt = optimum_reparam(mq_c,q_c,time,lambda,option.method,option.w, ...
+                gamt = optimum_reparam(mq_c,q_c,time,lambda,option.method, ...
                     mu_f(1,i-1), f(1,k));
             else
                 gamt = linspace(0,1,M);
@@ -564,7 +557,7 @@ for i = 2:K
         for k = 1:N
             q_c = q(:,k); mq_c = mu(:,i-1);
             if (option.alignment)
-                gamt = optimum_reparam(mq_c,q_c,time,lambda,option.method,option.w, ...
+                gamt = optimum_reparam(mq_c,q_c,time,lambda,option.method, ...
                     mu_f(1,i-1), f(1,k));
             else
                 gamt = linspace(0,1,M);
