@@ -25,7 +25,7 @@ v=gradient(p,1/(T-1));
 
 
 q=zeros(n,T);
-len = sqrt(InnerProd_Q(v,v));
+len = sqrt(InnerProd_Q(sqrt(abs(v))),sqrt(abs(v)));
 for i = 1:T
     L = sqrt(norm(v(:,i),'fro'));
     if L > 0.0001
