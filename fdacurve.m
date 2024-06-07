@@ -391,7 +391,7 @@ classdef fdacurve
             obj.beta_mean = betamean;
             obj.q_mean = mu;
             obj.gams = gamma;
-            obj.lambda = lambda;
+            obj.lambda = option.lambda;
             obj.v = v1;
             obj.qun = sumd(1:iter);
             obj.E = normvbar(1:iter-1);
