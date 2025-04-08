@@ -26,4 +26,10 @@ mex -outdir mlogit_warp/ mlogit_warp/mlogit_warp.c mlogit_warp/mlogit_warp_grad.
 
 % Bayesian
 fprintf('Compiling rbfgs files...\n');
-mex -outdir armadillo_cpp/ armadillo_cpp/c_rlbfgs.cpp -llapack -lblas
+if ispc
+    libDir = fullfile(matlabroot,"/extern/lib/win64/microsoft");    %Path to LAPAC and BLAS libs
+    mexCmd = sprintf('mex -outdir armadillo_cpp/ armadillo_cpp/c_rlbfgs.cpp -L"%s" -lmwlapack -lmwblas', libDir);
+    eval(mexCmd);
+else
+    mex -outdir armadillo_cpp/ armadillo_cpp/c_rlbfgs.cpp -llapack -lblas
+end
