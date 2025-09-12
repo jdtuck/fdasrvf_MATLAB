@@ -77,7 +77,7 @@ classdef fdahpns
             [resmat, PNS] = PNS_warping(gam);
                         
             % proportion of variance explained
-            varPNS = sum(abs(resmat.^2), 1) / n;
+            varPNS = sum(abs(resmat.^2), 2) / n;
             cumvarPNS = cumsum(varPNS);
             propcumPNS = cumvarPNS / cumvarPNS(end);
             
@@ -89,14 +89,14 @@ classdef fdahpns
             obj.gam_pns = zeros(length(obj.tau),M,no);
             for j=1:no      % three components
                 std1 = std(resmat(j, :));
-                mean = mean(resmat(j, :));
-                dirtmp = obj.tau * std1 + mean;
+                mean1 = mean(resmat(j, :));
+                dirtmp = obj.tau * std1 + mean1;
                 restmp = zeros(size(resmat,1), length(obj.tau));
                 restmp(j, :) = dirtmp;
                 PCvec = PNSe2s(restmp, PNS);
-                obj.psi_pns(:, :, j) = PCvec * PNS.radius;
+                obj.psi_pns(:, :, j) = (PCvec * PNS.radius)';
                 for k=1:length(obj.tau)
-                    gam0 = cumtrapz(linspace(0,1,size(gam,2)),obj.psi_pns(k,:,j).*obj.psi_pns(k,:,j));
+                    gam0 = cumtrapz(linspace(0,1,size(gam,1)),obj.psi_pns(k,:,j).*obj.psi_pns(k,:,j));
                     obj.gam_pns(k,:,j) = (gam0-gam0(1))/(gam0(end)-gam0(1));
                 end
             end
