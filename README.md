@@ -18,6 +18,7 @@ analysis
 2. Run setup.m to setup paths and compile MEX functions
   NOTE: Armadillo c++ library required for bayesian code.
 3. NOTE: After setup.m, you can use setup_paths.m to set paths as needed.
+4. Simple example for alignmment in example.m
 
 ------------------------------------------------------------------------------
 
