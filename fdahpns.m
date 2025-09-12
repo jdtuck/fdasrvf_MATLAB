@@ -27,7 +27,7 @@ classdef fdahpns
     %
     % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
     % Date   :  13-Sep-2025
-    
+
     properties
         warp_data % fdawarp class with alignment data
         gam_pns   % warping functions principal directions
@@ -40,7 +40,7 @@ classdef fdahpns
         PNS       % PNS structure
         tau       % principal directions
     end
-    
+
     methods
         function obj = fdahpns(fdawarp)
             %fdahpca Construct an instance of this class
@@ -51,7 +51,7 @@ classdef fdahpns
             end
             obj.warp_data = fdawarp;
         end
-        
+
         function obj = calc_fpns(obj,no)
             % calc_fpns Horizontal Functional Principal Component Analysis
             % -------------------------------------------------------------------------
@@ -75,15 +75,15 @@ classdef fdahpns
             end
 
             [resmat, PNS] = PNS_warping(gam);
-                        
+
             % proportion of variance explained
             varPNS = sum(abs(resmat.^2), 2) / n;
             cumvarPNS = cumsum(varPNS);
             propcumPNS = cumvarPNS / cumvarPNS(end);
-            
+
             % Parameters
             obj.tau = 1:5;
-            
+
             % TFPCA
             obj.psi_pns = zeros(length(obj.tau),M,no);
             obj.gam_pns = zeros(length(obj.tau),M,no);
@@ -93,20 +93,20 @@ classdef fdahpns
                 dirtmp = obj.tau * std1 + mean1;
                 restmp = zeros(size(resmat,1), length(obj.tau));
                 restmp(j, :) = dirtmp;
-                PCvec = PNSe2s(restmp, PNS);
-                obj.psi_pns(:, :, j) = (PCvec * PNS.radius)';
+                PCvec = fastPNSe2s(restmp, PNS);
+                obj.psi_pns(:, :, j) = (PCvec * PNS.radius);
                 for k=1:length(obj.tau)
                     gam0 = cumtrapz(linspace(0,1,size(gam,1)),obj.psi_pns(k,:,j).*obj.psi_pns(k,:,j));
                     obj.gam_pns(k,:,j) = (gam0-gam0(1))/(gam0(end)-gam0(1));
                 end
             end
-            
+
             obj.cumvar = propcumPNS;
             obj.no = no;
             obj.PNS = PNS;
             obj.coef = resmat;
         end
-        
+
         function plot(obj)
             % plot plot elastic horizontal fPCA results
             % -------------------------------------------------------------------------
