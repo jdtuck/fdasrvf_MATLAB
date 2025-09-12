@@ -1,35 +1,32 @@
-classdef fdahpca
-    %fdahpca A class to provide horizontal fPCA
+classdef fdahpns
+    %fdahpns A class to provide horizontal fPNS
     % -------------------------------------------------------------------------
-    % This class provides horizontal fPCA using the
+    % This class provides horizontal fPNS using the
     % SRVF framework
     %
-    % Usage:  obj = fdahpca(warp_data)
+    % Usage:  obj = fdahpns(warp_data)
     %
     % where:
     %   warp_data - fdawarp object of aligned data
     %
     %
-    % fdahpca Properties:
+    % fdahpns Properties:
     %   warp_data - fdawarp class with alignment data
-    %   gam_pca - warping functions principal directions
-    %   psi_pca - srvf principal directions
+    %   gam_pns - warping functions principal directions
+    %   psi_pns - srvf principal directions
     %   latent - latent values
-    %   U - eigenvectors
     %   coef - coeficients
-    %   vec - shooting vectors
-    %   mu - Karcher Mean
     %   tau - principal directions
     %
     %
-    % fdahpca Methods:
-    %   fdahpca - class constructor
-    %   calc_fpca - perform horizontal fPCA
+    % fdahpns Methods:
+    %   fdahpns - class constructor
+    %   calc_fpns - perform horizontal fPCA
     %   plot - plot results and functions in object
     %
     %
     % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
-    % Date   :  15-Mar-2018
+    % Date   :  13-Sep-2025
     
     properties
         warp_data % fdawarp class with alignment data
@@ -44,7 +41,7 @@ classdef fdahpca
     end
     
     methods
-        function obj = fdahpca(fdawarp)
+        function obj = fdahpns(fdawarp)
             %fdahpca Construct an instance of this class
             % Input:
             %   fdawarp: fdawarp class
@@ -54,67 +51,59 @@ classdef fdahpca
             obj.warp_data = fdawarp;
         end
         
-        function obj = calc_fpca(obj,no)
-            % calc_fpca Horizontal Functional Principal Component Analysis
+        function obj = calc_fpns(obj,no)
+            % calc_fpns Horizontal Functional Principal Component Analysis
             % -------------------------------------------------------------------------
             % This function calculates vertical functional principal component analysis
             % on aligned data
             %
-            % Usage: obj.calc_fpca(no)
+            % Usage: obj.horizFPCA(no)
+            %        obj.horizFPCA(no,showplot)
             %
             % Inputs:
             % no: number of principal components to extract
+            % showplot: show plots of principal directions (e.g, true)
             %
             % Outputs:
             % fdahpca object
             gam = obj.warp_data.gam;
+            n = size(gam, 1);
             if (~exist('no'))
                 no = 3;
             end
-            
-            [obj.mu,~,obj.vec] = SqrtMean(gam);
-            
-            K = cov(obj.vec);
-            
-            [obj.U,S,~] = svd(K);
-            Sig = diag(S);
-            T = size(obj.vec,2);
-            obj.U = obj.U(:,1:no);
-            Sig = Sig(1:no);
+
+            [resmat, PNS] = PNS_warping(gam);
+                        
+            % proportion of variance explained
+            varPNS = sum(abs(resmat.^2), 1) / n;
+            cumvarPNS = cumsum(varPNS);
+            propcumPNS = cumvarPNS / cumvarPNS(end);
             
             % Parameters
             obj.tau = 1:5;
             
             % TFPCA
-            obj.psi_pca = zeros(length(obj.tau),length(obj.mu),no);
-            obj.gam_pca = zeros(length(obj.tau),length(obj.mu),no);
+            obj.psi_pns = zeros(length(obj.tau),length(obj.mu),no);
+            obj.gam_pns = zeros(length(obj.tau),length(obj.mu),no);
             v = zeros(5,length(obj.mu),3);
             for j=1:no      % three components
-                for k=obj.tau   % -2, -1, 0, 1, 2 std from the mean
-                    v(k,:,j) = (k-3)*sqrt(Sig(j))*obj.U(:,j)';
-                    vn = norm(v(k,:,j))/sqrt(T);
-                    if vn < 0.0001
-                        obj.psi_pca(k,:,j) = obj.mu;
-                    else
-                        obj.psi_pca(k,:,j) = cos(vn)*obj.mu.' + sin(vn)*v(k,:,j)/vn;
-                    end
-                    gam0 = cumtrapz(linspace(0,1,size(gam,2)),obj.psi_pca(k,:,j).*obj.psi_pca(k,:,j));
-                    obj.gam_pca(k,:,j) = (gam0-gam0(1))/(gam0(end)-gam0(1));
+                std = std(resmat(j, :));
+                mean = mean(resmat(j, :));
+                dirtmp = obj.tau * std + mean;
+                restmp = zeros(size(resmat,1), length(obj.tau));
+                restmp(j, :) = dirtmp;
+                PCvec = PNSe2s(restmp, PNS);
+                obj.psi_pns(:, :, j) = PCvec * PNS.radius;
+                for k=1:length(obj.tau)
+                    gam0 = cumtrapz(linspace(0,1,size(gam,2)),obj.psi_pns(k,:,j).*obj.psi_pns(k,:,j));
+                    obj.gam_pns(k,:,j) = (gam0-gam0(1))/(gam0(end)-gam0(1));
                 end
             end
             
-            % coefficients
-            c = zeros(size(gam,1),no);
-            obj.vec = obj.vec.';
-            vm = mean(obj.vec,2);
-            for jj = 1:no
-                for ii = 1:size(gam,1)
-                    c(ii,jj) = (obj.vec(:,ii)-vm).'*obj.U(:,jj);
-                end
-            end
-            
-            obj.latent = Sig;
-            obj.coef = c;
+            obj.cumvar = propcumPNS;
+            obj.no = no;
+            obj.PNS = PNS;
+            obj.coef = resmat;
         end
         
         function plot(obj)
@@ -122,30 +111,30 @@ classdef fdahpca
             % -------------------------------------------------------------------------
             % Usage: obj.plot()
             cl = 'rbgmc';
-            [~, T, p1] = size(obj.gam_pca);
+            [~, T, p1] = size(obj.gam_pns);
             num_plot = ceil(p1/3);
             j = 1;
             for ii = 1:num_plot
-                if (j > size(obj.gam_pca,3))
+                if (j > size(obj.gam_pns,3))
                     break
                 end
                 figure;
                 for j1 = 1:3
                     j = j1 + (ii-1)*3;
-                    if (j > size(obj.gam_pca,3))
+                    if (j > size(obj.gam_pns,3))
                         break
                     end
                     subplot(1,3,j1);
                     for k = 1:length(obj.tau)
-                        plot(linspace(0,1,T), obj.gam_pca(k,:,j), cl(k), 'linewidth', 2); hold on;
+                        plot(linspace(0,1,T), obj.gam_pns(k,:,j), cl(k), 'linewidth', 2); hold on;
                     end
                     axis([0 1 0 1]);
                     title(['PD ' num2str(j)], 'fontsize', 14);
                 end
             end
-            cumm_coef = 100*cumsum(obj.latent)./sum(obj.latent);
+
             figure
-            plot(cumm_coef);title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
+            plot(obj.cumvar);title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
         end
     end
 end
