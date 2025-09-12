@@ -19,7 +19,7 @@ jobs:
     # The type of runner that the job will run on
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         release: [R2025a]
     
     runs-on: ${{ matrix.os }}
@@ -39,6 +39,7 @@ jobs:
           release: ${{ matrix.release }}
           products: >
             Curve_Fitting_Toolbox
+            Statistics_and_Machine_Learning_Toolbox
       
       - name: Run setup
         uses: matlab-actions/run-command@v2
