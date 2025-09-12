@@ -10,5 +10,5 @@ end
 radius = mean(sqrt(sum(psi.^2)));
 pnsdat = psi./repmat(sqrt(sum(psi.^2)),d,1);
 
-[resmat, PNS]=PNSmainHDLSS(pnsdat,pnsType);
+[resmat, PNS]=PNSmainHDLSS(pnsdat,1);
 PNS.radius = radius;

@@ -14,34 +14,13 @@ function [resmat, PNS] = fastpns(x, n_pc, itype, alpha, R, thresh)
     %  R         100 (default) : number of bootsrap samples to be evaluated for
     %            the sequential test.
 
-    if nargin == 1
-        n_pc = 0;
-        itype = 1; 
-        alpha = 0.05;
-        R = 100;
-        thresh = 1e-15;
-    end
-
-    if nargin == 2
-        itype = 1;
-        alpha = 0.05;
-        R = 100;
-        thresh = 1e-15;
-    end
-
-    if nargin == 3
-        alpha = 0.05;
-        R = 100;
-        thresh = 1e-15;
-    end
-
-    if nargin == 4
-        R = 100;
-        thresh = 1e-15;
-    end
-
-    if nargin == 5
-        thresh = 1e-15;
+    arguments
+        x double
+        n_pc=0
+        itype=1
+        alpha=0.05
+        R=100
+        thresh=1e-15
     end
 
     [n, pdim] = size(x);
@@ -50,10 +29,10 @@ function [resmat, PNS] = fastpns(x, n_pc, itype, alpha, R, thresh)
     end
     if n_pc == 1
         K = cov(x);
-        [U, S, V] = svd(K);
+        [~, S, ~] = svd(K);
         s = diag(S);
         cumm_coef = cumsum(s) / sum(s);
-        n_pc = find(cum_coef <= 0.99, 'first');
+        n_pc = find(cumm_coef <= 0.99, 'first');
     end
 
     Xs = x';
@@ -71,17 +50,17 @@ function [resmat, PNS] = fastpns(x, n_pc, itype, alpha, R, thresh)
 
     TT = TT';
     K = cov(TT);
-    [U, S, V] = svd(K);
+    [U, S, ~] = svd(K);
     s = diag(S);
-    pcapercent = sum(s[1:n_pc].^2 / sum(s.^2));
+    pcapercent = sum(s(1:n_pc).^2 / sum(s.^2));
 
     fprintf('"Initial PNS subsphere dimension: %d\n', (n_pc+1));
     fprintf('Percentage of variability in PNS sequence %f\n', round(pcapercent * 100))
 
-    ans = pcscore2sphere3(n_pc, muhat, Xs, TT, U);
-    Xssubsphere = ans';
+    pcscore = pcscore2sphere3(n_pc, muhat, Xs, TT, U);
+    Xssubsphere = pcscore';
 
-    resmat, PNS = PNSmainHDLSS(Xssubsphere, itype, a, R, thresh);
+    [resmat, PNS] = PNSmainHDLSS(Xssubsphere, itype, alpha, R, thresh);
 
     PNS.spheredata = Xssubsphere;
     PNS.pca = U;

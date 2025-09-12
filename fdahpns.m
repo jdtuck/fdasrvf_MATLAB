@@ -30,13 +30,14 @@ classdef fdahpns
     
     properties
         warp_data % fdawarp class with alignment data
-        gam_pca   % warping functions principal directions
-        psi_pca   % srvf principal directions
+        gam_pns   % warping functions principal directions
+        psi_pns   % srvf principal directions
         latent    % latent values
-        U         % eigenvectors
+        pc        % eigenvectors
         coef      % coeficients
-        vec       % shooting vectors
-        mu        % Karcher Mean
+        cumvar    % cummulative variance
+        no        % no of principal spheres
+        PNS       % PNS structure
         tau       % principal directions
     end
     
@@ -67,7 +68,8 @@ classdef fdahpns
             % Outputs:
             % fdahpca object
             gam = obj.warp_data.gam;
-            n = size(gam, 1);
+            n = size(gam, 2);
+            M = size(gam, 1);
             if (~exist('no'))
                 no = 3;
             end
@@ -83,13 +85,12 @@ classdef fdahpns
             obj.tau = 1:5;
             
             % TFPCA
-            obj.psi_pns = zeros(length(obj.tau),length(obj.mu),no);
-            obj.gam_pns = zeros(length(obj.tau),length(obj.mu),no);
-            v = zeros(5,length(obj.mu),3);
+            obj.psi_pns = zeros(length(obj.tau),M,no);
+            obj.gam_pns = zeros(length(obj.tau),M,no);
             for j=1:no      % three components
-                std = std(resmat(j, :));
+                std1 = std(resmat(j, :));
                 mean = mean(resmat(j, :));
-                dirtmp = obj.tau * std + mean;
+                dirtmp = obj.tau * std1 + mean;
                 restmp = zeros(size(resmat,1), length(obj.tau));
                 restmp(j, :) = dirtmp;
                 PCvec = PNSe2s(restmp, PNS);

@@ -10,7 +10,7 @@ function S_star = pcscore2sphere3(n_pc, X_hat, Xs, Tan, V)
     % V: rotation matrix to align the tangent space with the sphere
     % return: (d x n) matrix of points on the sphere
 
-    (d, n) = size(Tan);
+    [d, n] = size(Tan);
     W = zeros(d,n);
     for i = 1:n
         W(:, i) = (acos(sum(Xs(i,:) .* Xhat)) .* Tan(:,i) / norm(Tan(:,i)));
