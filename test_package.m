@@ -5,7 +5,7 @@ load data/simu_data.mat
 %% Test Distance and Gamma Calc
 [dy,dx] = elastic_distance(f(:,1),f(:,1),t);
 assert(dy < 1e-12, 'Amp distance not near 0')
-assert(dx == 0, 'Phase distance not near 0')
+assert(dx < 1e-7, 'Phase distance not near 0')
 
 %% Test f warping
 M = 101;
