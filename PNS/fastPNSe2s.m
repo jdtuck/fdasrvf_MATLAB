@@ -12,4 +12,4 @@ muhat = PNS.muhat;
 n_pc = PNS.n_pc;
 s = acos(GG(1,:));
 ones1 = ones(n, 1);
-approx1 = GG(2:(n_pc+1), :)' * PNS.pca(:, 1:n_pc)' + diag(cos(s)) * ones1 * muhat / norm(muhat);
+approx1 = GG(2:(n_pc+1), :)' * PNS.pca(:, 1:n_pc)' + (speye(length(s)).*cos(s)) * ones1 * muhat / norm(muhat);
