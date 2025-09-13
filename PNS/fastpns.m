@@ -35,6 +35,10 @@ if n_pc == 1
     n_pc = find(cumm_coef <= 0.99, 1, 'last');
 end
 
+if n_pc == 1
+    n_pc = n_pc + 1;
+end
+
 Xs = x';
 for i = 1:n
     Xs(i, :) = Xs(i, :) / norm(Xs(i, :));
