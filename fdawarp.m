@@ -72,6 +72,7 @@ classdef fdawarp
         qs     % random aligned srvfs
         type   % alignment type
         mcmc   % mcmc output if bayesian
+        lam_opt % optimum lambda from ppd
 
     end
 
@@ -94,6 +95,112 @@ classdef fdawarp
 
             obj.f = f;
             obj.time = time;
+        end
+
+        function obj = ppd(obj, max_lam, num_lam, pt, option)
+            % PPD Compute Peak Persistance Diagram
+            % -------------------------------------------------------------------------
+            % This computes the peak persistance diagram over a range of
+            % lambda. This can be slow and recommended to run in parallel
+            %
+            % Usage:  obj.ppd()
+            %         obj.ppd(max_lam)
+            %         obj.ppd(lambda,option)
+            %
+            % Input:
+            % max_lam: max regularization parameter (default 2)
+            % num_lam: number of steps (default 10)
+            % pt: the percentile of negative curvature of raw data (default
+            % .15)
+            %
+            % default options
+            % option.parallel = 0; % turns on MATLAB parallel processing (need
+            % parallel processing toolbox)
+            % option.closepool = 0; % determines wether to close matlabpool
+            % option.smooth = 0; % smooth data using standard box filter
+            % option.sparam = 25; % number of times to run filter
+            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
+            % option.spl = true; % use spline interpolation 
+            % option.MaxItr = 20;  % maximum iterations
+            %
+            % Output:
+            % fdawarp object
+            arguments
+                obj
+                max_lam = 2
+                num_lam = 10
+                pt = 0.15
+                option.parallel = 1;
+                option.closepool = 0;
+                option.smooth = 0;
+                option.sparam = 25;
+                option.method = 'DP1';
+                option.spl = true;
+                option.MaxItr = 20;
+            end
+
+            % Obtain a lambda candidate set
+            lam_vec = linspace(0, max_lam, num_lam);
+            fns = cell(num_lam, 1);
+            for i = 1:num_lam
+                obj = obj.time_warping(lam_vec(i), option);
+                fns{i} = obj.fn;
+            end
+
+            % Peak Persistent Diagrams
+            % Get the threshold for significant peak
+            % Calculate the time difference
+            diff_t = mean(diff(obj.time));
+            taus = [];
+            
+            % Compute tau values
+            for i = 1:size(obj.f, 1)
+                idx = islocalmax(obj.f(i,:));
+                df2 = gradient(gradient(obj.f(i,:), diff_t), diff_t);
+                tau = -df2 / max(-df2);
+                tau = max(tau,0);
+                taus = [taus, tau(idx)];
+            end
+
+            th = prctile(taus, pt * 100);
+
+            [IndicatorMatrix, ~, Heights, Locs, Labels, FNm] = getPPDinfo(obj.time, fns, lam_vec, th);
+            persistent_peak_labels = getPersistentPeaks(IndicatorMatrix');
+                
+            % Choose optimal lambda
+            ref_row = zeros(1,size(IndicatorMatrix,2));
+            ref_row(persistent_peak_labels) = 1;
+            
+            n_lams = size(IndicatorMatrix, 1);
+            hamming_distances = zeros(1, n_lams);
+            exact_match_indices = [];
+
+            for i = 1:n_lams
+                comp = double(~isnan(IndicatorMatrix(i, :)));
+                
+                % Check for exact match
+                if isequal(comp, ref_row)
+                    exact_match_indices = [exact_match_indices, i];
+                end    
+                % Calculate Hamming distance
+                hamming_distances(i) = sum(comp ~= ref_row);
+            end
+            
+            if ~isempty(exact_match_indices)
+                idx_opt = min(exact_match_indices);
+            else
+                min_distance = min(hamming_distances);
+                
+                min_distance_indices = find(hamming_distances == min_distance);
+                idx_opt = min(min_distance_indices);
+            end
+
+            % Draw PPD BarChart
+            drawPPDBarChart(IndicatorMatrix,Heights,lam_vec,idx_opt)
+            % Draw PPD Surface
+            drawPPDSurface(obj.time,lam_vec,FNm,Heights,Locs,IndicatorMatrix,Labels,idx_opt)
+            obj.lam_opt = lam_vec(idx_opt);
+            
         end
 
         function obj = time_warping(obj,lambda,option)
