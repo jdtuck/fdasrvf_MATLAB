@@ -101,7 +101,8 @@ classdef fdawarp
             % PPD Compute Peak Persistance Diagram
             % -------------------------------------------------------------------------
             % This computes the peak persistance diagram over a range of
-            % lambda. This can be slow and recommended to run in parallel
+            % lambda. This can help determine the proper elasticity (penalty).
+            % This can be slow and recommended to run in parallel
             %
             % Usage:  obj.ppd()
             %         obj.ppd(max_lam)
@@ -149,17 +150,16 @@ classdef fdawarp
 
             % Peak Persistent Diagrams
             % Get the threshold for significant peak
-            % Calculate the time difference
             diff_t = mean(diff(obj.time));
             taus = [];
             
             % Compute tau values
-            for i = 1:size(obj.f, 1)
-                idx = islocalmax(obj.f(i,:));
-                df2 = gradient(gradient(obj.f(i,:), diff_t), diff_t);
+            for i = 1:size(obj.f, 2)
+                idx = islocalmax(obj.f(:,i));
+                df2 = gradient(gradient(obj.f(:,i), diff_t), diff_t);
                 tau = -df2 / max(-df2);
                 tau = max(tau,0);
-                taus = [taus, tau(idx)];
+                taus = [taus, tau(idx)'];
             end
 
             th = prctile(taus, pt * 100);
