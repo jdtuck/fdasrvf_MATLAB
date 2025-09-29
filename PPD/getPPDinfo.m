@@ -19,17 +19,12 @@ labelMax = max(Labels{1});
 
 % Process each function to assign labels and locate peaks
 for i = 1:n_lams - 1
-
     currentLabel = Labels{i};
     [Labels{i + 1}, labelMax] = peak_successor(Fa{i}, Fa{i + 1}, currentLabel, labelMax, 1);
 
     % Find peak locations in the next function's mean
-    FNmNextMean = mean(Fa{i + 1}, 2);
-    idxMaxNext = find(islocalmax(FNmNextMean));
+    idxMaxNext = find(islocalmax(FNm(:, i+1)));
     Locs{i + 1} = idxMaxNext';
-
-    % Update the mean function matrix
-    FNm(:, i+1) = FNmNextMean;
 end
 
 % Preprocess data to compute IndicatorMatrix, Curvatures, and Heights
