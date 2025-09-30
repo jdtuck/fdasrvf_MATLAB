@@ -7,7 +7,7 @@ if isempty(IndicatorMatrix)
 end
 
 % Count the number of ones (occurrences) for each peak (ignore NaNs)
-occurrenceCounts = nansum(IndicatorMatrix, 2);
+occurrenceCounts = sum(IndicatorMatrix, 2, "omitnan");
 
 
 data = [occurrenceCounts; 0];
