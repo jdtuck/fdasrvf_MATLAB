@@ -105,8 +105,9 @@ classdef fdawarp
             % This can be slow and recommended to run in parallel
             %
             % Usage:  obj.ppd()
-            %         obj.ppd(max_lam)
-            %         obj.ppd(lambda,option)
+            %         obj.ppd(max_lam, num_lam)
+            %         obj.ppd(max_lam, num_lam, pt)
+            %         obj.ppd(max_lam, num_lam, pt, option)
             %
             % Input:
             % max_lam: max regularization parameter (default 2)
