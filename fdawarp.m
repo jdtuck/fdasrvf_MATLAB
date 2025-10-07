@@ -97,7 +97,7 @@ classdef fdawarp
             obj.time = time;
         end
 
-        function obj = ppd(obj, max_lam, num_lam, pt, option)
+        function obj = ppd(obj, max_lam, num_lam, pt, srvf, mu, option)
             % PPD Compute Peak Persistance Diagram
             % -------------------------------------------------------------------------
             % This computes the peak persistance diagram over a range of
@@ -114,6 +114,8 @@ classdef fdawarp
             % num_lam: number of steps (default 10)
             % pt: the percentile of negative curvature of raw data (default
             % .15)
+            % srvf: perfrom in srvf space (default F)
+            % mu: provided mean to align (default NaN)
             %
             % default options
             % option.parallel = 0; % turns on MATLAB parallel processing (need
@@ -132,6 +134,8 @@ classdef fdawarp
                 max_lam = 2
                 num_lam = 10
                 pt = 0.15
+                srvf = false
+                mu = NaN
                 option.parallel = 1;
                 option.closepool = 0;
                 option.smooth = 0;
@@ -145,8 +149,21 @@ classdef fdawarp
             lam_vec = linspace(0, max_lam, num_lam);
             fns = cell(num_lam, 1);
             for i = 1:num_lam
-                obj = obj.time_warping(lam_vec(i), option);
-                fns{i} = obj.fn;
+                if isnan(mu)
+                    obj = obj.time_warping(lam_vec(i), option);
+                else
+                    obj = obj.multiple_align_functions(mu, lam_vec(i), option);
+                end
+                if srvf
+                    fns{i} = obj.qn;
+                else
+                    fns{i} = obj.fn;
+                end
+            end
+            if srvf
+                f0 = obj.q0;
+            else
+                f0 = obj.f;
             end
 
             % Peak Persistent Diagrams
@@ -156,8 +173,8 @@ classdef fdawarp
             
             % Compute tau values
             for i = 1:size(obj.f, 2)
-                idx = islocalmax(obj.f(:,i));
-                df2 = gradient(gradient(obj.f(:,i), diff_t), diff_t);
+                idx = islocalmax(f0(:,i));
+                df2 = gradient(gradient(f0(:,i), diff_t), diff_t);
                 tau = -df2 / max(-df2);
                 tau = max(tau,0);
                 taus = [taus, tau(idx)'];
@@ -268,7 +285,7 @@ classdef fdawarp
             end
             %% Parameters
 
-            fprintf('\n lambda = %5.1f \n', lambda);
+            fprintf('\n lambda = %5.2f \n', lambda);
 
             binsize = mean(diff(obj.time));
             [M, N] = size(obj.f);
@@ -1068,7 +1085,7 @@ classdef fdawarp
                 end
             end
 
-            fprintf('\n lambda = %5.1f \n', lambda);
+            fprintf('\n lambda = %5.2f \n', lambda);
 
             [M, N] = size(obj.f);
 

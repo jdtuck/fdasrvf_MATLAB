@@ -26,7 +26,7 @@ for i = 1:len_lam
         if ismember(y, label_persistent_peaks)
             patch([x1, x2, x2, x1], [y1, y1, y2, y2], [0,0,0], 'EdgeColor', 'none')
         else
-            patch([x1, x2, x2, x1], [y1, y1, y2, y2], [0.8,0.8,0.8], 'EdgeColor', 'none')
+            patch([x1, x2, x2, x1], [y1, y1, y2, y2], [0.7,0.7,0.7], 'EdgeColor', 'none')
         end
     end
 end
