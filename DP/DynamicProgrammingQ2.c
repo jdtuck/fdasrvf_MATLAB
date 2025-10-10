@@ -115,9 +115,9 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   mxSetN( plhs[1], Gsize );
 
 cleanup:
-  if ( dp_nbhd ) free( dp_nbhd );
-  if ( idxv1 ) free( idxv1 );
-  if ( idxv2 ) free( idxv2 );
-  if ( E ) free( E );
-  if ( P ) free( P );
+  if ( dp_nbhd ) mxFree( dp_nbhd );
+  if ( idxv1 ) mxFree( idxv1 );
+  if ( idxv2 ) mxFree( idxv2 );
+  if ( E ) mxFree( E );
+  if ( P ) mxFree( P );
 }
