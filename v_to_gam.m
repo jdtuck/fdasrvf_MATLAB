@@ -3,15 +3,15 @@ function gam = v_to_gam(vec)
     % -----------------------------------------------------_
 
     if size(vec,2) > 1
-        [n,T] = size(vec);
+        [T, n] = size(vec);
         time = linspace(0,1,T);
     
-        gam = zeros(n,T);
+        gam = zeros(T,n);
         mu = ones(1, T);
         for i=1:n
-            psi = exp_map(mu,vec(i,:));
+            psi = exp_map(mu,vec(:,i));
             gam_tmp = cumtrapz(time,psi.^2);
-            gam(i,:) = (gam_tmp-min(gam_tmp))/(max(gam_tmp)-min(gam_tmp));
+            gam(:,i) = (gam_tmp-min(gam_tmp))/(max(gam_tmp)-min(gam_tmp));
         end
     else
         T = length(vec);
