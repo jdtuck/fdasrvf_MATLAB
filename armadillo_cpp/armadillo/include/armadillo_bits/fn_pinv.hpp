@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,51 +24,82 @@
 template<typename T1>
 arma_warn_unused
 inline
-typename enable_if2< is_real<typename T1::pod_type>::value, const Op<T1, op_pinv> >::result
+typename enable_if2< is_blas_real<typename T1::pod_type>::value, const Op<T1, op_pinv_default> >::result
+pinv
+  (
+  const Base<typename T1::elem_type,T1>& X
+  )
+  {
+  arma_debug_sigprint();
+  
+  return Op<T1, op_pinv_default>(X.get_ref());
+  }
+
+
+
+template<typename T1>
+arma_warn_unused
+inline
+typename enable_if2< is_blas_real<typename T1::pod_type>::value, const Op<T1, op_pinv> >::result
 pinv
   (
   const Base<typename T1::elem_type,T1>& X,
-  const typename T1::pod_type            tol    = 0.0,
-  const char*                            method = "dc"
+  const typename T1::pod_type            tol,
+  const char*                            method = nullptr
   )
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
-  const char sig = (method != NULL) ? method[0] : char(0);
+  uword method_id = 0;  // default setting
   
-  arma_debug_check( ((sig != 's') && (sig != 'd')), "pinv(): unknown method specified" );
+  if(method != nullptr)
+    {
+    const char sig = method[0];
+    
+    arma_conform_check( ((sig != 's') && (sig != 'd')), "pinv(): unknown method specified" );
+    
+    if(sig == 's')  { method_id = 1; }
+    if(sig == 'd')  { method_id = 2; }
+    }
   
-  return (sig == 'd') ? Op<T1, op_pinv>(X.get_ref(), eT(tol), 1, 0) : Op<T1, op_pinv>(X.get_ref(), eT(tol), 0, 0);
+  return Op<T1, op_pinv>(X.get_ref(), eT(tol), method_id, uword(0));
   }
 
 
 
 template<typename T1>
 inline
-typename enable_if2< is_real<typename T1::pod_type>::value, bool >::result
+typename enable_if2< is_blas_real<typename T1::pod_type>::value, bool >::result
 pinv
   (
          Mat<typename T1::elem_type>&    out,
   const Base<typename T1::elem_type,T1>& X,
   const typename T1::pod_type            tol    = 0.0,
-  const char*                            method = "dc"
+  const char*                            method = nullptr
   )
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  const char sig = (method != NULL) ? method[0] : char(0);
+  uword method_id = 0;  // default setting
   
-  arma_debug_check( ((sig != 's') && (sig != 'd')), "pinv(): unknown method specified" );
+  if(method != nullptr)
+    {
+    const char sig = method[0];
+    
+    arma_conform_check( ((sig != 's') && (sig != 'd')), "pinv(): unknown method specified" );
+    
+    if(sig == 's')  { method_id = 1; }
+    if(sig == 'd')  { method_id = 2; }
+    }
   
-  const bool use_divide_and_conquer = (sig == 'd');
-  
-  const bool status = op_pinv::apply_direct(out, X.get_ref(), tol, use_divide_and_conquer);
+  const bool status = op_pinv::apply_direct(out, X.get_ref(), tol, method_id);
   
   if(status == false)
     {
-    arma_debug_warn("pinv(): svd failed");
+    out.soft_reset();
+    arma_warn(3, "pinv(): svd failed");
     }
   
   return status;

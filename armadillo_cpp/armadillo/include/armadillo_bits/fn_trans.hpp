@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,10 +27,10 @@ const Op<T1, op_htrans>
 trans
   (
   const T1& X,
-  const typename enable_if< is_arma_type<T1>::value == true >::result* junk = 0
+  const typename enable_if< is_arma_type<T1>::value >::result* junk = nullptr
   )
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   arma_ignore(junk);
   
   return Op<T1, op_htrans>(X);
@@ -43,10 +45,10 @@ const Op<T1, op_htrans>
 htrans
   (
   const T1& X,
-  const typename enable_if< is_arma_type<T1>::value == true >::result* junk = 0
+  const typename enable_if< is_arma_type<T1>::value >::result* junk = nullptr
   )
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   arma_ignore(junk);
   
   return Op<T1, op_htrans>(X);
@@ -60,92 +62,36 @@ htrans
 
 template<typename T1>
 arma_warn_unused
-inline
-typename
-enable_if2
-  <
-  is_arma_sparse_type<T1>::value,
-  const SpOp<T1,spop_strans>
-  >::result
+arma_inline
+const SpOp<T1, spop_htrans>
 trans
   (
-  const T1& x,
-  const typename arma_not_cx<typename T1::elem_type>::result* junk = 0
+  const T1& X,
+  const typename enable_if< is_arma_sparse_type<T1>::value >::result* junk = nullptr
   )
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   arma_ignore(junk);
   
-  return SpOp<T1,spop_strans>(x);
+  return SpOp<T1, spop_htrans>(X);
   }
 
 
 
 template<typename T1>
 arma_warn_unused
-inline
-typename
-enable_if2
-  <
-  is_arma_sparse_type<T1>::value,
-  const SpOp<T1,spop_htrans>
-  >::result
-trans
-  (
-  const T1& x,
-  const typename arma_cx_only<typename T1::elem_type>::result* junk = 0
-  )
-  {
-  arma_extra_debug_sigprint();
-  arma_ignore(junk);
-  
-  return SpOp<T1,spop_htrans>(x);
-  }
-
-
-
-template<typename T1>
-arma_warn_unused
-inline
-typename
-enable_if2
-  <
-  is_arma_sparse_type<T1>::value,
-  const SpOp<T1,spop_strans>
-  >::result
+arma_inline
+const SpOp<T1, spop_htrans>
 htrans
   (
-  const T1& x,
-  const typename arma_not_cx<typename T1::elem_type>::result* junk = 0
+  const T1& X,
+  const typename enable_if< is_arma_sparse_type<T1>::value >::result* junk = nullptr
   )
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   arma_ignore(junk);
   
-  return SpOp<T1,spop_strans>(x);
-  }
-
-
-
-template<typename T1>
-arma_warn_unused
-inline
-typename
-enable_if2
-  <
-  is_arma_sparse_type<T1>::value,
-  const SpOp<T1,spop_htrans>
-  >::result
-htrans
-  (
-  const T1& x,
-  const typename arma_cx_only<typename T1::elem_type>::result* junk = 0
-  )
-  {
-  arma_extra_debug_sigprint();
-  arma_ignore(junk);
-  
-  return SpOp<T1,spop_htrans>(x);
+  return SpOp<T1, spop_htrans>(X);
   }
 
 

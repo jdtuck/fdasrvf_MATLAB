@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,15 +22,16 @@
 
 
 template<typename eT, typename T1>
-class subview_elem1 : public Base<eT, subview_elem1<eT,T1> >
+class subview_elem1 : public Base< eT, subview_elem1<eT,T1> >
   {
   public:
   
   typedef eT                                       elem_type;
   typedef typename get_pod_type<elem_type>::result pod_type;
   
-  static const bool is_row = false;
-  static const bool is_col = true;
+  static constexpr bool is_row  = false;
+  static constexpr bool is_col  = true;
+  static constexpr bool is_xvec = false;
   
   arma_aligned const Mat<eT>         fake_m;
   arma_aligned const Mat<eT>&        m;
@@ -44,6 +47,7 @@ class subview_elem1 : public Base<eT, subview_elem1<eT,T1> >
   public:
   
   inline ~subview_elem1();
+  inline  subview_elem1() = delete;
   
   template<typename op_type>              inline void inplace_op(const eT                    val);
   template<typename op_type, typename T2> inline void inplace_op(const subview_elem1<eT,T2>& x  );
@@ -54,6 +58,10 @@ class subview_elem1 : public Base<eT, subview_elem1<eT,T1> >
   arma_inline const Op<subview_elem1<eT,T1>,op_strans> st() const;
   
   inline void replace(const eT old_val, const eT new_val);
+  
+  inline void clean(const pod_type threshold);
+  
+  inline void clamp(const eT min_val, const eT max_val);
   
   inline void fill(const eT val);
   inline void zeros();
@@ -91,14 +99,12 @@ class subview_elem1 : public Base<eT, subview_elem1<eT,T1> >
   inline static void schur_inplace(Mat<eT>& out, const subview_elem1& in);
   inline static void   div_inplace(Mat<eT>& out, const subview_elem1& in);
   
+  template<typename eT2>
+  inline bool is_alias(const Mat<eT2>& X) const;
   
-  
-  private:
   
   friend class  Mat<eT>;
   friend class Cube<eT>;
-  
-  subview_elem1();
   };
 
 

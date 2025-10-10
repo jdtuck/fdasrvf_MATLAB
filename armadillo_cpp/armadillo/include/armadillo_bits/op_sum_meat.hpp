@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,157 +22,228 @@
 
 
 template<typename T1>
-arma_hot
 inline
 void
 op_sum::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_sum>& in)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  typedef typename T1::elem_type eT;
-  
-  const uword dim = in.aux_uword_a;
-  arma_debug_check( (dim > 1), "sum(): parameter 'dim' must be 0 or 1" );
-  
-  const Proxy<T1> P(in.m);
-  
-  if(P.is_alias(out) == false)
-    {
-    op_sum::apply_noalias(out, P, dim);
-    }
-  else
-    {
-    Mat<eT> tmp;
-    
-    op_sum::apply_noalias(tmp, P, dim);
-    
-    out.steal_mem(tmp);
-    }
+  op_sum::apply_generic(out, in);
   }
 
 
 
 template<typename T1>
-arma_hot
 inline
 void
-op_sum::apply_noalias(Mat<typename T1::elem_type>& out, const Proxy<T1>& P, const uword dim)
+op_sum::apply(Mat<typename T1::elem_type>& out, const Op< eOp<T1,eop_square>, op_sum >& in)
   {
-  arma_extra_debug_sigprint();
-  
-  if(is_Mat<typename Proxy<T1>::stored_type>::value)
-    {
-    op_sum::apply_noalias_unwrap(out, P, dim);
-    }
-  else
-    {
-    op_sum::apply_noalias_proxy(out, P, dim);
-    }
-  }
-
-
-
-template<typename T1>
-arma_hot
-inline
-void
-op_sum::apply_noalias_unwrap(Mat<typename T1::elem_type>& out, const Proxy<T1>& P, const uword dim)
-  {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
-  typedef typename Proxy<T1>::stored_type P_stored_type;
+  typedef eOp<T1,eop_square> inner_expr_type;
   
-  const unwrap<P_stored_type> tmp(P.Q);
+  typedef typename inner_expr_type::proxy_type::stored_type inner_expr_P_stored_type;
   
-  const typename unwrap<P_stored_type>::stored_type& X = tmp.M;
-  
-  const uword X_n_rows = X.n_rows;
-  const uword X_n_cols = X.n_cols;
-  
-  if(dim == 0)
+  if(is_Mat<inner_expr_P_stored_type>::value)
     {
-    out.set_size(1, X_n_cols);
+    const uword dim = in.aux_uword_a;
     
-    eT* out_mem = out.memptr();
+    arma_conform_check( (dim > 1), "sum(): parameter 'dim' must be 0 or 1" );
     
-    for(uword col=0; col < X_n_cols; ++col)
+    const quasi_unwrap<inner_expr_P_stored_type> U(in.m.P.Q);
+    
+    if(U.is_alias(out))
       {
-      out_mem[col] = arrayops::accumulate( X.colptr(col), X_n_rows );
+      Mat<eT> tmp;
+      
+      op_sum::apply_mat_square_noalias(tmp, U.M, dim);
+      
+      out.steal_mem(tmp);
       }
-    }
-  else
-    {
-    out.zeros(X_n_rows, 1);
-    
-    eT* out_mem = out.memptr();
-    
-    for(uword col=0; col < X_n_cols; ++col)
+    else
       {
-      arrayops::inplace_plus( out_mem, X.colptr(col), X_n_rows );
+      op_sum::apply_mat_square_noalias(out, U.M, dim);
       }
-    }
-  }
-
-
-
-template<typename T1>
-arma_hot
-inline
-void
-op_sum::apply_noalias_proxy(Mat<typename T1::elem_type>& out, const Proxy<T1>& P, const uword dim)
-  {
-  arma_extra_debug_sigprint();
-  
-  typedef typename T1::elem_type eT;
-  
-  if( arma_config::openmp && Proxy<T1>::use_mp && mp_gate<eT>::eval(P.get_n_elem()) )
-    {
-    op_sum::apply_noalias_proxy_mp(out, P, dim);
     
     return;
     }
   
-  const uword P_n_rows = P.get_n_rows();
-  const uword P_n_cols = P.get_n_cols();
+  op_sum::apply_generic(out, in);
+  }
+
+
+
+template<typename T1>
+inline
+void
+op_sum::apply(Mat<typename T1::elem_type>& out, const Op< eOp<T1,eop_pow>, op_sum >& in)
+  {
+  arma_debug_sigprint();
   
-  if(dim == 0)
+  typedef typename T1::elem_type eT;
+  
+  if(arma_config::optimise_powexpr && (in.m.aux == eT(2)))
     {
-    out.set_size(1, P_n_cols);
+    typedef Op< eOp<T1,eop_square>, op_sum > modified_whole_expr_type;
     
-    eT* out_mem = out.memptr();
+    op_sum::apply(out, reinterpret_cast<const modified_whole_expr_type& >(in) );
     
-    for(uword col=0; col < P_n_cols; ++col)
+    return;
+    }
+  
+  if(arma_config::optimise_powexpr && (in.m.aux == eT(0.5)) && is_real_or_cx<eT>::value)
+    {
+    typedef Op< eOp<T1,eop_sqrt>, op_sum > modified_whole_expr_type;
+    
+    op_sum::apply(out, reinterpret_cast<const modified_whole_expr_type& >(in) );
+    
+    return;
+    }
+  
+  op_sum::apply_generic(out, in);
+  }
+
+
+
+template<typename T1>
+inline
+void
+op_sum::apply_generic(Mat<typename T1::elem_type>& out, const Op<T1,op_sum>& in)
+  {
+  arma_debug_sigprint();
+  
+  typedef typename T1::elem_type eT;
+  
+  const uword dim = in.aux_uword_a;
+  
+  arma_conform_check( (dim > 1), "sum(): parameter 'dim' must be 0 or 1" );
+  
+  if((is_Mat<T1>::value) || (is_Mat<typename Proxy<T1>::stored_type>::value) || (arma_config::openmp && Proxy<T1>::use_mp))
+    {
+    const quasi_unwrap<T1> U(in.m);
+    
+    if(U.is_alias(out))
       {
-      eT val1 = eT(0);
-      eT val2 = eT(0);
+      Mat<eT> tmp;
       
-      uword i,j;
-      for(i=0, j=1; j < P_n_rows; i+=2, j+=2)
-        {
-        val1 += P.at(i,col);
-        val2 += P.at(j,col);
-        }
+      op_sum::apply_mat_noalias(tmp, U.M, dim);
       
-      if(i < P_n_rows)
-        {
-        val1 += P.at(i,col);
-        }
-      
-      out_mem[col] = (val1 + val2);
+      out.steal_mem(tmp);
+      }
+    else
+      {
+      op_sum::apply_mat_noalias(out, U.M, dim);
       }
     }
   else
     {
-    out.zeros(P_n_rows, 1);
+    const Proxy<T1> P(in.m);
     
-    eT* out_mem = out.memptr();
-    
-    for(uword col=0; col < P_n_cols; ++col)
-    for(uword row=0; row < P_n_rows; ++row)
+    if(P.is_alias(out))
       {
-      out_mem[row] += P.at(row,col);
+      Mat<eT> tmp;
+      
+      op_sum::apply_proxy_noalias(tmp, P, dim);
+      
+      out.steal_mem(tmp);
+      }
+    else
+      {
+      op_sum::apply_proxy_noalias(out, P, dim);
+      }
+    }
+  }
+
+
+
+template<typename eT>
+inline
+void
+op_sum::apply_mat_noalias(Mat<eT>& out, const Mat<eT>& X, const uword dim)
+  {
+  arma_debug_sigprint();
+  
+  const uword X_n_rows = X.n_rows;
+  const uword X_n_cols = X.n_cols;
+  
+  const uword out_n_rows = (dim == 0) ? uword(1) : X_n_rows;
+  const uword out_n_cols = (dim == 0) ? X_n_cols : uword(1);
+  
+  out.set_size(out_n_rows, out_n_cols);
+  
+  if(X.n_elem == 0)  { out.zeros(); return; }
+  
+  const eT* X_colptr =   X.memptr();
+        eT* out_mem  = out.memptr();
+  
+  if(dim == 0)
+    {
+    for(uword col=0; col < X_n_cols; ++col)
+      {
+      out_mem[col] = arrayops::accumulate( X_colptr, X_n_rows );
+      
+      X_colptr += X_n_rows;
+      }
+    }
+  else
+    {
+    arrayops::copy(out_mem, X_colptr, X_n_rows);
+    
+    X_colptr += X_n_rows;
+    
+    for(uword col=1; col < X_n_cols; ++col)
+      {
+      arrayops::inplace_plus( out_mem, X_colptr, X_n_rows );
+      
+      X_colptr += X_n_rows;
+      }
+    }
+  }
+
+
+
+template<typename eT>
+inline
+void
+op_sum::apply_mat_square_noalias(Mat<eT>& out, const Mat<eT>& X, const uword dim)
+  {
+  arma_debug_sigprint();
+  
+  const uword X_n_rows = X.n_rows;
+  const uword X_n_cols = X.n_cols;
+  
+  const uword out_n_rows = (dim == 0) ? uword(1) : X_n_rows;
+  const uword out_n_cols = (dim == 0) ? X_n_cols : uword(1);
+  
+  out.set_size(out_n_rows, out_n_cols);
+  
+  if(X.n_elem == 0)  { out.zeros(); return; }
+  
+  const eT* X_colptr =   X.memptr();
+        eT* out_mem  = out.memptr();
+  
+  if(dim == 0)
+    {
+    for(uword col=0; col < X_n_cols; ++col)
+      {
+      out_mem[col] = op_dot::direct_dot(X_n_rows, X_colptr, X_colptr);
+      
+      X_colptr += X_n_rows;
+      }
+    }
+  else
+    {
+    for(uword row=0; row < X_n_rows; ++row)  { const eT tmp = X_colptr[row]; out_mem[row] = tmp*tmp; }
+    
+    X_colptr += X_n_rows;
+    
+    for(uword col=1; col < X_n_cols; ++col)
+      {
+      for(uword row=0; row < X_n_rows; ++row)  { const eT tmp = X_colptr[row]; out_mem[row] += tmp*tmp; }
+      
+      X_colptr += X_n_rows;
       }
     }
   }
@@ -178,29 +251,72 @@ op_sum::apply_noalias_proxy(Mat<typename T1::elem_type>& out, const Proxy<T1>& P
 
 
 template<typename T1>
-arma_hot
 inline
 void
-op_sum::apply_noalias_proxy_mp(Mat<typename T1::elem_type>& out, const Proxy<T1>& P, const uword dim)
+op_sum::apply_proxy_noalias(Mat<typename T1::elem_type>& out, const Proxy<T1>& P, const uword dim)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  #if defined(ARMA_USE_OPENMP)
+  typedef typename T1::elem_type eT;
+  
+  const uword P_n_rows = P.get_n_rows();
+  const uword P_n_cols = P.get_n_cols();
+  
+  const uword out_n_rows = (dim == 0) ? uword(1) : P_n_rows;
+  const uword out_n_cols = (dim == 0) ? P_n_cols : uword(1);
+  
+  out.set_size(out_n_rows, out_n_cols);
+  
+  if(P.get_n_elem() == 0)  { out.zeros(); return; }
+  
+  eT* out_mem = out.memptr();
+  
+  if(Proxy<T1>::use_at == false)
     {
-    typedef typename T1::elem_type eT;
-    
-    const uword P_n_rows = P.get_n_rows();
-    const uword P_n_cols = P.get_n_cols();
-    
-    const int n_threads = mp_thread_limit::get();
-    
     if(dim == 0)
       {
-      out.set_size(1, P_n_cols);
+      uword count = 0;
       
-      eT* out_mem = out.memptr();
+      for(uword col=0; col < P_n_cols; ++col)
+        {
+        eT val1 = eT(0);
+        eT val2 = eT(0);
+        
+        uword j;
+        for(j=1; j < P_n_rows; j+=2)
+          {
+          val1 += P[count]; ++count;
+          val2 += P[count]; ++count;
+          }
+        
+        if((j-1) < P_n_rows)
+          {
+          val1 += P[count]; ++count;
+          }
+        
+        out_mem[col] = (val1 + val2);
+        }
+      }
+    else
+      {
+      uword count = 0;
       
-      #pragma omp parallel for schedule(static) num_threads(n_threads)
+      for(uword row=0; row < P_n_rows; ++row)
+        {
+        out_mem[row] = P[count]; ++count;
+        }
+      
+      for(uword col=1; col < P_n_cols; ++col)
+      for(uword row=0; row < P_n_rows; ++row)
+        {
+        out_mem[row] += P[count]; ++count;
+        }
+      }
+    }
+  else
+    {
+    if(dim == 0)
+      {
       for(uword col=0; col < P_n_cols; ++col)
         {
         eT val1 = eT(0);
@@ -223,30 +339,18 @@ op_sum::apply_noalias_proxy_mp(Mat<typename T1::elem_type>& out, const Proxy<T1>
       }
     else
       {
-      out.set_size(P_n_rows, 1);
-      
-      eT* out_mem = out.memptr();
-      
-      #pragma omp parallel for schedule(static) num_threads(n_threads)
       for(uword row=0; row < P_n_rows; ++row)
         {
-        eT acc = eT(0);
-        for(uword col=0; col < P_n_cols; ++col)
-          {
-          acc += P.at(row,col);
-          }
-        
-        out_mem[row] = acc;
+        out_mem[row] = P.at(row,0);
+        }
+      
+      for(uword col=1; col < P_n_cols; ++col)
+      for(uword row=0; row < P_n_rows; ++row)
+        {
+        out_mem[row] += P.at(row,col);
         }
       }
     }
-  #else
-    {
-    arma_ignore(out);
-    arma_ignore(P);
-    arma_ignore(dim);
-    }
-  #endif
   }
 
 
@@ -257,71 +361,62 @@ op_sum::apply_noalias_proxy_mp(Mat<typename T1::elem_type>& out, const Proxy<T1>
 
 
 template<typename T1>
-arma_hot
 inline
 void
 op_sum::apply(Cube<typename T1::elem_type>& out, const OpCube<T1,op_sum>& in)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
   const uword dim = in.aux_uword_a;
-  arma_debug_check( (dim > 2), "sum(): parameter 'dim' must be 0 or 1 or 2" );
   
-  const ProxyCube<T1> P(in.m);
+  arma_conform_check( (dim > 2), "sum(): parameter 'dim' must be 0 or 1 or 2" );
   
-  if(P.is_alias(out) == false)
+  if((is_Cube<T1>::value) || (is_Cube<typename ProxyCube<T1>::stored_type>::value) || (arma_config::openmp && ProxyCube<T1>::use_mp))
     {
-    op_sum::apply_noalias(out, P, dim);
+    const unwrap_cube<T1> U(in.m);
+    
+    if(U.is_alias(out))
+      {
+      Cube<eT> tmp;
+      
+      op_sum::apply_cube_noalias(tmp, U.M, dim);
+      
+      out.steal_mem(tmp);
+      }
+    else
+      {
+      op_sum::apply_cube_noalias(out, U.M, dim);
+      }
     }
   else
     {
-    Cube<eT> tmp;
+    const ProxyCube<T1> P(in.m);
     
-    op_sum::apply_noalias(tmp, P, dim);
-    
-    out.steal_mem(tmp);
+    if(P.is_alias(out))
+      {
+      Cube<eT> tmp;
+      
+      op_sum::apply_proxy_noalias(tmp, P, dim);
+      
+      out.steal_mem(tmp);
+      }
+    else
+      {
+      op_sum::apply_proxy_noalias(out, P, dim);
+      }
     }
   }
 
 
 
-template<typename T1>
-arma_hot
+template<typename eT>
 inline
 void
-op_sum::apply_noalias(Cube<typename T1::elem_type>& out, const ProxyCube<T1>& P, const uword dim)
+op_sum::apply_cube_noalias(Cube<eT>& out, const Cube<eT>& X, const uword dim)
   {
-  arma_extra_debug_sigprint();
-  
-  if(is_Cube<typename ProxyCube<T1>::stored_type>::value)
-    {
-    op_sum::apply_noalias_unwrap(out, P, dim);
-    }
-  else
-    {
-    op_sum::apply_noalias_proxy(out, P, dim);
-    }
-  }
-
-
-
-template<typename T1>
-arma_hot
-inline
-void
-op_sum::apply_noalias_unwrap(Cube<typename T1::elem_type>& out, const ProxyCube<T1>& P, const uword dim)
-  {
-  arma_extra_debug_sigprint();
-  
-  typedef typename T1::elem_type eT;
-  
-  typedef typename ProxyCube<T1>::stored_type P_stored_type;
-  
-  const unwrap_cube<P_stored_type> tmp(P.Q);
-  
-  const Cube<eT>& X = tmp.M;
+  arma_debug_sigprint();
   
   const uword X_n_rows   = X.n_rows;
   const uword X_n_cols   = X.n_cols;
@@ -373,21 +468,13 @@ op_sum::apply_noalias_unwrap(Cube<typename T1::elem_type>& out, const ProxyCube<
 
 
 template<typename T1>
-arma_hot
 inline
 void
-op_sum::apply_noalias_proxy(Cube<typename T1::elem_type>& out, const ProxyCube<T1>& P, const uword dim)
+op_sum::apply_proxy_noalias(Cube<typename T1::elem_type>& out, const ProxyCube<T1>& P, const uword dim)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   typedef typename T1::elem_type eT;
-  
-  if( arma_config::openmp && ProxyCube<T1>::use_mp && mp_gate<eT>::eval(P.get_n_elem()) )
-    {
-    op_sum::apply_noalias_proxy_mp(out, P, dim);
-    
-    return;
-    }
   
   const uword P_n_rows   = P.get_n_rows();
   const uword P_n_cols   = P.get_n_cols();
@@ -456,123 +543,6 @@ op_sum::apply_noalias_proxy(Cube<typename T1::elem_type>& out, const ProxyCube<T
         }
       }
     }
-  }
-
-
-
-template<typename T1>
-arma_hot
-inline
-void
-op_sum::apply_noalias_proxy_mp(Cube<typename T1::elem_type>& out, const ProxyCube<T1>& P, const uword dim)
-  {
-  arma_extra_debug_sigprint();
-  
-  #if defined(ARMA_USE_OPENMP)
-    {
-    typedef typename T1::elem_type eT;
-    
-    const uword P_n_rows   = P.get_n_rows();
-    const uword P_n_cols   = P.get_n_cols();
-    const uword P_n_slices = P.get_n_slices();
-    
-    const int n_threads = mp_thread_limit::get();
-    
-    if(dim == 0)
-      {
-      out.set_size(1, P_n_cols, P_n_slices);
-      
-      #pragma omp parallel for schedule(static) num_threads(n_threads)
-      for(uword slice=0; slice < P_n_slices; ++slice)
-        {
-        eT* out_mem = out.slice_memptr(slice);
-        
-        for(uword col=0; col < P_n_cols; ++col)
-          {
-          eT val1 = eT(0);
-          eT val2 = eT(0);
-          
-          uword i,j;
-          for(i=0, j=1; j < P_n_rows; i+=2, j+=2)
-            {
-            val1 += P.at(i,col,slice);
-            val2 += P.at(j,col,slice);
-            }
-          
-          if(i < P_n_rows)
-            {
-            val1 += P.at(i,col,slice);
-            }
-          
-          out_mem[col] = (val1 + val2);
-          }
-        }
-      }
-    else
-    if(dim == 1)
-      {
-      out.zeros(P_n_rows, 1, P_n_slices);
-      
-      #pragma omp parallel for schedule(static) num_threads(n_threads)
-      for(uword slice=0; slice < P_n_slices; ++slice)
-        {
-        eT* out_mem = out.slice_memptr(slice);
-        
-        for(uword col=0; col < P_n_cols; ++col)
-        for(uword row=0; row < P_n_rows; ++row)
-          {
-          out_mem[row] += P.at(row,col,slice);
-          }
-        }
-      }
-    else
-    if(dim == 2)
-      {
-      out.zeros(P_n_rows, P_n_cols, 1);
-      
-      if(P_n_cols >= P_n_rows)
-        {
-        #pragma omp parallel for schedule(static) num_threads(n_threads)
-        for(uword col=0; col < P_n_cols; ++col)
-          {
-          for(uword row=0; row < P_n_rows; ++row)
-            {
-            eT acc = eT(0);
-            for(uword slice=0; slice < P_n_slices; ++slice)
-              {
-              acc += P.at(row,col,slice);
-              }
-            
-            out.at(row,col,0) = acc;
-            }
-          }
-        }
-      else
-        {
-        #pragma omp parallel for schedule(static) num_threads(n_threads)
-        for(uword row=0; row < P_n_rows; ++row)
-          {
-          for(uword col=0; col < P_n_cols; ++col)
-            {
-            eT acc = eT(0);
-            for(uword slice=0; slice < P_n_slices; ++slice)
-              {
-              acc += P.at(row,col,slice);
-              }
-            
-            out.at(row,col,0) = acc;
-            }
-          }
-        }
-      }
-    }
-  #else
-    {
-    arma_ignore(out);
-    arma_ignore(P);
-    arma_ignore(dim);
-    }
-  #endif
   }
 
 

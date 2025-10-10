@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +26,7 @@ inline
 void
 op_chi2rnd::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_chi2rnd>& in)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -51,48 +53,41 @@ inline
 void
 op_chi2rnd::apply_noalias(Mat<typename T1::elem_type>& out, const Proxy<T1>& P)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  #if defined(ARMA_USE_CXX11)
+  typedef typename T1::elem_type eT;
+  
+  // we can only make a generator for float/double/long double types
+  typedef typename promote_type<eT, float>::result gT;
+  
+  op_chi2rnd_varying_df<gT> generator;
+  
+  const uword n_rows = P.get_n_rows();
+  const uword n_cols = P.get_n_cols();
+  
+  out.set_size(n_rows, n_cols);
+  
+  eT* out_mem = out.memptr();
+  
+  if(Proxy<T1>::use_at == false)
     {
-    typedef typename T1::elem_type eT;
+    const uword N = P.get_n_elem();
     
-    op_chi2rnd_varying_df<eT> generator;
+    typename Proxy<T1>::ea_type Pea = P.get_ea();
     
-    const uword n_rows = P.get_n_rows();
-    const uword n_cols = P.get_n_cols();
-    
-    out.set_size(n_rows, n_cols);
-    
-    eT* out_mem = out.memptr();
-    
-    if(Proxy<T1>::use_at == false)
+    for(uword i=0; i<N; ++i)
       {
-      const uword N = P.get_n_elem();
-      
-      typename Proxy<T1>::ea_type Pea = P.get_ea();
-      
-      for(uword i=0; i<N; ++i)
-        {
-        out_mem[i] = generator( Pea[i] );
-        }
-      }
-    else
-      {
-      for(uword col=0; col < n_cols; ++col)
-      for(uword row=0; row < n_rows; ++row)
-        {
-        (*out_mem) = generator( P.at(row,col) );  ++out_mem;
-        }
+      out_mem[i] = eT( generator( Pea[i] ) );
       }
     }
-  #else
+  else
     {
-    out.reset();
-    
-    arma_stop_logic_error("chi2rnd(): C++11 compiler required");
+    for(uword col=0; col < n_cols; ++col)
+    for(uword row=0; row < n_rows; ++row)
+      {
+      (*out_mem) = eT( generator( P.at(row,col) ) );  ++out_mem;
+      }
     }
-  #endif
   }
 
 
@@ -102,41 +97,30 @@ inline
 void
 op_chi2rnd::fill_constant_df(Mat<eT>& out, const eT df)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  #if defined(ARMA_USE_CXX11)
+  if(df > eT(0))
     {
-    if(df > eT(0))
-      {
-      typedef std::mt19937_64                   motor_type;
-      typedef std::mt19937_64::result_type      seed_type;
-      typedef std::chi_squared_distribution<eT> distr_type;
-      
-      motor_type motor;  motor.seed( seed_type(arma_rng::randi<int>()) );
-      distr_type distr(df);
-      
-      const uword N = out.n_elem;
-      
-      eT* out_mem = out.memptr();
-      
-      for(uword i=0; i<N; ++i)
-        {
-        out_mem[i] = eT( distr(motor) );
-        }
-      }
-    else
-      {
-      out.fill( Datum<eT>::nan );
-      }
-    }
-  #else
-    {
-    out.reset();
-    arma_ignore(df);
+    typedef std::mt19937_64                   motor_type;
+    typedef std::mt19937_64::result_type      seed_type;
+    typedef std::chi_squared_distribution<eT> distr_type;
     
-    arma_stop_logic_error("chi2rnd(): C++11 compiler required");
+    motor_type motor;  motor.seed( seed_type(arma_rng::randi<int>()) );
+    distr_type distr(df);
+    
+    const uword N = out.n_elem;
+    
+    eT* out_mem = out.memptr();
+    
+    for(uword i=0; i<N; ++i)
+      {
+      out_mem[i] = eT( distr(motor) );
+      }
     }
-  #endif
+  else
+    {
+    out.fill( Datum<eT>::nan );
+    }
   }
 
 
@@ -145,13 +129,11 @@ op_chi2rnd::fill_constant_df(Mat<eT>& out, const eT df)
 
 
 
-#if defined(ARMA_USE_CXX11)
-
 template<typename eT>
 inline
 op_chi2rnd_varying_df<eT>::~op_chi2rnd_varying_df()
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   }
 
 
@@ -160,7 +142,7 @@ template<typename eT>
 inline
 op_chi2rnd_varying_df<eT>::op_chi2rnd_varying_df()
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   typedef std::mt19937_64::result_type seed_type;
   
@@ -174,7 +156,7 @@ inline
 eT
 op_chi2rnd_varying_df<eT>::operator()(const eT df)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   // as C++11 doesn't seem to provide a way to explicitly set the parameter
   // of an existing chi_squared_distribution object,
@@ -191,8 +173,6 @@ op_chi2rnd_varying_df<eT>::operator()(const eT df)
     return Datum<eT>::nan;
     }
   }
-
-#endif
 
 
 

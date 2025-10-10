@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,19 +38,17 @@ typedef Col <s32> s32_colvec;
 typedef Row <s32> s32_rowvec;
 typedef Cube<s32> s32_cube;
 
-#if defined(ARMA_USE_U64S64)
-  typedef Mat <u64> u64_mat;
-  typedef Col <u64> u64_vec;
-  typedef Col <u64> u64_colvec;
-  typedef Row <u64> u64_rowvec;
-  typedef Cube<u64> u64_cube;
+typedef Mat <u64> u64_mat;
+typedef Col <u64> u64_vec;
+typedef Col <u64> u64_colvec;
+typedef Row <u64> u64_rowvec;
+typedef Cube<u64> u64_cube;
 
-  typedef Mat <s64> s64_mat;
-  typedef Col <s64> s64_vec;
-  typedef Col <s64> s64_colvec;
-  typedef Row <s64> s64_rowvec;
-  typedef Cube<s64> s64_cube;
-#endif
+typedef Mat <s64> s64_mat;
+typedef Col <s64> s64_vec;
+typedef Col <s64> s64_colvec;
+typedef Row <s64> s64_rowvec;
+typedef Cube<s64> s64_cube;
 
 typedef Mat <uword> umat;
 typedef Col <uword> uvec;
@@ -98,6 +98,20 @@ typedef Col <cx_double> cx_colvec;
 typedef Row <cx_double> cx_rowvec;
 typedef Cube<cx_double> cx_cube;
 
+#if defined(ARMA_HAVE_FP16)
+typedef Mat <fp16> hmat;
+typedef Col <fp16> hvec;
+typedef Col <fp16> hcolvec;
+typedef Row <fp16> hrowvec;
+typedef Cube<fp16> hcube;
+
+typedef Mat <cx_fp16> cx_hmat;
+typedef Col <cx_fp16> cx_hvec;
+typedef Col <cx_fp16> cx_hcolvec;
+typedef Row <cx_fp16> cx_hrowvec;
+typedef Cube<cx_fp16> cx_hcube;
+#endif
+
 
 
 typedef SpMat <uword> sp_umat;
@@ -140,16 +154,17 @@ typedef SpCol <cx_double> sp_cx_vec;
 typedef SpCol <cx_double> sp_cx_colvec;
 typedef SpRow <cx_double> sp_cx_rowvec;
 
+#if defined(ARMA_HAVE_FP16)
+typedef SpMat <fp16> sp_hmat;
+typedef SpCol <fp16> sp_hvec;
+typedef SpCol <fp16> sp_hcolvec;
+typedef SpRow <fp16> sp_hrowvec;
 
-// internal use only; subject to change and/or removal without notice
-typedef MapMat <uword>     map_umat;
-typedef MapMat <sword>     map_imat;
-typedef MapMat <float>     map_fmat;
-typedef MapMat <double>    map_dmat;
-typedef MapMat <double>    map_mat;
-typedef MapMat <cx_float>  map_cx_fmat;
-typedef MapMat <cx_double> map_cx_dmat;
-typedef MapMat <cx_double> map_cx_mat;
+typedef SpMat <cx_fp16> sp_cx_hmat;
+typedef SpCol <cx_fp16> sp_cx_hvec;
+typedef SpCol <cx_fp16> sp_cx_hcolvec;
+typedef SpRow <cx_fp16> sp_cx_hrowvec;
+#endif
 
 
 

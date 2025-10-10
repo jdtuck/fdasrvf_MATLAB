@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,9 +22,10 @@
 
 inline
 wall_clock::wall_clock()
-  : valid(false)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
+  
+  tic_point = std::chrono::steady_clock::now();  // warmup
   }
 
 
@@ -30,7 +33,7 @@ wall_clock::wall_clock()
 inline
 wall_clock::~wall_clock()
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   }
 
 
@@ -39,24 +42,18 @@ inline
 void
 wall_clock::tic()
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  #if defined(ARMA_USE_CXX11)
+  if(is_frozen)
     {
-    chrono_time1 = std::chrono::steady_clock::now();
-    valid = true;
+    is_frozen = false;
+    
+    frozen_span = std::chrono::duration<double>::zero();
     }
-  #elif defined(ARMA_HAVE_GETTIMEOFDAY)
-    {
-    gettimeofday(&posix_time1, 0);
-    valid = true;
-    }
-  #else
-    {
-    time1 = std::clock();
-    valid = true;
-    }
-  #endif
+  
+  is_started = true;
+  
+  tic_point = std::chrono::steady_clock::now();
   }
 
 
@@ -65,46 +62,67 @@ inline
 double
 wall_clock::toc()
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  if(valid)
+  typedef std::chrono::duration<double> duration_type;
+  
+  const std::chrono::steady_clock::time_point toc_point = std::chrono::steady_clock::now();
+  
+  duration_type local_frozen_span = frozen_span;
+  
+  if(is_frozen)
     {
-    #if defined(ARMA_USE_CXX11)
-      {
-      const std::chrono::steady_clock::time_point chrono_time2 = std::chrono::steady_clock::now();
-      
-      typedef std::chrono::duration<double> duration_type;
-      
-      const duration_type chrono_span = std::chrono::duration_cast< duration_type >(chrono_time2 - chrono_time1);
-      
-      return chrono_span.count();
-      }
-    #elif defined(ARMA_HAVE_GETTIMEOFDAY)
-      {
-      gettimeofday(&posix_time2, 0);
-      
-      const double tmp_time1 = double(posix_time1.tv_sec) + double(posix_time1.tv_usec) * 1.0e-6;
-      const double tmp_time2 = double(posix_time2.tv_sec) + double(posix_time2.tv_usec) * 1.0e-6;
-      
-      return tmp_time2 - tmp_time1;
-      }
-    #else
-      {
-      std::clock_t time2 = std::clock();
-      
-      std::clock_t diff = time2 - time1;
-      
-      return double(diff) / double(CLOCKS_PER_SEC);
-      }
-    #endif
+    // treat toc_point as equivalent to thaw_point
+    
+    const duration_type chrono_span = std::chrono::duration_cast< duration_type >(toc_point - freeze_point);
+    
+    local_frozen_span += chrono_span;
     }
-  else
-    {  
-    return 0.0;
+  
+  duration_type chrono_span = std::chrono::duration_cast< duration_type >(toc_point - tic_point);
+  
+  chrono_span -= local_frozen_span;
+  
+  return (is_started) ? double(chrono_span.count()) : double(0);
+  }
+
+
+inline
+void
+wall_clock::freeze()
+  {
+  arma_debug_sigprint();
+  
+  if( (is_started) && (is_frozen == false) )
+    {
+    is_frozen = true;
+    
+    freeze_point = std::chrono::steady_clock::now();
+    }
+  }
+
+
+
+inline
+void
+wall_clock::unfreeze()
+  {
+  arma_debug_sigprint();
+  
+  typedef std::chrono::duration<double> duration_type;
+  
+  const std::chrono::steady_clock::time_point thaw_point = std::chrono::steady_clock::now();
+  
+  if(is_frozen)
+    {
+    is_frozen = false;
+    
+    const duration_type chrono_span = std::chrono::duration_cast< duration_type >(thaw_point - freeze_point);
+    
+    frozen_span += chrono_span;
     }
   }
 
 
 
 //! @}
-

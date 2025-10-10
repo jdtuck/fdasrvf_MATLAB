@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,9 +22,15 @@
 
 
 
-class glue_polyval
+struct glue_polyval
   {
-  public:
+  template<typename T1, typename T2>
+  struct traits
+    {
+    static constexpr bool is_row  = T2::is_row;
+    static constexpr bool is_col  = T2::is_col;
+    static constexpr bool is_xvec = T2::is_xvec;
+    };
   
   template<typename eT> inline static void apply_noalias(Mat<eT>& out, const Mat<eT>& P, const Mat<eT>& X);
   
