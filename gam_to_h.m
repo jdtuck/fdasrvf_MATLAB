@@ -15,15 +15,15 @@ binsize = mean(diff(time));
 
 if smooth
     for i = 1:n
-        y = fit(time', gam(:,i),'smoothingspline','SmoothingParam',.9999);
+        y = fit(time', gam(:,i),'smoothingspline','SmoothingParam',.99999);
         fy = differentiate(y, time);
         idx = fy <= 0;
-        fy(idx) = 0;
+        fy(idx) = eps;
         h(:,i) = log(fy) - trapz(time, log(fy));
     end
 else
     for i=1:n
-        psi = sqrt(gradient(gam(:,i),binsize));
-        h(:,i) = log(psi) - trapz(time, log(psi));
+        psi = log(gradient(gam(:,i),binsize));
+        h(:,i) = psi - trapz(time, psi);
     end
 end
