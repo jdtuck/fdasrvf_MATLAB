@@ -152,7 +152,10 @@ classdef fdawarp
                 if isnan(mu)
                     obj = obj.time_warping(lam_vec(i), option);
                 else
-                    obj = obj.multiple_align_functions(mu, lam_vec(i), option);
+                    obj = obj.multiple_align_functions(mu, lam_vec(i), ...
+                        parallel=option.parallel,closepool=option.closepool,...
+                        smooth=option.smooth,sparam=option.sparam,...
+                        method=option.method,spl=option.spl,MaxItr=option.MaxItr);
                 end
                 if srvf
                     fns{i} = obj.qn;
@@ -479,23 +482,21 @@ classdef fdawarp
             % mcmc.gamma_stats: posterior gamma stats
             % mcmc.qstar_stats: posterior q_star stats
             % mcmc.fmean_stats: posterior fmean stats
-            [M, N] = size(obj.f);
-
-            if nargin < 2
+            arguments
+                obj
                 mcmcopts.iter = 2000;
-                mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
+                mcmcopts.burnin = min(5e3,2000/2);
                 mcmcopts.alpha0 = 0.1;
                 mcmcopts.beta0 = 0.1;
-                tmp.betas = [0.5,0.5,0.005,0.0001];
-                tmp.probs = [0.1,0.1,0.7,0.1];
-                mcmcopts.zpcn = tmp;
+                mcmcopts.zpcn = struct('betas',[0.5,0.5,0.005,0.0001],'probs',[0.1,0.1,0.7,0.1]);
                 mcmcopts.propvar = 4;
-                mcmcopts.initcoef = zeros(20, N);
+                mcmcopts.initcoef = zeros(20, size(obj.f,2));
                 mcmcopts.nbasis = 30;
                 mcmcopts.npoints = 200;
                 mcmcopts.extrainfo = true;
                 mcmcopts.ncenter = 100;
             end
+            [M, N] = size(obj.f);
 
             if (~iscolumn(obj.time))
                 obj.time = obj.time.';
@@ -531,7 +532,6 @@ classdef fdawarp
             g_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mg, 1);
             pw_sim_global_Mq = mcmcopts.nbasis/2;
             q_basis = basis_bspline(pw_sim_global_domain_par, 2*pw_sim_global_Mq, 3); %basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mq, 2);
-%             q_basis.matrix = [ones(numSimPoints,1) q_basis.matrix];
             sigma1_ini = 1;
             zpcn = mcmcopts.zpcn;
 
@@ -565,7 +565,7 @@ classdef fdawarp
                 pCN_prob = zpcn.probs;
                 probm = [0, cumsum(pCN_prob)];
                 z = rand;
-                sdvec = [pw_sim_global_sigma_q./repelem(1:pw_sim_global_Mq,2)];
+                sdvec = pw_sim_global_sigma_q./repelem(1:pw_sim_global_Mq,2);
                 for i = 1:length(pCN_beta)
                     if (z <= probm(i+1) && z > probm(i))
                         q_star_new = normrnd(0, sdvec, 1, pw_sim_global_Mq * 2);
@@ -798,16 +798,9 @@ classdef fdawarp
             %
             % Output:
             % fdawarp object
-            if nargin < 2
+            arguments
+                obj
                 lambda = 0;
-                option.parallel = 0;
-                option.closepool = 0;
-                option.smooth = 0;
-                option.sparam = 25;
-                option.method = 'DP1';
-                option.spl = true;
-                option.MaxItr = 20;
-            elseif nargin < 3
                 option.parallel = 0;
                 option.closepool = 0;
                 option.smooth = 0;
@@ -1175,15 +1168,13 @@ classdef fdawarp
             %
             % Output:
             % fdawarp object
-
-            if (isempty(obj.type))
-                error('Please align first');
-            end
-            if nargin < 2
+            arguments
+                obj
                 n = 1;
                 sort_samples = false;
-            elseif nargin < 3
-                sort_samples = false;
+            end
+            if (isempty(obj.type))
+                error('Please align first');
             end
             %% Separated and Warped Data
             % sampling from the estimated model
