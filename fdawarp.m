@@ -246,16 +246,9 @@ classdef fdawarp
             %
             % Output:
             % fdawarp object
-            if nargin < 2
+            arguments
+                obj
                 lambda = 0;
-                option.parallel = 0;
-                option.closepool = 0;
-                option.smooth = 0;
-                option.sparam = 25;
-                option.method = 'DP1';
-                option.spl = true;
-                option.MaxItr = 20;
-            elseif nargin < 3
                 option.parallel = 0;
                 option.closepool = 0;
                 option.smooth = 0;
@@ -1045,17 +1038,10 @@ classdef fdawarp
             %
             % Output: structure containing
             % fdawarp object
-            if nargin < 3
+            arguments
+                obj
+                mu
                 lambda = 0;
-                option.parallel = 0;
-                option.closepool = 0;
-                option.smooth = 0;
-                option.sparam = 25;
-                option.showplot = 1;
-                option.method = 'DP1';
-                option.spl = true;
-                option.MaxItr = 20;
-            elseif nargin < 4
                 option.parallel = 0;
                 option.closepool = 0;
                 option.smooth = 0;
