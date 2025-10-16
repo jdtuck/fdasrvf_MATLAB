@@ -1,6 +1,8 @@
 [![MATLAB FileExchange](https://img.shields.io/badge/MATLAB-FileExchange-orange.svg)][fex]
 [![Pipeline Status](https://gitlab.com/jdtuck/fdasrvf_MATLAB/badges/main/pipeline.svg)](https://gitlab.com/jdtuck/fdasrvf_MATLAB)
 
+![](logo.png)
+
 fdasrvf
 =======
 
