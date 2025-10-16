@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        release: [R2025a]
+        release: [R2025b]
     
     runs-on: ${{ matrix.os }}
 
