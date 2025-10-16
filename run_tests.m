@@ -1,1 +1,3 @@
-result = runtests('test_package');
+suite = testsuite('test_package');
+runner = testrunner;
+results = run(runner,suite)
