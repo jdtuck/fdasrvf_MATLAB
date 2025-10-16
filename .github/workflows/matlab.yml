@@ -48,7 +48,9 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Run all tests
-        uses: matlab-actions/run-tests@v2
+        uses: matlab-actions/run-command@v2
+        with:
+          command: test_package;
 
       # You can use "run-build" to invoke the MATLAB build tool and run build tasks
       #- name: Run the default "test" task in the build file
