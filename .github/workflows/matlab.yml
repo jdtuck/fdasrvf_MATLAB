@@ -30,7 +30,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Dependencies
-        run: sudo apt-get install -y libopenblas-dev
+        run: |
+          sudo apt update
+          sudo apt install build-essential libopenblas-dev -y
       
       # Sets up MATLAB on a GitHub-hosted runner
       - name: Set up MATLAB
