@@ -43,26 +43,11 @@ function out = align_fPCA(f,t,num_comp,lambda,option)
 %   id: point used for f(0)
 % stats: structure of statistics of alignment
 
-if nargin < 3
+arguments
+    f double
+    t double
     num_comp = 3;
     lambda = 0;
-    option.parallel = 0;
-    option.closepool = 0;
-    option.smooth = 0;
-    option.sparam = 25;
-    option.showplot = 1;
-    option.method = 'DP1';
-    option.MaxItr = 20;
-elseif nargin < 4
-    lambda = 0;
-    option.parallel = 0;
-    option.closepool = 0;
-    option.smooth = 0;
-    option.sparam = 25;
-    option.showplot = 1;
-    option.method = 'DP1';
-    option.MaxItr = 20;
-elseif nargin < 5
     option.parallel = 0;
     option.closepool = 0;
     option.smooth = 0;

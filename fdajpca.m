@@ -76,22 +76,18 @@ classdef fdajpca
             %
             % Output:
             % fdajpca object
+            arguments
+                obj
+                no = 3;
+                id = round(length(obj.warp_data.time)/2);
+            end
+            obj.id = id;
             fn = obj.warp_data.fn;
             time = obj.warp_data.time;
             qn = obj.warp_data.qn;
             q0 = obj.warp_data.q0;
             gam = obj.warp_data.gam;
-            if nargin < 2
-                no = 3;
-                id = round(length(time)/2);
-                obj.id = id;
-            elseif nargin < 3
-                id = round(length(time)/2);
-                obj.id = id;
-            else
-                obj.id = id;
-            end
-            
+
             [M, ~] = size(qn);
             
             % set up for fPCA in q-space

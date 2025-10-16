@@ -13,7 +13,10 @@ function fo = warp_f_gamma(f,gamma,t,spline)
 %
 % Output
 % fo: warped function
-if nargin < 4
+arguments
+    f
+    gamma
+    t
     spline = false;
 end
 

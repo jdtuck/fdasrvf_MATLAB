@@ -21,25 +21,13 @@ function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFl
 % Rbest: best rotation matrix
 % gamI: best reparameterization
 
-if nargin < 3
+arguments
+    q1
+    q2
     reparamFlag = true;
     rotFlag = true;
     closed = false;
     lam = 0.0;
-    method = 'DP';
-elseif nargin < 4
-    rotFlag = true;
-    closed = false;
-    lam = 0.0;
-    method = 'DP';
-elseif nargin < 5
-    closed = false;
-    lam = 0.0;
-    method = 'DP';
-elseif nargin < 6
-    lam = 0.0;
-    method = 'DP';
-elseif nargin < 7
     method = 'DP';
 end
 

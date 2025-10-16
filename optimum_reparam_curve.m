@@ -16,10 +16,10 @@ function gam = optimum_reparam_curve(q1,q2,lam,method)
 %
 % Output:
 % gam: warping function
-if nargin < 3
+arguments
+    q1
+    q2
     lam = 0.0;
-    method = 'DP';
-elseif nargin < 4
     method = 'DP';
 end
 

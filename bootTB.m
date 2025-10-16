@@ -49,9 +49,15 @@ function [amp, ph] = bootTB(f, time, a, p, B, no, option)
 %   maxx: maximum extreme function
 %   outlier_index: indexes of outlier functions
 %   plt: surface plot
-[M, ~] = size(f);
 
-if nargin < 7
+
+arguments
+    f
+    time
+    a
+    p
+    B
+    no
     option.parallel = 1;
     option.closepool = 0;
     option.smooth = 0;
@@ -61,6 +67,8 @@ if nargin < 7
     option.w = 0.0;
     option.MaxItr = 20;
 end
+
+[M, ~] = size(f);
 
 %% Align Data
 out_med = fdawarp(f,time);

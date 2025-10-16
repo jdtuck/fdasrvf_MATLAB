@@ -14,7 +14,9 @@ function Xn = ReSampleCurve(X,N,closed)
 %
 % Output:
 % X: matrix (nxN) of n dimensional curve with N sample points
-if nargin < 3
+arguments
+    X
+    N
     closed = false;
 end
 [n,T] = size(X);

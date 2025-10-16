@@ -13,12 +13,15 @@ function qo = warp_q_gamma(q,gamma,t,spline)
 %
 % Output
 % qo: warped SRVF
-M = length(gamma);
-gam_dev = gradient(gamma, 1/(M-1));
 
-if nargin < 4
+arguments
+    q
+    gamma
+    t
     spline = false;
 end
+M = length(gamma);
+gam_dev = gradient(gamma, 1/(M-1));
 
 if spline
     qo = interp1(t, q, (t(end)-t(1)).*gamma + t(1), 'makima')'.*sqrt(gam_dev');

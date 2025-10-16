@@ -98,16 +98,9 @@ classdef elastic_regression
             % output %
             % elastic_regression object
             
-            if nargin < 2
+            arguments
+                obj
                 lambda = 0;
-                option.parallel = 0;
-                option.closepool = 1;
-                option.smooth = 0;
-                option.sparam = 25;
-                option.B = [];
-                option.df = 20;
-                option.max_itr = 20;
-            elseif nargin < 3
                 option.parallel = 0;
                 option.closepool = 1;
                 option.smooth = 0;

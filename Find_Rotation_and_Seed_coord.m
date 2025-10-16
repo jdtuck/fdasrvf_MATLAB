@@ -19,19 +19,12 @@ function [beta2best,q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_coord(beta1,
 % Rbest: best rotation matrix
 % gamI: best reparameterization
 
-if nargin < 3
+arguments
+    beta1
+    beta2
     reparamFlag = true;
     rotation = true;
     closed = false;
-    method = 'DP';
-elseif nargin < 4
-    rotation = true;
-    closed = false;
-    method = 'DP';
-elseif nargin < 5
-    closed = false;
-    method = 'DP';
-elseif nargin < 6
     method = 'DP';
 end
 

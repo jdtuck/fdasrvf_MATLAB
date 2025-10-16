@@ -13,7 +13,9 @@ function fn = warp_curve_gamma(f,gamma,spline)
 % Output
 % fn: warped curve
 
-if nargin < 3
+arguments
+    f
+    gamma
     spline = false;
 end
 

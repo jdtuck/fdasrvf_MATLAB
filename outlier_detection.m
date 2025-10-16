@@ -15,7 +15,10 @@ function q_outlier = outlier_detection(q, time, mq, k)
 %
 % Output
 % q_outlier: outlier functions
-if nargin < 4
+arguments
+  q
+  time
+  mq
   k = 1.5;
 end
 N = size(q,2);

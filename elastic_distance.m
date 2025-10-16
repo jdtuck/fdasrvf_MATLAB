@@ -20,10 +20,11 @@ function [dy, dx] = elastic_distance(f1, f2, time, lambda, method)
 % Output
 % dy: amplitude distance
 % dx: phase distance
-if nargin < 4
+arguments
+    f1 double
+    f2 double
+    time double
     lambda = 0;
-    method = 'DP';
-elseif nargin < 5
     method = 'DP';
 end
 

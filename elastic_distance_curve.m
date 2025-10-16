@@ -22,19 +22,12 @@ function [dy, dx] = elastic_distance_curve(beta1, beta2, closed, rotation, scale
 % Output
 % dy: shape distance
 % dx: phase distance
-if nargin < 3
+arguments
+    beta1 double
+    beta2 double
     closed = false; 
     rotation = true;
     scale = false;
-    method = 'DP';
-elseif nargin < 4
-    rotation = true;
-    scale = false; 
-    method = 'DP';
-elseif nargin < 5
-    scale = false; 
-    method = 'DP';
-elseif nargin < 6
     method = 'DP';
 end
 

@@ -16,7 +16,8 @@ function [q,len,lenq] = curve_to_q(p,closed)
 % len: length of curve
 % lenq: length of SRVF
 
-if nargin < 2
+arguments
+    p
     closed = false;
 end
 

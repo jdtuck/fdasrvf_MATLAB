@@ -70,20 +70,17 @@ classdef fdavpca
             %
             % Output:
             % fdavpca object
+
+            arguments
+                obj
+                no = 3;
+                id = round(length(obj.warp_data.time)/2);
+                
+            end
+            obj.id = id;
             fn = obj.warp_data.fn;
             t = obj.warp_data.time;
             qn = obj.warp_data.qn;
-            
-            if nargin < 2
-                no = 3;
-                id = round(length(t)/2);
-                obj.id = id;
-            elseif nargin < 3
-                id = round(length(t)/2);
-                obj.id = id;
-            else
-                obj.id = id;
-            end
             
             % Parameters
             coefs = -2:2;

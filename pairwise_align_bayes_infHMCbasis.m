@@ -54,9 +54,12 @@ function [out, chains] = pairwise_align_bayes_infHMCbasis(y1i, y2i, time, mcmcop
 %       Hamiltonian Monte Carlo”, Computational Statistics and Data Analysis, accepted, 2021.
 %
 
-if nargin < 4
+arguments
+    y1i
+    y2i
+    time
     mcmcopts.iter = 1e4;
-    mcmcopts.burnin = min(5e3,mcmcopts.iter/2); %must be >1
+    mcmcopts.burnin = min(5e3,1e4/2); %must be >1
     mcmcopts.thin = 50;
     mcmcopts.nchains = 1;
     mcmcopts.alpha0 = 0.1;

@@ -98,10 +98,11 @@ classdef elastic_mlpcr_regression
             %
             % output %
             % elastic_regression object
-            method = lower(method);
-            m = obj.n_classes;
             
-            if nargin < 3
+            arguments
+                obj
+                method
+                no
                 option.parallel = 1;
                 option.closepool = 0;
                 option.smooth = 0;
@@ -110,6 +111,10 @@ classdef elastic_mlpcr_regression
                 option.method = 'DP1';
                 option.MaxItr = 20;
             end
+
+            method = lower(method);
+            m = obj.n_classes;
+            
             
             if option.smooth
                 obj.f = smooth_data(obj.f,option.sparam);

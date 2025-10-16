@@ -87,9 +87,12 @@ classdef elastic_lpcr_regression
             %
             % output %
             % elastic_regression object
-            method = lower(method);
             
-            if nargin < 3
+            
+            arguments
+                obj
+                method
+                no
                 option.parallel = 1;
                 option.closepool = 0;
                 option.smooth = 0;
@@ -98,6 +101,8 @@ classdef elastic_lpcr_regression
                 option.method = 'DP1';
                 option.MaxItr = 20;
             end
+
+            method = lower(method);
             
             if option.smooth
                 obj.f = smooth_data(obj.f,option.sparam);

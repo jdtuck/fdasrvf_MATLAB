@@ -14,10 +14,11 @@ function p = q_to_curve(q,scale)
 % Output:
 % q: matrix of curve
 
-[n,T] = size(q);
-if nargin < 2
+arguments
+    q
     scale = 1;
 end
+[n,T] = size(q);
 
 qnorm = zeros(1,T);
 for i = 1:T

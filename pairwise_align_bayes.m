@@ -51,18 +51,19 @@ function out = pairwise_align_bayes(f1i, f2i, time, mcmcopts)
 % out.xdist: phase distance posterior
 % out.ydist: amplitude distance posterior
 
-if nargin < 4
+arguments
+    f1i 
+    f2i 
+    time 
     mcmcopts.iter = 2e4;
-    mcmcopts.burnin = min(5e3,mcmcopts.iter/2);
+    mcmcopts.burnin = min(5e3,2e4/2);
     mcmcopts.alpha0 = 0.1;
     mcmcopts.beta0 = 0.1;
-    tmp.betas = [0.5,0.5,0.005,0.0001];
-    tmp.probs = [0.1,0.1,0.7,0.1];
-    mcmcopts.zpcn = tmp;
+    mcmcopts.zpcn = struct('betas', [0.5,0.5,0.005,0.0001], 'probs', [0.1,0.1,0.7,0.1]);
     mcmcopts.propvar = 1;
     mcmcopts.initcoef = repelem(0, 20).';
     mcmcopts.npoints = 200;
-    mcmcopts.extrainfo = true;
+    mcmcopts.extrainfo = true; 
 end
 
 if (~iscolumn(f1i))

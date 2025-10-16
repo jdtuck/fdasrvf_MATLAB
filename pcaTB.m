@@ -31,7 +31,12 @@ function out = pcaTB(f, time, a, p, no, option)
 % pca: functional pca from jointFPCA
 % tol: tolerance factor
 
-if nargin < 7
+arguments
+    f
+    time
+    a
+    p
+    no
     option.parallel = 0;
     option.closepool = 0;
     option.smooth = 0;

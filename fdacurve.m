@@ -96,14 +96,11 @@ classdef fdacurve
             %   scale: include scale (true/false (default))
             %   center: center curve (true (default)/false)
             
-            if nargin < 3
+            arguments
+                beta
+                closed
                 N = size(beta,2);
                 scale = false;
-                center = true;
-            elseif nargin < 4
-                scale = false;
-                center = true;
-            elseif nargin < 5
                 center = true;
             end
             obj.scale = scale;
@@ -166,7 +163,8 @@ classdef fdacurve
             % Output:
             % fdacurve object
             
-            if nargin < 2
+            arguments
+                obj
                 option.reparam = true;
                 option.rotation = true;
                 option.lambda = 0.0;
@@ -451,7 +449,8 @@ classdef fdacurve
             %
             % Output:
             % fdacurve object
-            if nargin < 2
+            arguments
+                obj
                 no = 10;
             end
             
@@ -530,11 +529,10 @@ classdef fdacurve
             % Output:
             % fdacurve object
             
-            if nargin < 3
+            arguments
+                obj
                 N = 10;
                 m = 3;
-            elseif nargin < 2
-                N = 10;
             end
             
             % calculate lengths
@@ -617,10 +615,11 @@ classdef fdacurve
             % plot plot curve mean results
             % -------------------------------------------------------------------------
             % Usage: obj.plot()
-            if nargin < 2
+            arguments
+                obj
                 color = false;
             end
-            figure(1);clf;hold all;
+            figure(1);clf;hold on;
             [n,T,K] = size(obj.beta);
             for ii = 1:K
                 if n == 2
@@ -682,7 +681,8 @@ classdef fdacurve
         
         function plot_pca(obj, n)
             
-            if nargin < 2
+            arguments
+                obj
                 n = 4;
             end
             if isempty(obj.s)

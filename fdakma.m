@@ -97,9 +97,11 @@ classdef fdakma
             % Output:
             % fdakma object
             
-            if nargin < 2
+            arguments
+                obj
+                K
                 seeds = [];
-                obj.lambda = 0;
+                lambda1 = 0;
                 option.parallel = 0;
                 option.alignment = true;
                 option.closepool = 0;
@@ -108,29 +110,9 @@ classdef fdakma
                 option.method = 'DP1';
                 option.MaxItr = 20;
                 option.thresh = 0.01;
-            elseif nargin < 3
-                obj.lambda = 0;
-                option.parallel = 0;
-                option.alignment = true;
-                option.closepool = 0;
-                option.smooth = 0;
-                option.sparam = 25;
-                option.method = 'DP1';
-                option.MaxItr = 20;
-                option.thresh = 0.01;
-            elseif nargin < 4
-                obj.lambda = lambda1;
-                option.parallel = 0;
-                option.alignment = true;
-                option.closepool = 0;
-                option.smooth = 0;
-                option.sparam = 25;
-                option.method = 'DP1';
-                option.MaxItr = 20;
-                option.thresh = 0.01;
-            else
-                obj.lambda = lambda1;
             end
+
+            obj.lambda = lambda1;
             
             % time warping on a set of functions
             if option.parallel == 1
@@ -324,18 +306,9 @@ classdef fdakma
             % Output:
             % fdakma object
             
-            if nargin < 2
-                obj.lambda = NaN;
-                option.parallel = 0;
-                option.alignment = true;
-                option.closepool = 0;
-                option.smooth = 0;
-                option.sparam = 25;
-                option.method = 'DP1';
-                option.MaxItr = 20;
-                option.thresh = 0.01;
-            elseif nargin < 3
-                obj.lambda = lambda1;
+            arguments
+                obj
+                lambda1 = 0
                 option.parallel = 0;
                 option.alignment = true;
                 option.closepool = 0;
@@ -345,6 +318,7 @@ classdef fdakma
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             end
+            obj.lambda = lambda1;
             
             % time warping on a set of functions
             if option.parallel == 1

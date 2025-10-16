@@ -29,9 +29,10 @@ function [dist,X2n,q2n,X1,q1]=pairwise_align_curves(X1,X2,option)
 % q1: SRVF of of curve 1
 
 % Load some parameters, no need to change this
-n = size(X1,1);
 
-if nargin < 3
+arguments
+    X1
+    X2
     option.plot_geod = true;
     option.plot_reg = true;
     option.plot_reparam = true;
@@ -40,6 +41,7 @@ if nargin < 3
     option.stp = 6;
     option.closed = false;
 end
+n = size(X1,1);
 
 % Resample the curves to have N points
 X1 = ReSampleCurve(X1,option.N);

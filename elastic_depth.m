@@ -15,10 +15,10 @@ function [amp, phase] = elastic_depth(f, time, lambda, parallel)
 % Output
 % amp: amplitude depth
 % phase: phase depth
-if nargin < 3
+arguments
+    f double
+    time doulbe
     lambda = 0;
-    parallel = 1;
-elseif nargin < 4
     parallel = 1;
 end
 

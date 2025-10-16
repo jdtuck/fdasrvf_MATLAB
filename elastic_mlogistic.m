@@ -96,7 +96,8 @@ classdef elastic_mlogistic
             % Output:
             % elastic_mlogistic object
             
-            if nargin < 1
+            arguments
+                obj
                 option.parallel = 0;
                 option.closepool = 0;
                 option.smooth = 0;
