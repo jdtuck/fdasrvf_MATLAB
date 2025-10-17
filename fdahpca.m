@@ -74,11 +74,11 @@ classdef fdahpca
             
             [obj.mu,~,obj.vec] = SqrtMean(gam);
             
-            K = cov(obj.vec);
+            K = cov(obj.vec');
             
             [obj.U,S,~] = svd(K);
             Sig = diag(S);
-            T = size(obj.vec,2);
+            T = size(obj.vec,1);
             obj.U = obj.U(:,1:no);
             Sig = Sig(1:no);
             
@@ -98,17 +98,16 @@ classdef fdahpca
                     else
                         obj.psi_pca(k,:,j) = cos(vn)*obj.mu.' + sin(vn)*v(k,:,j)/vn;
                     end
-                    gam0 = cumtrapz(linspace(0,1,size(gam,2)),obj.psi_pca(k,:,j).*obj.psi_pca(k,:,j));
+                    gam0 = cumtrapz(linspace(0,1,size(gam,1)),obj.psi_pca(k,:,j).*obj.psi_pca(k,:,j));
                     obj.gam_pca(k,:,j) = (gam0-gam0(1))/(gam0(end)-gam0(1));
                 end
             end
             
             % coefficients
             c = zeros(size(gam,1),no);
-            obj.vec = obj.vec.';
             vm = mean(obj.vec,2);
             for jj = 1:no
-                for ii = 1:size(gam,1)
+                for ii = 1:size(gam,2)
                     c(ii,jj) = (obj.vec(:,ii)-vm).'*obj.U(:,jj);
                 end
             end

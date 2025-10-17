@@ -316,7 +316,7 @@ classdef fdawarp
                         mf(1), f1(1,k,1));
                 end
             end
-            gamI_o = SqrtMeanInverse(gam_o);
+            gamI_o = SqrtMeanInverse(gam_o');
             mf = warp_f_gamma(mf,gamI_o,obj.time);
             mq = f_to_srvf(mf,obj.time);
 
@@ -389,7 +389,7 @@ classdef fdawarp
                         mf(1,r), f1(1,k,1));
                 end
             end
-            gamI_o = SqrtMeanInverse(gam_o);
+            gamI_o = SqrtMeanInverse(gam_o');
             mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,obj.time);
             for k = 1:N
                 q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,obj.time);
@@ -867,7 +867,7 @@ classdef fdawarp
                 end
             end
 
-            gamI_o = SqrtMeanInverse(gam_o);
+            gamI_o = SqrtMeanInverse(gam_o');
             mf = warp_f_gamma(mf,gamI_o,t);
             mq = f_to_srvf(mf,t,option.spl);
 
@@ -958,7 +958,7 @@ classdef fdawarp
                 end
             end
 
-            gamI_o = SqrtMeanInverse(gam_o);
+            gamI_o = SqrtMeanInverse(gam_o');
             mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,obj.time);
             for k = 1:N
                 q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,obj.time);
