@@ -46,8 +46,8 @@ jobs:
         uses: matlab-actions/run-command@v2
         with:
           command: |
-            mex -setup C++ -compiler MinGW64Compiler
-            mex -setup C -compiler MinGW64Compiler
+            cd util
+            configuremingw 
       - if: runner.os == 'Linux'
         uses: matlab-actions/setup-matlab@v2
         with:
@@ -64,3 +64,27 @@ jobs:
             Statistics_and_Machine_Learning_Toolbox
       - name: Run build
         uses: matlab-actions/run-build@v2
+  release:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/fdasrvf.mltbx
+          asset_name: fdasrvf.mltbx
+          asset_content_type: application/mltbx

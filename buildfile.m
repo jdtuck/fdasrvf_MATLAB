@@ -45,8 +45,14 @@ plan("mex:c_rlbfgs") = MexTask("armadillo_cpp/c_rlbfgs.cpp","mex",Options=option
 plan("test") = TestTask;
 
 % Make the "archive" task the default task in the plan
-plan.DefaultTasks = "test";
+plan.DefaultTasks = "package";
 
 % Make the "archive" task dependent
-plan("test").Dependencies = ["check" "clean" "mex"];
+plan("package").Dependencies = ["check" "clean" "mex" "test"];
+end
+
+function packageTask(~)
+    % Define actions for packaging the toolbox
+    disp("Packaging toolbox...");
+    matlab.addons.toolbox.packageToolbox("fdasrvf.prj");
 end

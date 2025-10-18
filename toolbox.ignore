@@ -31,3 +31,10 @@ resources
 **/.buildtool/**/*
 **/*.asv
 **/.DS_Store
+**/.github/**/*
+.gitignore
+.gitattributes
+.git
+.buildtool
+.github
+release
