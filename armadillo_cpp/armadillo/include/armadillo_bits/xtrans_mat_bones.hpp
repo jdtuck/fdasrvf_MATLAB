@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,16 +19,15 @@
 
 
 template<typename eT, bool do_conj>
-struct xtrans_mat : public Base< eT, xtrans_mat<eT, do_conj> >
+class xtrans_mat : public Base<eT, xtrans_mat<eT, do_conj> >
   {
+  public:
+  
   typedef eT                                       elem_type;
   typedef typename get_pod_type<elem_type>::result pod_type;
   
-  static constexpr bool is_row  = false;
-  static constexpr bool is_col  = false;
-  static constexpr bool is_xvec = false;
-  
-  static constexpr bool really_do_conj = (do_conj && is_cx<eT>::yes);
+  static const bool is_row = false;
+  static const bool is_col = false;
   
   arma_aligned const   Mat<eT>& X;
   arma_aligned mutable Mat<eT>  Y;

@@ -15,12 +15,12 @@
 
 
 // Connector for Mex files to use Armadillo for calculation
-// Version 0.6
+// Version 0.5
 
 
 #include "../include/armadillo"
 #include <mex.h>
-#include <matrix.h>
+#include <mat.h>
 #include <cstring>
 
 using namespace std;
@@ -31,7 +31,7 @@ using namespace arma;
 template<class Type>
 inline
 Type
-armaGetScalar(const mxArray* matlabScalar)
+armaGetScalar(const mxArray *matlabScalar)
   {
   if(mxGetData(matlabScalar) != NULL)
     {
@@ -48,7 +48,7 @@ armaGetScalar(const mxArray* matlabScalar)
 // To keep with Matlab/Octave mex functions since functions for double are usually defined in conjunction with the general functions.
 inline
 double
-armaGetDouble(const mxArray* matlabScalar) 
+armaGetDouble(const mxArray *matlabScalar) 
   {
   return armaGetScalar<double>(matlabScalar);
   }
@@ -59,7 +59,7 @@ armaGetDouble(const mxArray* matlabScalar)
 template<class Type>
 inline
 Mat<Type>
-armaGetData(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true)
+armaGetData(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true)
   {
   if(mxGetData(matlabMatrix) != NULL)
     {
@@ -86,7 +86,7 @@ armaGetData(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict 
 // Get double real matrix from Matlab/Octave.
 inline
 Mat<double>
-armaGetPr(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true)
+armaGetPr(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true)
   {
   if(mxGetData(matlabMatrix) != NULL)
     {
@@ -115,7 +115,7 @@ armaGetPr(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = 
 template<class Type>
 inline
 Mat<Type>
-armaGetImagData(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true)
+armaGetImagData(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true)
   {
   if(mxGetImagData(matlabMatrix) != NULL)
     {
@@ -142,7 +142,7 @@ armaGetImagData(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool str
 // Get double imaginary matrix from Matlab/Octave.
 inline
 Mat<double>
-armaGetPi(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true) 
+armaGetPi(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true) 
   {
   if(mxGetImagData(matlabMatrix) != NULL)
     {
@@ -169,7 +169,7 @@ armaGetPi(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = 
 // Get complex matrix from Matlab/Octave
 inline
 cx_mat
-armaGetCx(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true) 
+armaGetCx(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true) 
   {
   if( (mxGetPr(matlabMatrix) != NULL) && (mxGetPi(matlabMatrix) != NULL) )
     {
@@ -195,7 +195,7 @@ armaGetCx(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = 
 template<class Type>
 inline
 void
-armaSetData(mxArray* matlabMatrix, const Mat<Type>& armaMatrix)
+armaSetData(mxArray *matlabMatrix, const Mat<Type>& armaMatrix)
   {
         Type *dst_pointer = (Type*)mxGetData(matlabMatrix);
   const Type *src_pointer = (Type*)armaMatrix.memptr();
@@ -207,7 +207,7 @@ armaSetData(mxArray* matlabMatrix, const Mat<Type>& armaMatrix)
 // Return double real valued matrix to Matlab/Octave
 inline
 void
-armaSetPr(mxArray* matlabMatrix, const Mat<double>& armaMatrix)
+armaSetPr(mxArray *matlabMatrix, const Mat<double>& armaMatrix)
   {
         double *dst_pointer = mxGetPr(matlabMatrix);
   const double *src_pointer = armaMatrix.memptr();
@@ -220,7 +220,7 @@ armaSetPr(mxArray* matlabMatrix, const Mat<double>& armaMatrix)
 template<class Type>
 inline
 void
-armaSetImagData(mxArray* matlabMatrix, const Mat<Type>& armaMatrix)
+armaSetImagData(mxArray *matlabMatrix, const Mat<Type>& armaMatrix)
   {
         Type *dst_pointer = (Type*)mxGetImagData(matlabMatrix);
   const Type *src_pointer = (Type*)armaMatrix.memptr();
@@ -232,7 +232,7 @@ armaSetImagData(mxArray* matlabMatrix, const Mat<Type>& armaMatrix)
 // Return double complex valued matrix to Matlab/Octave
 inline
 void
-armaSetPi(mxArray* matlabMatrix, const Mat<double>& armaMatrix)
+armaSetPi(mxArray *matlabMatrix, const Mat<double>& armaMatrix)
   {
         double *dst_pointer = mxGetPi(matlabMatrix);
   const double *src_pointer = armaMatrix.memptr();
@@ -244,7 +244,7 @@ armaSetPi(mxArray* matlabMatrix, const Mat<double>& armaMatrix)
 // Return complex matrix to Matlab/Octave. Requires Matlab/Octave matrix to be mxCOMPLEX
 inline
 void
-armaSetCx(mxArray* matlabMatrix, const cx_mat& armaMatrix) 
+armaSetCx(mxArray *matlabMatrix, const cx_mat& armaMatrix) 
   {
   armaSetPr(matlabMatrix, real(armaMatrix));
   armaSetPi(matlabMatrix, imag(armaMatrix));
@@ -258,7 +258,7 @@ armaSetCx(mxArray* matlabMatrix, const cx_mat& armaMatrix)
 template<class Type>
 inline
 Cube<Type>
-armaGetCubeData(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true)
+armaGetCubeData(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true)
   {  
   if(mxGetData(matlabMatrix) != NULL)
     {
@@ -286,7 +286,7 @@ armaGetCubeData(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool str
 // Get double cube from Matlab/Octave.   
 inline
 Cube<double>
-armaGetCubePr(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true)
+armaGetCubePr(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true)
   {
   if(mxGetData(matlabMatrix) != NULL)
     {
@@ -316,7 +316,7 @@ armaGetCubePr(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool stric
 template<class Type>
 inline
 Cube<Type>
-armaGetCubeImagData(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true)
+armaGetCubeImagData(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true)
   {
   if(mxGetImagData(matlabMatrix) != NULL)
     {
@@ -344,7 +344,7 @@ armaGetCubeImagData(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool
 // Get double cube from Matlab/Octave.   
 inline
 Cube<double>
-armaGetCubePi(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true)
+armaGetCubePi(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true)
   {
   if(mxGetImagData(matlabMatrix) != NULL)
     {
@@ -372,7 +372,7 @@ armaGetCubePi(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool stric
 // Get complex cube from Matlab/Octave
 inline
 cx_cube
-armaGetCubeCx(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool strict = true) 
+armaGetCubeCx(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = true) 
   {
   if( (mxGetPr(matlabMatrix) != NULL) && (mxGetPi(matlabMatrix) != NULL) )
     {
@@ -399,7 +399,7 @@ armaGetCubeCx(const mxArray* matlabMatrix, bool copy_aux_mem = false, bool stric
 template<class Type>
 inline
 void
-armaSetCubeData(mxArray* matlabMatrix, const Cube<Type>& armaCube) 
+armaSetCubeData(mxArray *matlabMatrix, const Cube<Type>& armaCube) 
   {
         Type *dst_pointer = (Type*)mxGetData(matlabMatrix);
   const Type *src_pointer = (Type*)armaCube.memptr();
@@ -411,7 +411,7 @@ armaSetCubeData(mxArray* matlabMatrix, const Cube<Type>& armaCube)
 // Return double real valued cube to Matlab/Octave
 inline
 void
-armaSetCubePr(mxArray* matlabMatrix, const Cube<double>& armaCube) 
+armaSetCubePr(mxArray *matlabMatrix, const Cube<double>& armaCube) 
   {
         double *dst_pointer = mxGetPr(matlabMatrix);
   const double *src_pointer = armaCube.memptr();
@@ -424,7 +424,7 @@ armaSetCubePr(mxArray* matlabMatrix, const Cube<double>& armaCube)
 template<class Type>
 inline
 void
-armaSetImagCubeData(mxArray* matlabMatrix, const Cube<Type>& armaCube)
+armaSetImagCubeData(mxArray *matlabMatrix, const Cube<Type>& armaCube)
   {
         Type *dst_pointer = (Type*)mxGetImagData(matlabMatrix);
   const Type *src_pointer = (Type*)armaCube.memptr();
@@ -436,7 +436,7 @@ armaSetImagCubeData(mxArray* matlabMatrix, const Cube<Type>& armaCube)
 // Return double imaginary valued matrix to Matlab/Octave
 inline
 void
-armaSetCubePi(mxArray* matlabMatrix, const Cube<double>& armaCube)
+armaSetCubePi(mxArray *matlabMatrix, const Cube<double>& armaCube)
   {
         double *dst_pointer = mxGetPi(matlabMatrix);
   const double *src_pointer = armaCube.memptr();
@@ -448,7 +448,7 @@ armaSetCubePi(mxArray* matlabMatrix, const Cube<double>& armaCube)
 // Return double complex cube to Matlab/Octave.
 inline
 void
-armaSetCubeCx(mxArray* matlabMatrix, const cx_cube& armaCube)
+armaSetCubeCx(mxArray *matlabMatrix, const cx_cube& armaCube)
   {
   armaSetCubePr(matlabMatrix, real(armaCube));
   armaSetCubePi(matlabMatrix, imag(armaCube));
@@ -462,7 +462,7 @@ armaSetCubeCx(mxArray* matlabMatrix, const cx_cube& armaCube)
 template<class Type>
 inline
 SpMat<Type>
-armaGetSparseData(const mxArray* matlabMatrix, bool sort_locations = false)
+armaGetSparseData(const mxArray *matlabMatrix, bool sort_locations = false)
   {
   if(!mxIsSparse(matlabMatrix))
     {
@@ -522,7 +522,7 @@ armaGetSparseData(const mxArray* matlabMatrix, bool sort_locations = false)
 // Get double valued sparse matrix from Matlab/Octave.
 inline
 SpMat<double>
-armaGetSparseMatrix(const mxArray* matlabMatrix, bool sort_locations = false)
+armaGetSparseMatrix(const mxArray *matlabMatrix, bool sort_locations = false)
   {
   if(!mxIsSparse(matlabMatrix))
     {
@@ -584,7 +584,7 @@ armaGetSparseMatrix(const mxArray* matlabMatrix, bool sort_locations = false)
 template<class Type>
 inline
 SpMat<Type>
-armaGetSparseImagData(const mxArray* matlabMatrix, bool sort_locations = false)
+armaGetSparseImagData(const mxArray *matlabMatrix, bool sort_locations = false)
   {
   if(!mxIsSparse(matlabMatrix))
     {
@@ -643,7 +643,7 @@ armaGetSparseImagData(const mxArray* matlabMatrix, bool sort_locations = false)
 // Get imaginary double valued sparse matrix from Matlab/Octave.
 inline
 SpMat<double>
-armaGetSparseImagMatrix(const mxArray* matlabMatrix, bool sort_locations = false)
+armaGetSparseImagMatrix(const mxArray *matlabMatrix, bool sort_locations = false)
   {
   if(!mxIsSparse(matlabMatrix))
     {
@@ -703,14 +703,12 @@ armaGetSparseImagMatrix(const mxArray* matlabMatrix, bool sort_locations = false
 // Return sparse matrix to matlab
 inline
 void
-armaSetSparsePr(mxArray* matlabMatrix, const SpMat<double>& armaMatrix)
+armaSetSparsePr(mxArray *matlabMatrix, const SpMat<double>& armaMatrix)
   {
   double  *sr  = mxGetPr(matlabMatrix);
   mwIndex *irs = mxGetIr(matlabMatrix);
   mwIndex *jcs = mxGetJc(matlabMatrix);
-  
-  armaMatrix.sync();
-  
+    
   mwSize n_nonzero = armaMatrix.n_nonzero;
   mwSize n_cols    = armaMatrix.n_cols;
 
@@ -729,14 +727,12 @@ armaSetSparsePr(mxArray* matlabMatrix, const SpMat<double>& armaMatrix)
 // Return sparse matrix to matlab as imaginary part
 inline
 void
-armaSetSparsePi(mxArray* matlabMatrix, const SpMat<double>& armaMatrix)
+armaSetSparsePi(mxArray *matlabMatrix, const SpMat<double>& armaMatrix)
   {
   double  *si  = mxGetPi(matlabMatrix);
   mwIndex *irs = mxGetIr(matlabMatrix);
   mwIndex *jcs = mxGetJc(matlabMatrix);
-  
-  armaMatrix.sync();
-  
+    
   mwSize n_nonzero = armaMatrix.n_nonzero;
   mwSize n_cols    = armaMatrix.n_cols;
 
@@ -760,7 +756,7 @@ inline
 mxArray*
 armaCreateMxMatrix(const mwSize n_rows, const mwSize n_cols, const mxClassID mx_type = mxDOUBLE_CLASS, const mxComplexity mx_complexity = mxREAL)
   {
-  mxArray* temp = mxCreateNumericMatrix(n_rows, n_cols, mx_type, mx_complexity);
+  mxArray *temp = mxCreateNumericMatrix(n_rows, n_cols, mx_type, mx_complexity);
   
   if(temp == NULL)
     {
@@ -783,7 +779,7 @@ armaCreateMxMatrix(const mwSize n_rows, const mwSize n_cols, const mwSize n_slic
   
   const mwSize n_dim = 3;
   
-  mxArray* temp = mxCreateNumericArray(n_dim, dims, mx_type, mx_complexity);
+  mxArray *temp = mxCreateNumericArray(n_dim, dims, mx_type, mx_complexity);
   
   if(temp == NULL)
     {
@@ -801,7 +797,7 @@ inline
 mxArray*
 armaCreateMxSparseMatrix(const mwSize n_rows,const mwSize n_cols,const mwSize n_nonzero,const mxComplexity mx_complexity = mxREAL)
   {
-  mxArray* temp = mxCreateSparse(n_rows, n_cols, n_nonzero, mx_complexity);
+  mxArray *temp = mxCreateSparse(n_rows, n_cols, n_nonzero, mx_complexity);
   
   if(temp == NULL)
     {
@@ -815,3 +811,219 @@ armaCreateMxSparseMatrix(const mwSize n_rows,const mwSize n_cols,const mwSize n_
   }
 
 
+//Functions to write MAT files
+inline
+int
+armaWriteMatToFile(const char *filename, mat &armaMatrix, const char *name)
+  {
+  MATFile *file;
+  file = matOpen(filename,"wz");
+  
+  int result;
+  
+  if(file == NULL)
+    {
+    mexErrMsgTxt("Could not create MAT file.");
+    return 0;
+    }
+  else
+    {
+    mxArray *temp = mxCreateDoubleMatrix(armaMatrix.n_rows, armaMatrix.n_cols, mxREAL);
+    armaSetPr(temp, armaMatrix);
+    result = matPutVariable(file, name, temp);
+    mxDestroyArray(temp); //Cleanup after writing MAT file
+    }
+  
+  matClose(file);
+  
+  return result;
+  }
+
+
+inline
+int
+armaWriteCxMatToFile(const char *filename, cx_mat &armaMatrix, const char *name)
+  {
+  MATFile *file;
+  file = matOpen(filename,"wz");
+  
+  int result;
+  
+  if(file == NULL)
+    {
+    mexErrMsgTxt("Could not create MAT file.");
+    return 0;
+    }
+  else
+    {
+    mxArray *temp = mxCreateDoubleMatrix(armaMatrix.n_rows, armaMatrix.n_cols, mxCOMPLEX);
+    armaSetCx(temp, armaMatrix);
+    result = matPutVariable(file, name, temp);
+    mxDestroyArray(temp); //Cleanup after writing MAT file
+    }
+  
+  matClose(file);
+  
+  return result;
+  }
+
+
+inline
+int
+armaWriteCubeToFile(const char *filename, cube &armaCube, const char *name)
+  {
+  MATFile *file;
+  file = matOpen(filename,"wz");
+  
+  int result;
+  
+  if(file == NULL)
+    {
+    mexErrMsgTxt("Could not create MAT file.");
+    return 0;
+    }
+  else
+    {
+    mxArray *temp = armaCreateMxMatrix(armaCube.n_rows, armaCube.n_cols, armaCube.n_slices, mxDOUBLE_CLASS, mxREAL);
+    armaSetCubePr(temp, armaCube);
+    result = matPutVariable(file, name, temp);
+    mxDestroyArray(temp); //Cleanup after writing MAT file
+    }
+  
+  matClose(file);
+  
+  return result;
+  }
+
+
+inline
+int
+armaWriteCxCubeToFile(const char *filename, cx_cube &armaCube, const char *name)
+  {
+  MATFile *file;
+  file = matOpen(filename,"wz");
+  
+  int result;
+  
+  if(file == NULL)
+    {
+    mexErrMsgTxt("Could not create MAT file.");
+    return 0;
+    }
+  else
+    {
+    mxArray *temp = armaCreateMxMatrix(armaCube.n_rows, armaCube.n_cols, armaCube.n_slices, mxDOUBLE_CLASS, mxCOMPLEX);
+    armaSetCubeCx(temp, armaCube);
+    result = matPutVariable(file, name, temp);
+    mxDestroyArray(temp); //Cleanup after writing MAT file
+    }
+  
+  matClose(file);
+  
+  return result;
+  }
+
+
+//Functions to read and write matrices and cubes in MAT file format
+inline
+mat
+armaReadMatFromFile(const char *filename)
+  {
+  MATFile *file;
+  file = matOpen(filename,"r");
+  
+  char buffer[1024];
+  const char *name;
+  name = buffer;
+  
+  if(file == NULL)
+    {
+    mexErrMsgTxt("Could not open MAT file.");
+    return mat();
+    }
+  else
+    {
+    mat tmp = armaGetPr(matGetNextVariable(file,&name));
+    matClose(file);
+    
+    return tmp;
+    }
+  }
+
+
+inline
+cx_mat
+armaReadCxMatFromFile(const char *filename)
+  {
+  MATFile *file;
+  file = matOpen(filename,"r");
+  
+  char buffer[1024];
+  const char *name;
+  name = buffer;
+  
+  if(file == NULL)
+    {
+    mexErrMsgTxt("Could not open MAT file.");
+    return cx_mat();
+    }
+  else
+    {
+    cx_mat tmp = armaGetCx(matGetNextVariable(file, &name));
+    matClose(file);
+    
+    return tmp;
+    }
+  }
+
+
+inline
+cube
+armaReadCubeFromFile(const char *filename)
+  {
+  MATFile *file;
+  file = matOpen(filename,"r");
+  
+  char buffer[1024];
+  const char *name;
+  name = buffer;
+  
+  if(file == NULL)
+    {
+    mexErrMsgTxt("Could not open MAT file.");
+    return cube();
+    }
+  else
+    {
+    cube tmp = armaGetCubePr(matGetNextVariable(file,&name));
+    matClose(file);
+    
+    return tmp;
+    }
+  }
+
+
+inline
+cx_cube
+armaReadCxCubeFromFile(const char *filename)
+  {
+  MATFile *file;
+  file = matOpen(filename,"r");
+  
+  char buffer[1024];
+  const char *name;
+  name = buffer;
+  
+  if(file == NULL)
+    {
+    mexErrMsgTxt("Could not open MAT file.");
+    return cx_cube();
+    }
+  else
+    {
+    cx_cube tmp = armaGetCubeCx(matGetNextVariable(file,&name));
+    matClose(file);
+    
+    return tmp;
+    }
+  }

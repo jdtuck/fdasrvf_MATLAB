@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +23,7 @@ template<typename eT>
 inline
 arma_counter<eT>::~arma_counter()
   {
-  arma_debug_sigprint_this(this);
+  arma_extra_debug_sigprint_this(this);
   }
 
 
@@ -36,7 +34,7 @@ arma_counter<eT>::arma_counter()
   : d_count(   eT(0))
   , i_count(uword(0))
   {
-  arma_debug_sigprint_this(this);
+  arma_extra_debug_sigprint_this(this);
   }
 
 
@@ -134,7 +132,7 @@ template<typename eT>
 inline
 running_stat<eT>::~running_stat()
   {
-  arma_debug_sigprint_this(this);
+  arma_extra_debug_sigprint_this(this);
   }
 
 
@@ -149,7 +147,7 @@ running_stat<eT>::running_stat()
   , min_val_norm(typename running_stat<eT>::T(0))
   , max_val_norm(typename running_stat<eT>::T(0))
   {
-  arma_debug_sigprint_this(this);
+  arma_extra_debug_sigprint_this(this);
   }
 
 
@@ -160,11 +158,11 @@ inline
 void
 running_stat<eT>::operator() (const typename running_stat<eT>::T sample)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  if(arma_isnonfinite(sample))
+  if( arma_isfinite(sample) == false )
     {
-    arma_warn(3, "running_stat: non-finite sample ignored" );
+    arma_debug_warn("running_stat: sample ignored as it is non-finite" );
     return;
     }
   
@@ -179,11 +177,11 @@ inline
 void
 running_stat<eT>::operator() (const std::complex< typename running_stat<eT>::T >& sample)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  if(arma_isnonfinite(sample))
+  if( arma_isfinite(sample) == false )
     {
-    arma_warn(3, "running_stat: non-finite sample ignored" );
+    arma_debug_warn("running_stat: sample ignored as it is non-finite" );
     return;
     }
   
@@ -198,7 +196,7 @@ inline
 void
 running_stat<eT>::reset()
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   // typedef typename running_stat<eT>::T T;
   
@@ -222,7 +220,7 @@ inline
 eT
 running_stat<eT>::mean() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return r_mean;
   }
@@ -235,7 +233,7 @@ inline
 typename running_stat<eT>::T
 running_stat<eT>::var(const uword norm_type) const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const T N = counter.value();
   
@@ -265,7 +263,7 @@ inline
 typename running_stat<eT>::T
 running_stat<eT>::stddev(const uword norm_type) const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return std::sqrt( (*this).var(norm_type) );
   }
@@ -278,7 +276,7 @@ inline
 eT
 running_stat<eT>::min() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return min_val;
   }
@@ -291,7 +289,7 @@ inline
 eT
 running_stat<eT>::max() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return max_val;
   }
@@ -303,7 +301,7 @@ inline
 eT
 running_stat<eT>::range() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return (max_val - min_val);
   }
@@ -316,7 +314,7 @@ inline
 typename get_pod_type<eT>::result
 running_stat<eT>::count() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return counter.value();
   }
@@ -329,7 +327,7 @@ inline
 void
 running_stat_aux::update_stats(running_stat<eT>& x, const eT sample, const typename arma_not_cx<eT>::result* junk)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename running_stat<eT>::T T;
@@ -382,7 +380,7 @@ inline
 void
 running_stat_aux::update_stats(running_stat<eT>& x, const std::complex<eT>& sample, const typename arma_not_cx<eT>::result* junk)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   running_stat_aux::update_stats(x, std::real(sample));
@@ -396,7 +394,7 @@ inline
 void
 running_stat_aux::update_stats(running_stat<eT>& x, const typename eT::value_type sample, const typename arma_cx_only<eT>::result* junk)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename eT::value_type T;
@@ -412,7 +410,7 @@ inline
 void
 running_stat_aux::update_stats(running_stat<eT>& x, const eT& sample, const typename arma_cx_only<eT>::result* junk)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename eT::value_type T;

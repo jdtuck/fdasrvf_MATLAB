@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +24,7 @@ inline
 void
 op_trimat::fill_zeros(Mat<eT>& out, const bool upper)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const uword N = out.n_rows;
   
@@ -38,7 +36,7 @@ op_trimat::fill_zeros(Mat<eT>& out, const bool upper)
       {
       eT* data = out.colptr(i);
       
-      arrayops::fill_zeros( &data[i+1], (N-(i+1)) );
+      arrayops::inplace_set( &data[i+1], eT(0), (N-(i+1)) );
       }
     }
   else
@@ -49,7 +47,7 @@ op_trimat::fill_zeros(Mat<eT>& out, const bool upper)
       {
       eT* data = out.colptr(i);
       
-      arrayops::fill_zeros( data, i );
+      arrayops::inplace_set( data, eT(0), i );
       }
     }
   }
@@ -61,100 +59,43 @@ inline
 void
 op_trimat::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimat>& in)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
-  const bool upper = (in.aux_uword_a == 0);
+  const unwrap<T1>   tmp(in.m);
+  const Mat<eT>& A = tmp.M;
   
-  // allow detection of in-place operation
-  if(is_Mat<T1>::value)
+  arma_debug_check( (A.is_square() == false), "trimatu()/trimatl(): given matrix must be square sized" );
+  
+  const uword N     = A.n_rows;
+  const bool  upper = (in.aux_uword_a == 0);
+  
+  if(&out != &A)
     {
-    const unwrap<T1> U(in.m);
+    out.copy_size(A);
     
-    if(&out == &(U.M))
+    if(upper)
       {
-      arma_conform_check( (U.M.is_square() == false), "trimatu()/trimatl(): given matrix must be square sized" );
-      
-      op_trimat::fill_zeros(out, upper);
+      // upper triangular: copy the diagonal and the elements above the diagonal
+      for(uword i=0; i<N; ++i)
+        {
+        const eT* A_data   = A.colptr(i);
+              eT* out_data = out.colptr(i);
+        
+        arrayops::copy( out_data, A_data, i+1 );
+        }
       }
     else
       {
-      op_trimat::apply_mat_noalias(out, U.M, upper);
-      }
-    }
-  else
-  if((is_Mat<typename Proxy<T1>::stored_type>::value) || (arma_config::openmp && Proxy<T1>::use_mp))
-    {
-    const quasi_unwrap<T1> U(in.m);
-    
-    if(U.is_alias(out))
-      {
-      Mat<eT> tmp;
-      
-      op_trimat::apply_mat_noalias(tmp, U.M, upper);
-      
-      out.steal_mem(tmp);
-      }
-    else
-      {
-      op_trimat::apply_mat_noalias(out, U.M, upper);
-      }
-    }
-  else
-    {
-    const Proxy<T1> P(in.m);
-    
-    if(P.is_alias(out))
-      {
-      Mat<eT> tmp;
-      
-      op_trimat::apply_proxy_noalias(tmp, P, upper);
-      
-      out.steal_mem(tmp);
-      }
-    else
-      {
-      op_trimat::apply_proxy_noalias(out, P, upper);
-      }
-    }
-  }
-
-
-
-template<typename eT>
-inline
-void
-op_trimat::apply_mat_noalias(Mat<eT>& out, const Mat<eT>& A, const bool upper)
-  {
-  arma_debug_sigprint();
-  
-  arma_conform_check( (A.is_square() == false), "trimatu()/trimatl(): given matrix must be square sized" );
-  
-  out.copy_size(A);
-  
-  const uword N = A.n_rows;
-  
-  if(upper)
-    {
-    // upper triangular: copy the diagonal and the elements above the diagonal
-    for(uword i=0; i<N; ++i)
-      {
-      const eT* A_data   = A.colptr(i);
-            eT* out_data = out.colptr(i);
-      
-      arrayops::copy( out_data, A_data, i+1 );
-      }
-    }
-  else
-    {
-    // lower triangular: copy the diagonal and the elements below the diagonal
-    for(uword i=0; i<N; ++i)
-      {
-      const eT* A_data   = A.colptr(i);
-            eT* out_data = out.colptr(i);
-      
-      arrayops::copy( &out_data[i], &A_data[i], N-i );
+      // lower triangular: copy the diagonal and the elements below the diagonal
+      for(uword i=0; i<N; ++i)
+        {
+        const eT* A_data   = A.colptr(i);
+              eT* out_data = out.colptr(i);
+        
+        arrayops::copy( &out_data[i], &A_data[i], N-i );
+        }
       }
     }
   
@@ -166,30 +107,138 @@ op_trimat::apply_mat_noalias(Mat<eT>& out, const Mat<eT>& A, const bool upper)
 template<typename T1>
 inline
 void
-op_trimat::apply_proxy_noalias(Mat<typename T1::elem_type>& out, const Proxy<T1>& P, const bool upper)
+op_trimat::apply(Mat<typename T1::elem_type>& out, const Op<Op<T1, op_htrans>, op_trimat>& in)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  arma_conform_check( (P.get_n_rows() != P.get_n_cols()), "trimatu()/trimatl(): given matrix must be square sized" );
+  typedef typename T1::elem_type eT;
   
-  const uword N = P.get_n_rows();
+  const unwrap<T1>   tmp(in.m.m);
+  const Mat<eT>& A = tmp.M;
   
-  out.set_size(N,N);
+  const bool upper = (in.aux_uword_a == 0);
+  
+  op_trimat::apply_htrans(out, A, upper);
+  }
+
+
+
+template<typename eT>
+inline
+void
+op_trimat::apply_htrans
+  (
+        Mat<eT>& out,
+  const Mat<eT>& A,
+  const bool     upper,
+  const typename arma_not_cx<eT>::result* junk
+  )
+  {
+  arma_extra_debug_sigprint();
+  arma_ignore(junk);
+  
+  // This specialisation is for trimatl(trans(X)) = trans(trimatu(X)) and also
+  // trimatu(trans(X)) = trans(trimatl(X)).  We want to avoid the creation of an
+  // extra temporary.
+  
+  // It doesn't matter if the input and output matrices are the same; we will
+  // pull data from the upper or lower triangular to the lower or upper
+  // triangular (respectively) and then set the rest to 0, so overwriting issues
+  // aren't present.
+  
+  arma_debug_check( (A.is_square() == false), "trimatu()/trimatl(): given matrix must be square sized" );
+  
+  const uword N = A.n_rows;
+  
+  if(&out != &A)
+    {
+    out.copy_size(A);
+    }
+  
+  // We can't really get away with any array copy operations here,
+  // unfortunately...
   
   if(upper)
     {
-    for(uword j=0; j < N;     ++j)
-    for(uword i=0; i < (j+1); ++i)
+    // Upper triangular: but since we're transposing, we're taking the lower
+    // triangular and putting it in the upper half.
+    for(uword row = 0; row < N; ++row)
       {
-      out.at(i,j) = P.at(i,j);
+      eT* out_colptr = out.colptr(row);
+      
+      for(uword col = 0; col <= row; ++col)
+        {
+        //out.at(col, row) = A.at(row, col);
+        out_colptr[col] = A.at(row, col);
+        }
       }
     }
   else
     {
-    for(uword j=0; j<N; ++j)
-    for(uword i=j; i<N; ++i)
+    // Lower triangular: but since we're transposing, we're taking the upper
+    // triangular and putting it in the lower half.
+    for(uword row = 0; row < N; ++row)
       {
-      out.at(i,j) = P.at(i,j);
+      for(uword col = row; col < N; ++col)
+        {
+        out.at(col, row) = A.at(row, col);
+        }
+      }
+    }
+  
+  op_trimat::fill_zeros(out, upper);
+  }
+
+
+
+template<typename eT>
+inline
+void
+op_trimat::apply_htrans
+  (
+        Mat<eT>& out,
+  const Mat<eT>& A,
+  const bool     upper,
+  const typename arma_cx_only<eT>::result* junk
+  )
+  {
+  arma_extra_debug_sigprint();
+  arma_ignore(junk);
+  
+  arma_debug_check( (A.is_square() == false), "trimatu()/trimatl(): given matrix must be square sized" );
+  
+  const uword N = A.n_rows;
+  
+  if(&out != &A)
+    {
+    out.copy_size(A);
+    }
+  
+  if(upper)
+    {
+    // Upper triangular: but since we're transposing, we're taking the lower
+    // triangular and putting it in the upper half.
+    for(uword row = 0; row < N; ++row)
+      {
+      eT* out_colptr = out.colptr(row);
+      
+      for(uword col = 0; col <= row; ++col)
+        {
+        //out.at(col, row) = std::conj( A.at(row, col) );
+        out_colptr[col] = std::conj( A.at(row, col) );
+        }
+      }
+    }
+  else
+    {
+    // Lower triangular: but since we're transposing, we're taking the upper
+    // triangular and putting it in the lower half.
+    for(uword row = 0; row < N; ++row)
+      {
+      for(uword col = row; col < N; ++col)
+        {
+        out.at(col, row) = std::conj( A.at(row, col) );
+        }
       }
     }
   
@@ -207,14 +256,14 @@ inline
 void
 op_trimatu_ext::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimatu_ext>& in)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
   const unwrap<T1>   tmp(in.m);
   const Mat<eT>& A = tmp.M;
   
-  arma_conform_check( (A.is_square() == false), "trimatu(): given matrix must be square sized" );
+  arma_debug_check( (A.is_square() == false), "trimatu(): given matrix must be square sized" );
   
   const uword row_offset = in.aux_uword_a;
   const uword col_offset = in.aux_uword_b;
@@ -222,7 +271,7 @@ op_trimatu_ext::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimatu_e
   const uword n_rows = A.n_rows;
   const uword n_cols = A.n_cols;
   
-  arma_conform_check_bounds( ((row_offset > 0) && (row_offset >= n_rows)) || ((col_offset > 0) && (col_offset >= n_cols)), "trimatu(): requested diagonal is out of bounds" );
+  arma_debug_check( ((row_offset > 0) && (row_offset >= n_rows)) || ((col_offset > 0) && (col_offset >= n_cols)), "trimatu(): requested diagonal is out of bounds" );
   
   if(&out != &A)
     {
@@ -263,7 +312,7 @@ inline
 void
 op_trimatu_ext::fill_zeros(Mat<eT>& out, const uword row_offset, const uword col_offset)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const uword n_rows = out.n_rows;
   const uword n_cols = out.n_cols;
@@ -298,14 +347,14 @@ inline
 void
 op_trimatl_ext::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimatl_ext>& in)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
   const unwrap<T1>   tmp(in.m);
   const Mat<eT>& A = tmp.M;
   
-  arma_conform_check( (A.is_square() == false), "trimatl(): given matrix must be square sized" );
+  arma_debug_check( (A.is_square() == false), "trimatl(): given matrix must be square sized" );
   
   const uword row_offset = in.aux_uword_a;
   const uword col_offset = in.aux_uword_b;
@@ -313,7 +362,7 @@ op_trimatl_ext::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimatl_e
   const uword n_rows = A.n_rows;
   const uword n_cols = A.n_cols;
   
-  arma_conform_check_bounds( ((row_offset > 0) && (row_offset >= n_rows)) || ((col_offset > 0) && (col_offset >= n_cols)), "trimatl(): requested diagonal is out of bounds" );
+  arma_debug_check( ((row_offset > 0) && (row_offset >= n_rows)) || ((col_offset > 0) && (col_offset >= n_cols)), "trimatl(): requested diagonal is out of bounds" );
   
   if(&out != &A)
     {
@@ -348,7 +397,7 @@ inline
 void
 op_trimatl_ext::fill_zeros(Mat<eT>& out, const uword row_offset, const uword col_offset)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const uword n_rows = out.n_rows;
   const uword n_cols = out.n_cols;

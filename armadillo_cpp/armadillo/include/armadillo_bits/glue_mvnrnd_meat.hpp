@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,33 +28,14 @@
 template<typename T1, typename T2>
 inline
 void
-glue_mvnrnd_vec::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_mvnrnd_vec>& expr)
-  {
-  arma_debug_sigprint();
-  
-  const bool status = glue_mvnrnd::apply_direct(out, expr.A, expr.B, uword(1));
-  
-  if(status == false)
-    {
-    out.soft_reset();
-    arma_stop_runtime_error("mvnrnd(): given covariance matrix is not symmetric positive semi-definite");
-    }
-  }
-
-
-
-template<typename T1, typename T2>
-inline
-void
 glue_mvnrnd::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_mvnrnd>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const bool status = glue_mvnrnd::apply_direct(out, expr.A, expr.B, expr.aux_uword);
   
   if(status == false)
     {
-    out.soft_reset();
     arma_stop_runtime_error("mvnrnd(): given covariance matrix is not symmetric positive semi-definite");
     }
   }
@@ -68,26 +47,21 @@ inline
 bool
 glue_mvnrnd::apply_direct(Mat<typename T1::elem_type>& out, const Base<typename T1::elem_type,T1>& M, const Base<typename T1::elem_type,T2>& C, const uword N)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
   const quasi_unwrap<T1> UM(M.get_ref());
   const quasi_unwrap<T2> UC(C.get_ref());
   
-  arma_conform_check( (UM.M.is_colvec() == false) && (UM.M.is_empty() == false),  "mvnrnd(): given mean must be a column vector"     );
-  arma_conform_check( (UC.M.is_square() == false),  "mvnrnd(): given covariance matrix must be square sized"                         );
-  arma_conform_check( (UM.M.n_rows != UC.M.n_rows), "mvnrnd(): number of rows in given mean vector and covariance matrix must match" );
+  arma_debug_check( (UM.M.is_colvec() == false) && (UM.M.is_empty() == false),  "mvnrnd(): given mean must be a column vector"     );
+  arma_debug_check( (UC.M.is_square() == false),  "mvnrnd(): given covariance matrix must be square sized"                         );
+  arma_debug_check( (UM.M.n_rows != UC.M.n_rows), "mvnrnd(): number of rows in given mean vector and covariance matrix must match" );
   
   if( UM.M.is_empty() || UC.M.is_empty() )
     {
     out.set_size(0,N);
     return true;
-    }
-  
-  if((arma_config::check_conform) && (auxlib::rudimentary_sym_check(UC.M) == false))
-    {
-    arma_warn(1, "mvnrnd(): given matrix is not symmetric");
     }
   
   bool status = false;
@@ -105,6 +79,8 @@ glue_mvnrnd::apply_direct(Mat<typename T1::elem_type>& out, const Base<typename 
     status = glue_mvnrnd::apply_noalias(out, UM.M, UC.M, N);
     }
   
+  if(status == false)  { out.soft_reset(); }
+  
   return status;
   }
 
@@ -115,7 +91,7 @@ inline
 bool
 glue_mvnrnd::apply_noalias(Mat<eT>& out, const Mat<eT>& M, const Mat<eT>& C, const uword N)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   Mat<eT> D;
   
@@ -128,7 +104,7 @@ glue_mvnrnd::apply_noalias(Mat<eT>& out, const Mat<eT>& M, const Mat<eT>& C, con
     Col<eT> eigval;  // NOTE: eT is constrained to be real (ie. float or double) in fn_mvnrnd.hpp
     Mat<eT> eigvec;
     
-    const bool eig_status = eig_sym_helper(eigval, eigvec, C, 'd', "mvnrnd()");
+    const bool eig_status = auxlib::eig_sym_dc(eigval, eigvec, C);
     
     if(eig_status == false)  { return false; }
     
@@ -139,13 +115,13 @@ glue_mvnrnd::apply_noalias(Mat<eT>& out, const Mat<eT>& M, const Mat<eT>& C, con
     
     const eT tol = eT(-100) * Datum<eT>::eps * norm(C, "fro");
     
-    if(arma_isnonfinite(tol))  { return false; }
+    if(arma_isfinite(tol) == false)  { return false; }
     
     for(uword i=0; i<eigval_n_elem; ++i)
       {
       const eT val = eigval_mem[i];
       
-      if( (val < tol) || arma_isnonfinite(val) )  { return false; }
+      if( (val < tol) || (arma_isfinite(val) == false) )  { return false; }
       }
     
     for(uword i=0; i<eigval_n_elem; ++i)  { if(eigval_mem[i] < eT(0))  { eigval_mem[i] = eT(0); } }

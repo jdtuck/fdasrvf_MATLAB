@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,11 +20,14 @@
 
 
 
-struct op_cov
-  : public traits_op_default
+class op_cov
   {
-  template<typename T1> inline static void apply(Mat<typename T1::elem_type>& out, const Op< T1,               op_cov>& in);
-  template<typename T1> inline static void apply(Mat<typename T1::elem_type>& out, const Op< Op<T1,op_htrans>, op_cov>& in);
+  public:
+  
+  template<typename eT> inline static void direct_cov(Mat<eT>&                out, const Mat<eT>& X,                const uword norm_type);
+  template<typename  T> inline static void direct_cov(Mat< std::complex<T> >& out, const Mat< std::complex<T> >& X, const uword norm_type);
+  
+  template<typename T1> inline static void apply(Mat<typename T1::elem_type>& out, const Op<T1,op_cov>& in);
   };
 
 

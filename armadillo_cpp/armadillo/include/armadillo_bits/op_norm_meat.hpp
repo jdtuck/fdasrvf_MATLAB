@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,25 +20,26 @@
 
 
 template<typename T1>
+arma_hot
 inline
-typename T1::elem_type
+typename T1::pod_type
 op_norm::vec_norm_1(const Proxy<T1>& P, const typename arma_not_cx<typename T1::elem_type>::result* junk)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
-  constexpr bool use_direct_mem = (is_Mat<typename Proxy<T1>::stored_type>::value) || (is_subview_col<typename Proxy<T1>::stored_type>::value) || (arma_config::openmp && Proxy<T1>::use_mp);
+  const bool have_direct_mem = (is_Mat<typename Proxy<T1>::stored_type>::value) || (is_subview_col<typename Proxy<T1>::stored_type>::value);
   
-  if(use_direct_mem)
+  if(have_direct_mem)
     {
     const quasi_unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
     
     return op_norm::vec_norm_1_direct_std(tmp.M);
     }
   
-  typedef typename T1::elem_type eT;
+  typedef typename T1::pod_type T;
   
-  eT acc = eT(0);
+  T acc = T(0);
   
   if(Proxy<T1>::use_at == false)
     {
@@ -48,8 +47,8 @@ op_norm::vec_norm_1(const Proxy<T1>& P, const typename arma_not_cx<typename T1::
     
     const uword N = P.get_n_elem();
     
-    eT acc1 = eT(0);
-    eT acc2 = eT(0);
+    T acc1 = T(0);
+    T acc2 = T(0);
     
     uword i,j;
     for(i=0, j=1; j<N; i+=2, j+=2)
@@ -63,7 +62,7 @@ op_norm::vec_norm_1(const Proxy<T1>& P, const typename arma_not_cx<typename T1::
       acc1 += std::abs(A[i]);
       }
     
-    acc = (acc1 + acc2);
+    acc = acc1 + acc2;
     }
   else
     {
@@ -79,8 +78,8 @@ op_norm::vec_norm_1(const Proxy<T1>& P, const typename arma_not_cx<typename T1::
       }
     else
       {
-      eT acc1 = eT(0);
-      eT acc2 = eT(0);
+      T acc1 = T(0);
+      T acc2 = T(0);
       
       for(uword col=0; col<n_cols; ++col)
         {
@@ -98,7 +97,7 @@ op_norm::vec_norm_1(const Proxy<T1>& P, const typename arma_not_cx<typename T1::
           }
         }
       
-      acc = (acc1 + acc2);
+      acc = acc1 + acc2;
       }
     }
   
@@ -108,11 +107,12 @@ op_norm::vec_norm_1(const Proxy<T1>& P, const typename arma_not_cx<typename T1::
 
 
 template<typename T1>
+arma_hot
 inline
 typename T1::pod_type
 op_norm::vec_norm_1(const Proxy<T1>& P, const typename arma_cx_only<typename T1::elem_type>::result* junk)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename T1::elem_type eT;
@@ -174,121 +174,90 @@ op_norm::vec_norm_1(const Proxy<T1>& P, const typename arma_cx_only<typename T1:
     }
   else
     {
-    arma_debug_print("detected possible underflow or overflow");
-    
-    typedef typename promote_type<eT, float>::result acc_eT;
-    
-    typedef typename get_pod_type<acc_eT>::result acc_T;
-    
-    arma_debug_type_print<eT>("eT");
-    arma_debug_type_print<acc_eT>("acc_eT");
+    arma_extra_debug_print("op_norm::vec_norm_1(): detected possible underflow or overflow");
     
     const quasi_unwrap<typename Proxy<T1>::stored_type> R(P.Q);
     
     const uword N     = R.M.n_elem;
     const eT*   R_mem = R.M.memptr();
     
-    acc_T max_val = priv::most_neg<acc_T>();
+    T max_val = priv::most_neg<T>();
     
     for(uword i=0; i<N; ++i)
       {
       const std::complex<T>& X = R_mem[i];
       
-      const acc_T a = std::abs(acc_T(X.real()));
-      const acc_T b = std::abs(acc_T(X.imag()));
+      const T a = std::abs(X.real());
+      const T b = std::abs(X.imag());
       
       if(a > max_val)  { max_val = a; }
       if(b > max_val)  { max_val = b; }
       }
     
-    if(max_val == acc_T(0))  { return T(0); }
+    if(max_val == T(0))  { return T(0); }
     
-    acc_T alt_acc = acc_T(0);
+    T alt_acc = T(0);
     
     for(uword i=0; i<N; ++i)
       {
       const std::complex<T>& X = R_mem[i];
       
-      const acc_T a = acc_T(X.real()) / max_val;
-      const acc_T b = acc_T(X.imag()) / max_val;
+      const T a = X.real() / max_val;
+      const T b = X.imag() / max_val;
       
       alt_acc += std::sqrt( (a*a) + (b*b) );
       }
     
-    return T( alt_acc * max_val );
+    return ( alt_acc * max_val );
     }
   }
 
 
 
 template<typename eT>
+arma_hot
 inline
 eT
-op_norm::vec_norm_1_direct_std(const Mat<eT>& X, const typename arma_blas_real_only<eT>::result* junk)
+op_norm::vec_norm_1_direct_std(const Mat<eT>& X)
   {
-  arma_debug_sigprint();
-  arma_ignore(junk);
+  arma_extra_debug_sigprint();
   
   const uword N = X.n_elem;
   const eT*   A = X.memptr();
   
-  eT out_val = eT(0);
-  
-  #if defined(ARMA_USE_ATLAS)
+  if(N < uword(32))
     {
-    arma_debug_print("atlas::cblas_asum()");
-    out_val = atlas::cblas_asum(N,A);
+    return op_norm::vec_norm_1_direct_mem(N,A);
     }
-  #elif defined(ARMA_USE_BLAS)
+  else
     {
-    if(has_blas_float_bug<eT>::value)
+    #if defined(ARMA_USE_ATLAS)
       {
-      out_val = op_norm::vec_norm_1_direct_mem(N,A);
+      return atlas::cblas_asum(N,A);
       }
-    else
+    #elif defined(ARMA_USE_BLAS)
       {
-      arma_debug_print("blas::asum()");
-      out_val = blas::asum(N,A);
+      return blas::asum(N,A);
       }
+    #else
+      {
+      return op_norm::vec_norm_1_direct_mem(N,A);
+      }
+    #endif
     }
-  #else
-    {
-    out_val = op_norm::vec_norm_1_direct_mem(N,A);
-    }
-  #endif
-  
-  return (out_val <= eT(0)) ? eT(0) : out_val;
   }
 
 
 
 template<typename eT>
-inline
-eT
-op_norm::vec_norm_1_direct_std(const Mat<eT>& X, const typename arma_fp16_real_only<eT>::result* junk)
-  {
-  arma_debug_sigprint();
-  arma_ignore(junk);
-
-  const uword N = X.n_elem;
-  const eT*   A = X.memptr();
-
-  // fp16 support must be direct non-BLAS
-  eT out_val = op_norm::vec_norm_1_direct_mem(N,A);
-  
-  return (out_val <= eT(0)) ? eT(0) : out_val;
-  }
-
-
-
-template<typename eT>
+arma_hot
 inline
 eT
 op_norm::vec_norm_1_direct_mem(const uword N, const eT* A)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  #if (defined(ARMA_SIMPLE_LOOPS) || defined(__FAST_MATH__))
+  #if defined(ARMA_SIMPLE_LOOPS) || (defined(__FINITE_MATH_ONLY__) && (__FINITE_MATH_ONLY__ > 0))
     {
     eT acc1 = eT(0);
     
@@ -334,25 +303,26 @@ op_norm::vec_norm_1_direct_mem(const uword N, const eT* A)
 
 
 template<typename T1>
+arma_hot
 inline
-typename T1::elem_type
+typename T1::pod_type
 op_norm::vec_norm_2(const Proxy<T1>& P, const typename arma_not_cx<typename T1::elem_type>::result* junk)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
-  constexpr bool use_direct_mem = (is_Mat<typename Proxy<T1>::stored_type>::value) || (is_subview_col<typename Proxy<T1>::stored_type>::value) || (arma_config::openmp && Proxy<T1>::use_mp);
+  const bool have_direct_mem = (is_Mat<typename Proxy<T1>::stored_type>::value) || (is_subview_col<typename Proxy<T1>::stored_type>::value);
   
-  if(use_direct_mem)
+  if(have_direct_mem)
     {
     const quasi_unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
     
     return op_norm::vec_norm_2_direct_std(tmp.M);
     }
   
-  typedef typename T1::elem_type eT;
+  typedef typename T1::pod_type T;
   
-  eT acc = eT(0);
+  T acc = T(0);
   
   if(Proxy<T1>::use_at == false)
     {
@@ -360,28 +330,28 @@ op_norm::vec_norm_2(const Proxy<T1>& P, const typename arma_not_cx<typename T1::
     
     const uword N = P.get_n_elem();
     
-    eT acc1 = eT(0);
-    eT acc2 = eT(0);
+    T acc1 = T(0);
+    T acc2 = T(0);
     
     uword i,j;
     
     for(i=0, j=1; j<N; i+=2, j+=2)
       {
-      const eT tmp_i = A[i];
-      const eT tmp_j = A[j];
+      const T tmp_i = A[i];
+      const T tmp_j = A[j];
       
-      acc1 += (tmp_i * tmp_i);
-      acc2 += (tmp_j * tmp_j);
+      acc1 += tmp_i * tmp_i;
+      acc2 += tmp_j * tmp_j;
       }
     
     if(i < N)
       {
-      const eT tmp_i = A[i];
+      const T tmp_i = A[i];
       
-      acc1 += (tmp_i * tmp_i);
+      acc1 += tmp_i * tmp_i;
       }
     
-    acc = (acc1 + acc2);
+    acc = acc1 + acc2;
     }
   else
     {
@@ -392,49 +362,45 @@ op_norm::vec_norm_2(const Proxy<T1>& P, const typename arma_not_cx<typename T1::
       {
       for(uword col=0; col<n_cols; ++col)
         {
-        const eT tmp = P.at(0,col);
+        const T tmp = P.at(0,col);
         
-        acc += (tmp * tmp);
+        acc += tmp * tmp;
         }
       }
     else
       {
-      eT acc1 = eT(0);
-      eT acc2 = eT(0);
-      
       for(uword col=0; col<n_cols; ++col)
         {
         uword i,j;
         for(i=0, j=1; j<n_rows; i+=2, j+=2)
           {
-          const eT tmp_i = P.at(i,col);
-          const eT tmp_j = P.at(j,col);
+          const T tmp_i = P.at(i,col);
+          const T tmp_j = P.at(j,col);
           
-          acc1 += (tmp_i * tmp_i);
-          acc2 += (tmp_j * tmp_j);
+          acc += tmp_i * tmp_i;
+          acc += tmp_j * tmp_j;
           }
         
         if(i < n_rows)
           {
-          const eT tmp_i = P.at(i,col);
+          const T tmp_i = P.at(i,col);
           
-          acc1 += (tmp_i * tmp_i);
+          acc += tmp_i * tmp_i;
           }
         }
-      
-      acc = (acc1 + acc2);
       }
     }
   
-  const eT sqrt_acc = std::sqrt(acc);
   
-  if( (sqrt_acc != eT(0)) && arma_isfinite(sqrt_acc) )
+  const T sqrt_acc = std::sqrt(acc);
+  
+  if( (sqrt_acc != T(0)) && arma_isfinite(sqrt_acc) )
     {
     return sqrt_acc;
     }
   else
     {
-    arma_debug_print("detected possible underflow or overflow");
+    arma_extra_debug_print("op_norm::vec_norm_2(): detected possible underflow or overflow");
     
     const quasi_unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
     
@@ -445,11 +411,12 @@ op_norm::vec_norm_2(const Proxy<T1>& P, const typename arma_not_cx<typename T1::
 
 
 template<typename T1>
+arma_hot
 inline
 typename T1::pod_type
 op_norm::vec_norm_2(const Proxy<T1>& P, const typename arma_cx_only<typename T1::elem_type>::result* junk)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename T1::elem_type eT;
@@ -513,89 +480,80 @@ op_norm::vec_norm_2(const Proxy<T1>& P, const typename arma_cx_only<typename T1:
     }
   else
     {
-    arma_debug_print("detected possible underflow or overflow");
-    
-    typedef typename promote_type<eT, float>::result acc_eT;
-    
-    typedef typename get_pod_type<acc_eT>::result acc_T;
-    
-    arma_debug_type_print<eT>("eT");
-    arma_debug_type_print<acc_eT>("acc_eT");
+    arma_extra_debug_print("op_norm::vec_norm_2(): detected possible underflow or overflow");
     
     const quasi_unwrap<typename Proxy<T1>::stored_type> R(P.Q);
     
     const uword N     = R.M.n_elem;
     const eT*   R_mem = R.M.memptr();
     
-    acc_T max_val = priv::most_neg<acc_T>();
+    T max_val = priv::most_neg<T>();
     
     for(uword i=0; i<N; ++i)
       {
-      const acc_T val_i = std::abs(acc_eT(R_mem[i]));
+      const T val_i = std::abs(R_mem[i]);
       
       if(val_i > max_val)  { max_val = val_i; }
       }
     
-    if(max_val == acc_T(0))  { return T(0); }
+    if(max_val == T(0))  { return T(0); }
     
-    acc_T alt_acc = acc_T(0);
+    T alt_acc = T(0);
     
     for(uword i=0; i<N; ++i)
       {
-      const acc_T val_i = std::abs(acc_eT(R_mem[i])) / max_val;
+      const T val_i = std::abs(R_mem[i]) / max_val;
       
       alt_acc += val_i * val_i;
       }
     
-    return T( std::sqrt(alt_acc) * max_val );
+    return ( std::sqrt(alt_acc) * max_val ); 
     }
   }
 
 
 
 template<typename eT>
+arma_hot
 inline
 eT
-op_norm::vec_norm_2_direct_std(const Mat<eT>& X, const typename arma_blas_real_only<eT>::result* junk)
+op_norm::vec_norm_2_direct_std(const Mat<eT>& X)
   {
-  arma_debug_sigprint();
-  arma_ignore(junk);
+  arma_extra_debug_sigprint();
   
   const uword N = X.n_elem;
   const eT*   A = X.memptr();
   
-  eT out_val = eT(0);
+  eT result;
   
-  #if defined(ARMA_USE_ATLAS)
+  if(N < uword(32))
     {
-    arma_debug_print("atlas::cblas_nrm2()");
-    out_val = atlas::cblas_nrm2(N,A);
-    }
-  #elif defined(ARMA_USE_BLAS)
-    {
-    if(has_blas_float_bug<eT>::value)
-      {
-      out_val = op_norm::vec_norm_2_direct_mem(N,A);
-      }
-    else
-      {
-      arma_debug_print("blas::nrm2()");
-      out_val = blas::nrm2(N,A);
-      }
-    }
-  #else
-    {
-    out_val = op_norm::vec_norm_2_direct_mem(N,A);
-    }
-  #endif
-  
-  if( (out_val != eT(0)) && arma_isfinite(out_val) )
-    {
-    return (out_val < eT(0)) ? eT(0) : out_val;
+    result = op_norm::vec_norm_2_direct_mem(N,A);
     }
   else
     {
-    arma_debug_print("detected possible underflow or overflow");
+    #if defined(ARMA_USE_ATLAS)
+      {
+      result = atlas::cblas_nrm2(N,A);
+      }
+    #elif defined(ARMA_USE_BLAS)
+      {
+      result = blas::nrm2(N,A);
+      }
+    #else
+      {
+      result = op_norm::vec_norm_2_direct_mem(N,A);
+      }
+    #endif
+    }
+  
+  if( (result != eT(0)) && arma_isfinite(result) )
+    {
+    return result;
+    }
+  else
+    {
+    arma_extra_debug_print("op_norm::vec_norm_2_direct_std(): detected possible underflow or overflow");
     
     return op_norm::vec_norm_2_direct_robust(X);
     }
@@ -604,43 +562,16 @@ op_norm::vec_norm_2_direct_std(const Mat<eT>& X, const typename arma_blas_real_o
 
 
 template<typename eT>
-inline
-eT
-op_norm::vec_norm_2_direct_std(const Mat<eT>& X, const typename arma_fp16_real_only<eT>::result* junk)
-  {
-  arma_debug_sigprint();
-  arma_ignore(junk);
-  
-  const uword N = X.n_elem;
-  const eT*   A = X.memptr();
-  
-  // fp16 support must be non-BLAS
-  eT out_val = op_norm::vec_norm_2_direct_mem(N,A);
-  
-  if( (out_val != eT(0)) && arma_isfinite(out_val) )
-    {
-    return (out_val < eT(0)) ? eT(0) : out_val;
-    }
-  else
-    {
-    arma_debug_print("detected possible underflow or overflow");
-    
-    return op_norm::vec_norm_2_direct_robust(X);
-    }
-  }
-
-
-
-template<typename eT>
+arma_hot
 inline
 eT
 op_norm::vec_norm_2_direct_mem(const uword N, const eT* A)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  eT acc = eT(0);
+  eT acc;
   
-  #if (defined(ARMA_SIMPLE_LOOPS) || defined(__FAST_MATH__))
+  #if defined(ARMA_SIMPLE_LOOPS) || (defined(__FINITE_MATH_ONLY__) && (__FINITE_MATH_ONLY__ > 0))
     {
     eT acc1 = eT(0);
     
@@ -648,11 +579,11 @@ op_norm::vec_norm_2_direct_mem(const uword N, const eT* A)
       {
       memory::mark_as_aligned(A);
       
-      for(uword i=0; i<N; ++i)  { const eT tmp_i = A[i];  acc1 += (tmp_i * tmp_i); }
+      for(uword i=0; i<N; ++i)  { const eT tmp_i = A[i];  acc1 += tmp_i * tmp_i; }
       }
     else
       {
-      for(uword i=0; i<N; ++i)  { const eT tmp_i = A[i];  acc1 += (tmp_i * tmp_i); }
+      for(uword i=0; i<N; ++i)  { const eT tmp_i = A[i];  acc1 += tmp_i * tmp_i; }
       }
     
     acc = acc1;
@@ -669,15 +600,15 @@ op_norm::vec_norm_2_direct_mem(const uword N, const eT* A)
       const eT tmp_i = (*A);  A++;
       const eT tmp_j = (*A);  A++;
       
-      acc1 += (tmp_i * tmp_i);
-      acc2 += (tmp_j * tmp_j);
+      acc1 += tmp_i * tmp_i;
+      acc2 += tmp_j * tmp_j;
       }
     
     if((j-1) < N)
       {
       const eT tmp_i = (*A);
       
-      acc1 += (tmp_i * tmp_i);
+      acc1 += tmp_i * tmp_i;
       }
     
     acc = acc1 + acc2;
@@ -690,61 +621,24 @@ op_norm::vec_norm_2_direct_mem(const uword N, const eT* A)
 
 
 template<typename eT>
+arma_hot
 inline
 eT
 op_norm::vec_norm_2_direct_robust(const Mat<eT>& X)
   {
-  arma_debug_sigprint();
-  
-  typedef typename promote_type<eT, float>::result acc_eT;
-  
-  arma_debug_type_print<eT>("eT");
-  arma_debug_type_print<acc_eT>("acc_eT");
+  arma_extra_debug_sigprint();
   
   const uword N = X.n_elem;
+  const eT*   A = X.memptr();
   
-  if(is_fp16<eT>::yes)
-    {
-    // try straightforward type promotion before the default slow algorithm
-    
-    const eT* X_mem = X.memptr();
-    
-    acc_eT acc1 = acc_eT(0);
-    acc_eT acc2 = acc_eT(0);
-    
-    uword j;
-    
-    for(j=1; j<N; j+=2)
-      {
-      const acc_eT tmp_i = acc_eT(*X_mem);  X_mem++;
-      const acc_eT tmp_j = acc_eT(*X_mem);  X_mem++;
-      
-      acc1 += (tmp_i * tmp_i);
-      acc2 += (tmp_j * tmp_j);
-      }
-    
-    if((j-1) < N)
-      {
-      const acc_eT tmp_i = acc_eT(*X_mem);
-      
-      acc1 += (tmp_i * tmp_i);
-      }
-    
-    const acc_eT sqrt_acc = std::sqrt(acc1 + acc2);
-    
-    if( (sqrt_acc != acc_eT(0)) && arma_isfinite(sqrt_acc) )  { return eT(sqrt_acc); }
-    }
-  
-  const eT* A = X.memptr();
-  
-  acc_eT max_val = priv::most_neg<acc_eT>();
+  eT max_val = priv::most_neg<eT>();
   
   uword j;
   
   for(j=1; j<N; j+=2)
     {
-    acc_eT val_i = acc_eT(*A);  A++;
-    acc_eT val_j = acc_eT(*A);  A++;
+    eT val_i = (*A);  A++;
+    eT val_j = (*A);  A++;
     
     val_i = std::abs(val_i);
     val_j = std::abs(val_j);
@@ -755,50 +649,49 @@ op_norm::vec_norm_2_direct_robust(const Mat<eT>& X)
   
   if((j-1) < N)
     {
-    const acc_eT val_i = std::abs(acc_eT(*A));
+    const eT val_i = std::abs(*A);
     
     if(val_i > max_val)  { max_val = val_i; }
     }
   
-  if(max_val == acc_eT(0))  { return eT(0); }
+  if(max_val == eT(0))  { return eT(0); }
   
   const eT* B = X.memptr();
   
-  acc_eT acc1 = acc_eT(0);
-  acc_eT acc2 = acc_eT(0);
+  eT acc1 = eT(0);
+  eT acc2 = eT(0);
   
   for(j=1; j<N; j+=2)
     {
-    acc_eT val_i = acc_eT(*B);  B++;
-    acc_eT val_j = acc_eT(*B);  B++;
+    eT val_i = (*B);  B++;
+    eT val_j = (*B);  B++;
     
     val_i /= max_val;
     val_j /= max_val;
     
-    acc1 += (val_i * val_i);
-    acc2 += (val_j * val_j);
+    acc1 += val_i * val_i;
+    acc2 += val_j * val_j;
     }
   
   if((j-1) < N)
     {
-    const acc_eT val_i = acc_eT(*B) / max_val;
+    const eT val_i = (*B) / max_val;
     
-    acc1 += (val_i * val_i);
+    acc1 += val_i * val_i;
     }
   
-  const acc_eT out_val = std::sqrt(acc1 + acc2) * max_val;
-  
-  return (out_val <= acc_eT(0)) ? eT(0) : eT(out_val);
+  return ( std::sqrt(acc1 + acc2) * max_val ); 
   }
 
 
 
 template<typename T1>
+arma_hot
 inline
 typename T1::pod_type
 op_norm::vec_norm_k(const Proxy<T1>& P, const int k)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::pod_type T;
   
@@ -810,9 +703,17 @@ op_norm::vec_norm_k(const Proxy<T1>& P, const int k)
     
     const uword N = P.get_n_elem();
     
-    for(uword i=0; i<N; ++i)
+    uword i,j;
+    
+    for(i=0, j=1; j<N; i+=2, j+=2)
       {
-      acc += arma_pow(std::abs(A[i]), k);
+      acc += std::pow(std::abs(A[i]), k);
+      acc += std::pow(std::abs(A[j]), k);
+      }
+    
+    if(i < N)
+      {
+      acc += std::pow(std::abs(A[i]), k);
       }
     }
   else
@@ -825,14 +726,14 @@ op_norm::vec_norm_k(const Proxy<T1>& P, const int k)
       for(uword col=0; col < n_cols; ++col)
       for(uword row=0; row < n_rows; ++row)
         {
-        acc += arma_pow(std::abs(P.at(row,col)), k);
+        acc += std::pow(std::abs(P.at(row,col)), k);
         }
       }
     else
       {
       for(uword col=0; col < n_cols; ++col)
         {
-        acc += arma_pow(std::abs(P.at(0,col)), k);
+        acc += std::pow(std::abs(P.at(0,col)), k);
         }
       }
     }
@@ -843,11 +744,12 @@ op_norm::vec_norm_k(const Proxy<T1>& P, const int k)
 
 
 template<typename T1>
+arma_hot
 inline
 typename T1::pod_type
 op_norm::vec_norm_max(const Proxy<T1>& P)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::pod_type T;
   
@@ -908,11 +810,12 @@ op_norm::vec_norm_max(const Proxy<T1>& P)
 
 
 template<typename T1>
+arma_hot
 inline
 typename T1::pod_type
 op_norm::vec_norm_min(const Proxy<T1>& P)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::pod_type T;
   
@@ -972,73 +875,132 @@ op_norm::vec_norm_min(const Proxy<T1>& P)
 
 
 
-template<typename eT>
+template<typename T1>
 inline
-typename get_pod_type<eT>::result
-op_norm::mat_norm_1(const Mat<eT>& X)
+typename T1::pod_type
+op_norm::mat_norm_1(const Proxy<T1>& P)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   // TODO: this can be sped up with a dedicated implementation
-  return as_scalar( max( sum(abs(X), 0), 1) );
+  return as_scalar( max( sum(abs(P.Q), 0), 1) );
   }
 
 
 
-template<typename eT>
+template<typename T1>
 inline
-typename get_pod_type<eT>::result
-op_norm::mat_norm_2(const Mat<eT>& X, const typename arma_blas_real_or_cx_only<eT>::result* junk)
+typename T1::pod_type
+op_norm::mat_norm_2(const Proxy<T1>& P)
   {
-  arma_debug_sigprint();
-  arma_ignore(junk);
+  arma_extra_debug_sigprint();
   
-  typedef typename get_pod_type<eT>::result T;
-  
-  if(X.internal_has_nonfinite())  { arma_warn(1, "norm(): given matrix has non-finite elements"); }
+  typedef typename T1::pod_type   T;
   
   Col<T> S;
+  svd(S, P.Q);
   
-  arma::svd(S, X);
-  
-  const T out_val = (S.n_elem > 0) ? S[0] : T(0);
-  
-  return (out_val <= T(0)) ? T(0) : out_val;
+  return (S.n_elem > 0) ? max(S) : T(0);
   }
 
 
 
-template<typename eT>
+template<typename T1>
 inline
-typename get_pod_type<eT>::result
-op_norm::mat_norm_2(const Mat<eT>& X, const typename arma_fp16_real_or_cx_only<eT>::result* junk)
+typename T1::pod_type
+op_norm::mat_norm_inf(const Proxy<T1>& P)
   {
-  arma_debug_sigprint();
-  arma_ignore(junk);
-  
-  typedef typename get_pod_type<eT>::result T;
-  
-  typedef typename promote_type<eT, float>::result promoted_eT;
-  
-  arma_debug_type_print<eT>("eT");
-  arma_debug_type_print<promoted_eT>("promoted_eT");
-  
-  const Mat<promoted_eT> XX = conv_to< Mat<promoted_eT> >::from(X);
-  
-  return T(op_norm::mat_norm_2(XX));
-  }
-
-
-
-template<typename eT>
-inline
-typename get_pod_type<eT>::result
-op_norm::mat_norm_inf(const Mat<eT>& X)
-  {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   // TODO: this can be sped up with a dedicated implementation
-  return as_scalar( max( sum(abs(X), 1), 0) );
+  return as_scalar( max( sum(abs(P.Q), 1), 0) );
+  }
+
+
+
+//
+// norms for sparse matrices
+
+
+
+template<typename T1>
+inline
+typename T1::pod_type
+op_norm::mat_norm_1(const SpProxy<T1>& P)
+  {
+  arma_extra_debug_sigprint();
+  
+  // TODO: this can be sped up with a dedicated implementation
+  return as_scalar( max( sum(abs(P.Q), 0), 1) );
+  }
+
+
+
+template<typename T1>
+inline
+typename T1::pod_type
+op_norm::mat_norm_2(const SpProxy<T1>& P, const typename arma_real_only<typename T1::elem_type>::result* junk)
+  {
+  arma_extra_debug_sigprint();
+  arma_ignore(junk);
+  
+  // norm = sqrt( largest eigenvalue of (A^H)*A ), where ^H is the conjugate transpose
+  // http://math.stackexchange.com/questions/4368/computing-the-largest-eigenvalue-of-a-very-large-sparse-matrix
+  
+  typedef typename T1::elem_type eT;
+  typedef typename T1::pod_type   T;
+  
+  const unwrap_spmat<typename SpProxy<T1>::stored_type> tmp(P.Q);
+  
+  const SpMat<eT>& A = tmp.M;
+  const SpMat<eT>  B = trans(A);
+  
+  const SpMat<eT>  C = (A.n_rows <= A.n_cols) ? (A*B) : (B*A);
+  
+  const Col<T> eigval = eigs_sym(C, 1);
+  
+  return (eigval.n_elem > 0) ? std::sqrt(eigval[0]) : T(0);
+  }
+
+
+
+template<typename T1>
+inline
+typename T1::pod_type
+op_norm::mat_norm_2(const SpProxy<T1>& P, const typename arma_cx_only<typename T1::elem_type>::result* junk)
+  {
+  arma_extra_debug_sigprint();
+  arma_ignore(junk);
+  
+  //typedef typename T1::elem_type eT;
+  typedef typename T1::pod_type   T;
+  
+  arma_ignore(P);
+  arma_stop_logic_error("norm(): unimplemented norm type for complex sparse matrices");
+  
+  return T(0);
+  
+  // const unwrap_spmat<typename SpProxy<T1>::stored_type> tmp(P.Q);
+  // 
+  // const SpMat<eT>& A = tmp.M;
+  // const SpMat<eT>  B = trans(A);
+  // 
+  // const SpMat<eT>  C = (A.n_rows <= A.n_cols) ? (A*B) : (B*A);
+  // 
+  // const Col<eT> eigval = eigs_gen(C, 1);
+  }
+
+
+
+template<typename T1>
+inline
+typename T1::pod_type
+op_norm::mat_norm_inf(const SpProxy<T1>& P)
+  {
+  arma_extra_debug_sigprint();
+  
+  // TODO: this can be sped up with a dedicated implementation
+  return as_scalar( max( sum(abs(P.Q), 1), 0) );
   }
 
 

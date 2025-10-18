@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,13 +32,13 @@ inline
 void
 op_sqrtmat::apply(Mat< std::complex<typename T1::elem_type> >& out, const mtOp<std::complex<typename T1::elem_type>,T1,op_sqrtmat>& in)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const bool status = op_sqrtmat::apply_direct(out, in.m);
   
   if(status == false)
     {
-    arma_warn(3, "sqrtmat(): given matrix is singular; may not have a square root");
+    arma_debug_warn("sqrtmat(): given matrix seems singular; may not have a square root");
     }
   }
 
@@ -51,13 +49,13 @@ inline
 bool
 op_sqrtmat::apply_direct(Mat< std::complex<typename T1::elem_type> >& out, const Op<T1,op_diagmat>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type T;
   
   const diagmat_proxy<T1> P(expr.m);
   
-  arma_conform_check( (P.n_rows != P.n_cols), "sqrtmat(): given matrix must be square sized" );
+  arma_debug_check( (P.n_rows != P.n_cols), "sqrtmat(): given matrix must be square sized" );
   
   const uword N = P.n_rows;
   
@@ -91,112 +89,40 @@ inline
 bool
 op_sqrtmat::apply_direct(Mat< std::complex<typename T1::elem_type> >& out, const Base<typename T1::elem_type,T1>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type       in_T;
   typedef typename std::complex<in_T> out_T;
   
-  const quasi_unwrap<T1> expr_unwrap(expr.get_ref());
-  const Mat<in_T>& A   = expr_unwrap.M;
+  const Proxy<T1> P(expr.get_ref());
   
-  arma_conform_check( (A.is_square() == false), "sqrtmat(): given matrix must be square sized" );
+  arma_debug_check( (P.get_n_rows() != P.get_n_cols()), "sqrtmat(): given matrix must be square sized" );
   
-  if(A.n_elem == 0)
+  if(P.get_n_elem() == 0)
     {
     out.reset();
     return true;
     }
-  else
-  if(A.n_elem == 1)
-    {
-    out.set_size(1,1);
-    out[0] = std::sqrt( std::complex<in_T>( A[0] ) );
-    return true;
-    }
   
-  if(A.is_diagmat())
-    {
-    arma_debug_print("op_sqrtmat: diag optimisation");
-    
-    const uword N = A.n_rows;
-    
-    out.zeros(N,N);  // aliasing can't happen as op_sqrtmat is defined as cx_mat = op(mat)
-    
-    for(uword i=0; i<N; ++i)
-      {
-      const in_T val = A.at(i,i);
-      
-      if(val >= in_T(0))
-        {
-        out.at(i,i) = std::sqrt(val);
-        }
-      else
-        {
-        out.at(i,i) = std::sqrt( out_T(val) );
-        }
-      }
-    
-    return true;
-    }
-  
-  const bool try_sympd = arma_config::optimise_sym && sym_helper::guess_sympd(A);
-  
-  if(try_sympd)
-    {
-    arma_debug_print("op_sqrtmat: attempting sympd optimisation");
-    
-    // if matrix A is sympd, all its eigenvalues are positive
-    
-    Col<in_T> eigval;
-    Mat<in_T> eigvec;
-    
-    const bool eig_status = eig_sym_helper(eigval, eigvec, A, 'd', "sqrtmat()");
-    
-    if(eig_status)
-      {
-      // ensure each eigenvalue is > 0
-      
-      const uword N          = eigval.n_elem;
-      const in_T* eigval_mem = eigval.memptr();
-      
-      bool all_pos = true;
-      
-      for(uword i=0; i<N; ++i)  { all_pos = (eigval_mem[i] <= in_T(0)) ? false : all_pos; }
-      
-      if(all_pos)
-        {
-        eigval = sqrt(eigval);
-        
-        out = conv_to< Mat<out_T> >::from( eigvec * diagmat(eigval) * eigvec.t() );
-        
-        return true;
-        }
-      }
-    
-    arma_debug_print("op_sqrtmat: sympd optimisation failed");
-    
-    // fallthrough if eigen decomposition failed or an eigenvalue is <= 0
-    }
-  
+  typename Proxy<T1>::ea_type Pea = P.get_ea();
   
   Mat<out_T> U;
-  Mat<out_T> S(A.n_rows, A.n_cols, arma_nozeros_indicator());
+  Mat<out_T> S(P.get_n_rows(), P.get_n_cols());
   
-  const  in_T* Amem = A.memptr();
-        out_T* Smem = S.memptr();
+  out_T* Smem = S.memptr();
   
-  const uword n_elem = A.n_elem;
+  const uword N = P.get_n_elem();
   
-  for(uword i=0; i<n_elem; ++i)
+  for(uword i=0; i<N; ++i)
     {
-    Smem[i] = std::complex<in_T>( Amem[i] );
+    Smem[i] = std::complex<in_T>( Pea[i] );
     }
   
   const bool schur_ok = auxlib::schur(U,S);
   
   if(schur_ok == false)
     {
-    arma_debug_print("sqrtmat(): schur decomposition failed");
+    arma_extra_debug_print("sqrtmat(): schur decomposition failed");
     out.soft_reset();
     return false;
     }
@@ -219,13 +145,13 @@ inline
 void
 op_sqrtmat_cx::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_sqrtmat_cx>& in)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const bool status = op_sqrtmat_cx::apply_direct(out, in.m);
   
   if(status == false)
     {
-    arma_warn(3, "sqrtmat(): given matrix is singular; may not have a square root");
+    arma_debug_warn("sqrtmat(): given matrix seems singular; may not have a square root");
     }
   }
 
@@ -236,7 +162,7 @@ inline
 bool
 op_sqrtmat_cx::apply_direct(Mat<typename T1::elem_type>& out, const Op<T1,op_diagmat>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -267,11 +193,11 @@ inline
 bool
 op_sqrtmat_cx::apply_direct_noalias(Mat<typename T1::elem_type>& out, const diagmat_proxy<T1>& P)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
-  arma_conform_check( (P.n_rows != P.n_cols), "sqrtmat(): given matrix must be square sized" );
+  arma_debug_check( (P.n_rows != P.n_cols), "sqrtmat(): given matrix must be square sized" );
   
   const uword N = P.n_rows;
   
@@ -300,86 +226,26 @@ inline
 bool
 op_sqrtmat_cx::apply_direct(Mat<typename T1::elem_type>& out, const Base<typename T1::elem_type,T1>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  typedef typename T1::pod_type   T;
   typedef typename T1::elem_type eT;
   
   Mat<eT> U;
   Mat<eT> S = expr.get_ref();
   
-  arma_conform_check( (S.n_rows != S.n_cols), "sqrtmat(): given matrix must be square sized" );
-  
-  if(S.n_elem == 0)
+  if(S.is_empty())
     {
     out.reset();
     return true;
     }
-  else
-  if(S.n_elem == 1)
-    {
-    out.set_size(1,1);
-    out[0] = std::sqrt(S[0]);
-    return true;
-    }
   
-  if(S.is_diagmat())
-    {
-    arma_debug_print("op_sqrtmat_cx: diag optimisation");
-    
-    const uword N = S.n_rows;
-    
-    out.zeros(N,N);  // aliasing can't happen as S is generated
-    
-    for(uword i=0; i<N; ++i)  { out.at(i,i) = std::sqrt( S.at(i,i) ); }
-    
-    return true;
-    }
-  
-  const bool try_sympd = arma_config::optimise_sym && sym_helper::guess_sympd(S);
-  
-  if(try_sympd)
-    {
-    arma_debug_print("op_sqrtmat_cx: attempting sympd optimisation");
-    
-    // if matrix S is sympd, all its eigenvalues are positive
-    
-    Col< T> eigval;
-    Mat<eT> eigvec;
-    
-    const bool eig_status = eig_sym_helper(eigval, eigvec, S, 'd', "sqrtmat()");
-    
-    if(eig_status)
-      {
-      // ensure each eigenvalue is > 0
-      
-      const uword N          = eigval.n_elem;
-      const T*    eigval_mem = eigval.memptr();
-      
-      bool all_pos = true;
-      
-      for(uword i=0; i<N; ++i)  { all_pos = (eigval_mem[i] <= T(0)) ? false : all_pos; }
-      
-      if(all_pos)
-        {
-        eigval = sqrt(eigval);
-        
-        out = eigvec * diagmat(eigval) * eigvec.t();
-        
-        return true;
-        }
-      }
-    
-    arma_debug_print("op_sqrtmat_cx: sympd optimisation failed");
-    
-    // fallthrough if eigen decomposition failed or an eigenvalue is <= 0
-    }
+  arma_debug_check( (S.n_rows != S.n_cols), "sqrtmat(): given matrix must be square sized" );
   
   const bool schur_ok = auxlib::schur(U, S);
   
   if(schur_ok == false)
     {
-    arma_debug_print("sqrtmat(): schur decomposition failed");
+    arma_extra_debug_print("sqrtmat(): schur decomposition failed");
     out.soft_reset();
     return false;
     }
@@ -452,7 +318,7 @@ inline
 void
 op_sqrtmat_sympd::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_sqrtmat_sympd>& in)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const bool status = op_sqrtmat_sympd::apply_direct(out, in.m);
   
@@ -470,52 +336,22 @@ inline
 bool
 op_sqrtmat_sympd::apply_direct(Mat<typename T1::elem_type>& out, const Base<typename T1::elem_type,T1>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   #if defined(ARMA_USE_LAPACK)
     {
-    typedef typename T1::elem_type eT;
     typedef typename T1::pod_type   T;
+    typedef typename T1::elem_type eT;
     
     const unwrap<T1>   U(expr.get_ref());
     const Mat<eT>& X = U.M;
     
-    arma_conform_check( (X.is_square() == false), "sqrtmat_sympd(): given matrix must be square sized" );
-    
-    if((arma_config::check_conform) && (is_cx<eT>::yes) && (sym_helper::check_diag_imag(X) == false))
-      {
-      arma_warn(1, "sqrtmat_sympd(): imaginary components on the diagonal are non-zero");
-      }
-    
-    if(is_op_diagmat<T1>::value || X.is_diagmat())
-      {
-      arma_debug_print("op_sqrtmat_sympd: diag optimisation");
-      
-      out = X;
-      
-      eT* colmem = out.memptr();
-      
-      const uword N = X.n_rows;
-      
-      for(uword i=0; i<N; ++i)
-        {
-        eT& out_ii      = colmem[i];
-         T  out_ii_real = access::tmp_real(out_ii);
-        
-        if(out_ii_real < T(0))  { return false; }
-        
-        out_ii = std::sqrt(out_ii);
-        
-        colmem += N;
-        }
-      
-      return true;
-      }
+    arma_debug_check( (X.is_square() == false), "sqrtmat_sympd(): given matrix must be square sized" );
     
     Col< T> eigval;
     Mat<eT> eigvec;
     
-    const bool status = eig_sym_helper(eigval, eigvec, X, 'd', "sqrtmat_sympd()");
+    const bool status = auxlib::eig_sym_dc(eigval, eigvec, X);
     
     if(status == false)  { return false; }
     

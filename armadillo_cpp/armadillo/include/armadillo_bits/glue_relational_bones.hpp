@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +19,10 @@
 
 
 
-struct glue_rel_lt
-  : public traits_glue_or
+class glue_rel_lt
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat <uword>& out, const mtGlue<uword, T1, T2, glue_rel_lt>& X);
   
@@ -33,9 +32,10 @@ struct glue_rel_lt
 
 
 
-struct glue_rel_gt
-  : public traits_glue_or
+class glue_rel_gt
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat <uword>& out, const mtGlue<uword, T1, T2, glue_rel_gt>& X);
   
@@ -45,9 +45,10 @@ struct glue_rel_gt
 
 
 
-struct glue_rel_lteq
-  : public traits_glue_or
+class glue_rel_lteq
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat <uword>& out, const mtGlue<uword, T1, T2, glue_rel_lteq>& X);
   
@@ -57,9 +58,10 @@ struct glue_rel_lteq
 
 
 
-struct glue_rel_gteq
-  : public traits_glue_or
+class glue_rel_gteq
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat <uword>& out, const mtGlue<uword, T1, T2, glue_rel_gteq>& X);
   
@@ -69,9 +71,10 @@ struct glue_rel_gteq
 
 
 
-struct glue_rel_eq
-  : public traits_glue_or
+class glue_rel_eq
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat <uword>& out, const mtGlue<uword, T1, T2, glue_rel_eq>& X);
   
@@ -81,9 +84,10 @@ struct glue_rel_eq
 
 
 
-struct glue_rel_noteq
-  : public traits_glue_or
+class glue_rel_noteq
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat <uword>& out, const mtGlue<uword, T1, T2, glue_rel_noteq>& X);
   
@@ -93,9 +97,10 @@ struct glue_rel_noteq
 
 
 
-struct glue_rel_and
-  : public traits_glue_or
+class glue_rel_and
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat <uword>& out, const mtGlue<uword, T1, T2, glue_rel_and>& X);
   
@@ -105,9 +110,10 @@ struct glue_rel_and
 
 
 
-struct glue_rel_or
-  : public traits_glue_or
+class glue_rel_or
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat <uword>& out, const mtGlue<uword, T1, T2, glue_rel_or>& X);
   

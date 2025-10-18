@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,30 +18,16 @@
 //! @{
 
 
-//! extract main diagonal from matrix
+//! extract a diagonal from a matrix
 template<typename T1>
 arma_warn_unused
 arma_inline
 const Op<T1, op_diagvec>
-diagvec(const Base<typename T1::elem_type,T1>& X)
+diagvec(const Base<typename T1::elem_type,T1>& X, const sword diag_id = 0)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  return Op<T1, op_diagvec>(X.get_ref());
-  }
-
-
-
-//! extract arbitrary diagonal from matrix
-template<typename T1>
-arma_warn_unused
-arma_inline
-const Op<T1, op_diagvec2>
-diagvec(const Base<typename T1::elem_type,T1>& X, const sword diag_id)
-  {
-  arma_debug_sigprint();
-  
-  return Op<T1, op_diagvec2>(X.get_ref(), ((diag_id < 0) ? -diag_id : diag_id), ((diag_id < 0) ? 1 : 0) );
+  return Op<T1, op_diagvec>(X.get_ref(), ((diag_id < 0) ? -diag_id : diag_id), ((diag_id < 0) ? 1 : 0) );
   }
 
 
@@ -51,12 +35,12 @@ diagvec(const Base<typename T1::elem_type,T1>& X, const sword diag_id)
 template<typename T1>
 arma_warn_unused
 arma_inline
-const mtSpReduceOp<typename T1::elem_type, T1, op_sp_diagvec>
+const SpOp<T1, spop_diagvec>
 diagvec(const SpBase<typename T1::elem_type,T1>& X, const sword diag_id = 0)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  return mtSpReduceOp<typename T1::elem_type, T1, op_sp_diagvec>(X.get_ref(), ((diag_id < 0) ? -diag_id : diag_id), ((diag_id < 0) ? 1 : 0) );
+  return SpOp<T1, spop_diagvec>(X.get_ref(), ((diag_id < 0) ? -diag_id : diag_id), ((diag_id < 0) ? 1 : 0) );
   }
 
 

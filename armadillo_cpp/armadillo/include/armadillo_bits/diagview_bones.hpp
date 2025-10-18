@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,18 +20,17 @@
 
 //! Class for storing data required to extract and set the diagonals of a matrix
 template<typename eT>
-class diagview : public Base< eT, diagview<eT> >
+class diagview : public Base<eT, diagview<eT> >
   {
   public:
   
   typedef eT                                elem_type;
   typedef typename get_pod_type<eT>::result pod_type;
   
-  const Mat<eT>& m;
+  arma_aligned const Mat<eT>& m;
   
-  static constexpr bool is_row  = false;
-  static constexpr bool is_col  = true;
-  static constexpr bool is_xvec = false;
+  static const bool is_row = false;
+  static const bool is_col = true;
   
   const uword row_offset;
   const uword col_offset;
@@ -41,21 +38,17 @@ class diagview : public Base< eT, diagview<eT> >
   const uword n_rows;     // equal to n_elem
   const uword n_elem;
   
-  static constexpr uword n_cols = 1;
+  static const uword n_cols = 1;
   
   
   protected:
   
   arma_inline diagview(const Mat<eT>& in_m, const uword in_row_offset, const uword in_col_offset, const uword len);
-
+  
   
   public:
   
   inline ~diagview();
-  inline  diagview() = delete;
-  
-  inline  diagview(const diagview&  in);
-  inline  diagview(      diagview&& in);
   
   inline void operator=(const diagview& x);
   
@@ -89,11 +82,11 @@ class diagview : public Base< eT, diagview<eT> >
   arma_inline eT  operator()(const uword in_n_row, const uword in_n_col) const;
   
   
+  arma_inline const Op<diagview<eT>,op_htrans>  t() const;
+  arma_inline const Op<diagview<eT>,op_htrans> ht() const;
+  arma_inline const Op<diagview<eT>,op_strans> st() const;
+  
   inline void replace(const eT old_val, const eT new_val);
-  
-  inline void clean(const pod_type threshold);
-  
-  inline void clamp(const eT min_val, const eT max_val);
   
   inline void fill(const eT val);
   inline void zeros();
@@ -108,12 +101,14 @@ class diagview : public Base< eT, diagview<eT> >
   inline static void schur_inplace(Mat<eT>& out, const diagview& in);
   inline static void   div_inplace(Mat<eT>& out, const diagview& in);
   
-  template<typename eT2>
-  inline bool is_alias(const Mat<eT2>& X) const;
   
+  private:
   
   friend class Mat<eT>;
   friend class subview<eT>;
+  
+  diagview();
+  //diagview(const diagview&);  // making this private causes an error under gcc 4.1/4.2, but not 4.3
   };
 
 

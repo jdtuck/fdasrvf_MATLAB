@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +23,7 @@ template<typename obj_type>
 inline
 running_stat_vec<obj_type>::~running_stat_vec()
   {
-  arma_debug_sigprint_this(this);
+  arma_extra_debug_sigprint_this(this);
   }
 
 
@@ -35,7 +33,7 @@ inline
 running_stat_vec<obj_type>::running_stat_vec(const bool in_calc_cov)
   : calc_cov(in_calc_cov)
   {
-  arma_debug_sigprint_this(this);
+  arma_extra_debug_sigprint_this(this);
   }
 
 
@@ -53,7 +51,7 @@ running_stat_vec<obj_type>::running_stat_vec(const running_stat_vec<obj_type>& i
   , min_val_norm(in_rsv.min_val_norm)
   , max_val_norm(in_rsv.max_val_norm)
   {
-  arma_debug_sigprint_this(this);
+  arma_extra_debug_sigprint_this(this);
   }
 
 
@@ -63,7 +61,7 @@ inline
 running_stat_vec<obj_type>&
 running_stat_vec<obj_type>::operator=(const running_stat_vec<obj_type>& in_rsv)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   access::rw(calc_cov) = in_rsv.calc_cov;
   
@@ -84,11 +82,12 @@ running_stat_vec<obj_type>::operator=(const running_stat_vec<obj_type>& in_rsv)
 //! update statistics to reflect new sample
 template<typename obj_type>
 template<typename T1>
+arma_hot
 inline
 void
 running_stat_vec<obj_type>::operator() (const Base<typename running_stat_vec<obj_type>::T, T1>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const quasi_unwrap<T1> tmp(X.get_ref());
   const Mat<T>& sample = tmp.M;
@@ -98,9 +97,9 @@ running_stat_vec<obj_type>::operator() (const Base<typename running_stat_vec<obj
     return;
     }
   
-  if( sample.internal_has_nonfinite() )
+  if( sample.is_finite() == false )
     {
-    arma_warn(3, "running_stat_vec: non-finite sample ignored");
+    arma_debug_warn("running_stat_vec: sample ignored as it has non-finite elements");
     return;
     }
   
@@ -111,11 +110,12 @@ running_stat_vec<obj_type>::operator() (const Base<typename running_stat_vec<obj
 
 template<typename obj_type>
 template<typename T1>
+arma_hot
 inline
 void
 running_stat_vec<obj_type>::operator() (const Base< std::complex<typename running_stat_vec<obj_type>::T>, T1>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const quasi_unwrap<T1> tmp(X.get_ref());
   
@@ -126,9 +126,9 @@ running_stat_vec<obj_type>::operator() (const Base< std::complex<typename runnin
     return;
     }
   
-  if( sample.internal_has_nonfinite() )
+  if( sample.is_finite() == false )
     {
-    arma_warn(3, "running_stat_vec: non-finite sample ignored");
+    arma_debug_warn("running_stat_vec: sample ignored as it has non-finite elements");
     return;
     }
   
@@ -143,7 +143,7 @@ inline
 void
 running_stat_vec<obj_type>::reset()
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   counter.reset();
   
@@ -172,7 +172,7 @@ inline
 const typename running_stat_vec<obj_type>::return_type1&
 running_stat_vec<obj_type>::mean() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return r_mean;
   }
@@ -185,7 +185,7 @@ inline
 const typename running_stat_vec<obj_type>::return_type2&
 running_stat_vec<obj_type>::var(const uword norm_type)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const T N = counter.value();
   
@@ -221,7 +221,7 @@ inline
 typename running_stat_vec<obj_type>::return_type2
 running_stat_vec<obj_type>::stddev(const uword norm_type) const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const T N = counter.value();
   
@@ -253,9 +253,9 @@ inline
 const Mat< typename running_stat_vec<obj_type>::eT >&
 running_stat_vec<obj_type>::cov(const uword norm_type)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  if(calc_cov)
+  if(calc_cov == true)
     {
     const T N = counter.value();
     
@@ -300,7 +300,7 @@ inline
 const typename running_stat_vec<obj_type>::return_type1&
 running_stat_vec<obj_type>::min() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return min_val;
   }
@@ -313,7 +313,7 @@ inline
 const typename running_stat_vec<obj_type>::return_type1&
 running_stat_vec<obj_type>::max() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return max_val;
   }
@@ -325,7 +325,7 @@ inline
 typename running_stat_vec<obj_type>::return_type1
 running_stat_vec<obj_type>::range() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return (max_val - min_val);
   }
@@ -338,7 +338,7 @@ inline
 typename running_stat_vec<obj_type>::T
 running_stat_vec<obj_type>::count() const
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return counter.value();
   }
@@ -360,7 +360,7 @@ running_stat_vec_aux::update_stats
   const typename arma_not_cx<typename running_stat_vec<obj_type>::eT>::result* junk
   )
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename running_stat_vec<obj_type>::eT eT;
@@ -370,7 +370,7 @@ running_stat_vec_aux::update_stats
   
   if(N > T(0))
     {
-    arma_conform_assert_same_size(x.r_mean, sample, "running_stat_vec(): dimensionality mismatch");
+    arma_debug_assert_same_size(x.r_mean, sample, "running_stat_vec(): dimensionality mismatch");
     
     const uword n_elem      = sample.n_elem;
     const eT*   sample_mem  = sample.memptr();
@@ -382,7 +382,7 @@ running_stat_vec_aux::update_stats
     const T  N_plus_1   = x.counter.value_plus_1();
     const T  N_minus_1  = x.counter.value_minus_1();
     
-    if(x.calc_cov)
+    if(x.calc_cov == true)
       {
       Mat<eT>& tmp1 = x.tmp1;
       Mat<eT>& tmp2 = x.tmp2;
@@ -427,13 +427,13 @@ running_stat_vec_aux::update_stats
     }
   else
     {
-    arma_conform_check( (sample.is_vec() == false), "running_stat_vec(): given sample must be a vector" );
+    arma_debug_check( (sample.is_vec() == false), "running_stat_vec(): given sample is not a vector");
     
     x.r_mean.set_size(sample.n_rows, sample.n_cols);
     
     x.r_var.zeros(sample.n_rows, sample.n_cols);
     
-    if(x.calc_cov)
+    if(x.calc_cov == true)
       {
       x.r_cov.zeros(sample.n_elem, sample.n_elem);
       }
@@ -475,7 +475,7 @@ running_stat_vec_aux::update_stats
   const typename       arma_not_cx<typename running_stat_vec<obj_type>::eT>::result* junk
   )
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename running_stat_vec<obj_type>::eT eT;
@@ -496,7 +496,7 @@ running_stat_vec_aux::update_stats
   const typename arma_cx_only<typename running_stat_vec<obj_type>::eT>::result* junk
   )
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename running_stat_vec<obj_type>::eT eT;
@@ -517,7 +517,7 @@ running_stat_vec_aux::update_stats
   const typename arma_cx_only<typename running_stat_vec<obj_type>::eT>::result* junk
   )
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   arma_ignore(junk);
   
   typedef typename running_stat_vec<obj_type>::eT eT;
@@ -527,7 +527,7 @@ running_stat_vec_aux::update_stats
   
   if(N > T(0))
     {
-    arma_conform_assert_same_size(x.r_mean, sample, "running_stat_vec(): dimensionality mismatch");
+    arma_debug_assert_same_size(x.r_mean, sample, "running_stat_vec(): dimensionality mismatch");
     
     const uword n_elem           = sample.n_elem;
     const eT*   sample_mem       = sample.memptr();
@@ -541,7 +541,7 @@ running_stat_vec_aux::update_stats
     const T  N_plus_1   = x.counter.value_plus_1();
     const T  N_minus_1  = x.counter.value_minus_1();
     
-    if(x.calc_cov)
+    if(x.calc_cov == true)
       {
       Mat<eT>& tmp1 = x.tmp1;
       Mat<eT>& tmp2 = x.tmp2;
@@ -588,13 +588,13 @@ running_stat_vec_aux::update_stats
     }
   else
     {
-    arma_conform_check( (sample.is_vec() == false), "running_stat_vec(): given sample must be a vector" );
+    arma_debug_check( (sample.is_vec() == false), "running_stat_vec(): given sample is not a vector");
     
     x.r_mean.set_size(sample.n_rows, sample.n_cols);
     
     x.r_var.zeros(sample.n_rows, sample.n_cols);
     
-    if(x.calc_cov)
+    if(x.calc_cov == true)
       {
       x.r_cov.zeros(sample.n_elem, sample.n_elem);
       }

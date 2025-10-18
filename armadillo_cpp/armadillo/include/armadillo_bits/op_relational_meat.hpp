@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -258,7 +256,7 @@ inline
 void
 op_rel_lt_pre::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_lt_pre>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_pre( < );
   }
@@ -270,7 +268,7 @@ inline
 void
 op_rel_gt_pre::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_gt_pre>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_pre( > );
   }
@@ -282,7 +280,7 @@ inline
 void
 op_rel_lteq_pre::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_lteq_pre>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_pre( <= );
   }
@@ -294,7 +292,7 @@ inline
 void
 op_rel_gteq_pre::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_gteq_pre>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_pre( >= );
   }
@@ -306,7 +304,7 @@ inline
 void
 op_rel_lt_post::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_lt_post>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_post( < );
   }
@@ -318,7 +316,7 @@ inline
 void
 op_rel_gt_post::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_gt_post>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_post( > );
   }
@@ -330,7 +328,7 @@ inline
 void
 op_rel_lteq_post::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_lteq_post>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_post( <= );
   }
@@ -342,7 +340,7 @@ inline
 void
 op_rel_gteq_post::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_gteq_post>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_post( >= );
   }
@@ -354,7 +352,7 @@ inline
 void
 op_rel_eq::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_eq>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_post( == );
   }
@@ -366,7 +364,7 @@ inline
 void
 op_rel_noteq::apply(Mat<uword>& out, const mtOp<uword, T1, op_rel_noteq>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_mat_post( != );
   }
@@ -384,7 +382,7 @@ inline
 void
 op_rel_lt_pre::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_lt_pre>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_pre( < );
   }
@@ -396,7 +394,7 @@ inline
 void
 op_rel_gt_pre::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_gt_pre>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_pre( > );
   }
@@ -408,7 +406,7 @@ inline
 void
 op_rel_lteq_pre::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_lteq_pre>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_pre( <= );
   }
@@ -420,7 +418,7 @@ inline
 void
 op_rel_gteq_pre::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_gteq_pre>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_pre( >= );
   }
@@ -432,7 +430,7 @@ inline
 void
 op_rel_lt_post::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_lt_post>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_post( < );
   }
@@ -444,7 +442,7 @@ inline
 void
 op_rel_gt_post::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_gt_post>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_post( > );
   }
@@ -456,7 +454,7 @@ inline
 void
 op_rel_lteq_post::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_lteq_post>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_post( <= );
   }
@@ -468,7 +466,7 @@ inline
 void
 op_rel_gteq_post::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_gteq_post>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_post( >= );
   }
@@ -480,7 +478,7 @@ inline
 void
 op_rel_eq::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_eq>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_post( == );
   }
@@ -492,7 +490,7 @@ inline
 void
 op_rel_noteq::apply(Cube<uword>& out, const mtOpCube<uword, T1, op_rel_noteq>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   arma_applier_cube_post( != );
   }

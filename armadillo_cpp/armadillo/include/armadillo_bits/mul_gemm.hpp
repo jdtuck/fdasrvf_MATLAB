@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,10 +21,13 @@
 
 //! for tiny square matrices, size <= 4x4
 template<const bool do_trans_A=false, const bool use_alpha=false, const bool use_beta=false>
-struct gemm_emul_tinysq
+class gemm_emul_tinysq
   {
+  public:
+  
+  
   template<typename eT, typename TA, typename TB>
-  arma_cold
+  arma_hot
   inline
   static
   void
@@ -39,18 +40,14 @@ struct gemm_emul_tinysq
     const eT       beta  = eT(0)
     )
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     
     switch(A.n_rows)
       {
       case  4:  gemv_emul_tinysq<do_trans_A, use_alpha, use_beta>::apply( C.colptr(3), A, B.colptr(3), alpha, beta );
-      // fallthrough
       case  3:  gemv_emul_tinysq<do_trans_A, use_alpha, use_beta>::apply( C.colptr(2), A, B.colptr(2), alpha, beta );
-      // fallthrough
       case  2:  gemv_emul_tinysq<do_trans_A, use_alpha, use_beta>::apply( C.colptr(1), A, B.colptr(1), alpha, beta );
-      // fallthrough
       case  1:  gemv_emul_tinysq<do_trans_A, use_alpha, use_beta>::apply( C.colptr(0), A, B.colptr(0), alpha, beta );
-      // fallthrough
       default:  ;
       }
     }
@@ -59,160 +56,12 @@ struct gemm_emul_tinysq
 
 
 
-struct gemm_emul_large_mp_helper
-  {
-  template<typename eT>
-  arma_hot
-  inline
-  static
-  void
-  copy_row(eT* out_mem, const Mat<eT>& in, const uword row)
-    {
-    const uword n_rows = in.n_rows;
-    const uword n_cols = in.n_cols;
-    
-    const eT* in_mem_row = in.memptr() + row;
-    
-    for(uword i=0; i < n_cols; ++i)
-      {
-      out_mem[i] = (*in_mem_row);
-      
-      in_mem_row += n_rows;
-      }
-    }
-  };
-
-
-
-#if defined(ARMA_USE_OPENMP)
 //! emulation of gemm(), for non-complex matrices only, as it assumes only simple transposes (ie. doesn't do hermitian transposes)
-//! parallelised version
 template<const bool do_trans_A=false, const bool do_trans_B=false, const bool use_alpha=false, const bool use_beta=false>
-struct gemm_emul_large_mp
+class gemm_emul_large
   {
-  template<typename eT, typename TA, typename TB>
-  arma_hot
-  inline
-  static
-  void
-  apply
-    (
-          Mat<eT>& C,
-    const TA&      A,
-    const TB&      B,
-    const eT       alpha = eT(1),
-    const eT       beta  = eT(0)
-    )
-    {
-    arma_debug_sigprint();
-    
-    const uword A_n_rows = A.n_rows;
-    const uword A_n_cols = A.n_cols;
-    
-    const uword B_n_rows = B.n_rows;
-    const uword B_n_cols = B.n_cols;
-    
-    if( (do_trans_A == false) && (do_trans_B == false) )
-      {
-      const uword n_threads = uword(mp_thread_limit::get());
-      
-      podarray<eT> tmp(A_n_cols * n_threads, arma_nozeros_indicator());
-      
-      eT* tmp_mem = tmp.memptr();
-      
-      #pragma omp parallel for schedule(static) num_threads(int(n_threads))
-      for(uword row_A=0; row_A < A_n_rows; ++row_A)
-        {
-        const uword thread_id = uword(omp_get_thread_num());
-        
-        eT* A_rowdata = tmp_mem + (A_n_cols * thread_id);
-        
-        gemm_emul_large_mp_helper::copy_row(A_rowdata, A, row_A);
-        
-        for(uword col_B=0; col_B < B_n_cols; ++col_B)
-          {
-          const eT acc = op_dot::direct_dot(B_n_rows, A_rowdata, B.colptr(col_B));
-          
-               if( (use_alpha == false) && (use_beta == false) )  { C.at(row_A,col_B) =       acc;                          }
-          else if( (use_alpha == true ) && (use_beta == false) )  { C.at(row_A,col_B) = alpha*acc;                          }
-          else if( (use_alpha == false) && (use_beta == true ) )  { C.at(row_A,col_B) =       acc + beta*C.at(row_A,col_B); }
-          else if( (use_alpha == true ) && (use_beta == true ) )  { C.at(row_A,col_B) = alpha*acc + beta*C.at(row_A,col_B); }
-          }
-        }
-      }
-    else
-    if( (do_trans_A == true) && (do_trans_B == false) )
-      {
-      const int n_threads = mp_thread_limit::get();
-      
-      #pragma omp parallel for schedule(static) num_threads(n_threads)
-      for(uword col_A=0; col_A < A_n_cols; ++col_A)
-        {
-        // col_A is interpreted as row_A when storing the results in matrix C
-        
-        const eT* A_coldata = A.colptr(col_A);
-        
-        for(uword col_B=0; col_B < B_n_cols; ++col_B)
-          {
-          const eT acc = op_dot::direct_dot(B_n_rows, A_coldata, B.colptr(col_B));
-          
-               if( (use_alpha == false) && (use_beta == false) )  { C.at(col_A,col_B) =       acc;                          }
-          else if( (use_alpha == true ) && (use_beta == false) )  { C.at(col_A,col_B) = alpha*acc;                          }
-          else if( (use_alpha == false) && (use_beta == true ) )  { C.at(col_A,col_B) =       acc + beta*C.at(col_A,col_B); }
-          else if( (use_alpha == true ) && (use_beta == true ) )  { C.at(col_A,col_B) = alpha*acc + beta*C.at(col_A,col_B); }
-          }
-        }
-      }
-    else
-    if( (do_trans_A == false) && (do_trans_B == true) )
-      {
-      Mat<eT> BB;
-      op_strans::apply_mat_noalias(BB, B);
-      
-      gemm_emul_large_mp<false, false, use_alpha, use_beta>::apply(C, A, BB, alpha, beta);
-      }
-    else
-    if( (do_trans_A == true) && (do_trans_B == true) )
-      {
-      // using trans(A)*trans(B) = trans(B*A) equivalency; assuming no hermitian transpose
-      
-      const uword n_threads = uword(mp_thread_limit::get());
-      
-      podarray<eT> tmp(B_n_cols * n_threads, arma_nozeros_indicator());
-      
-      eT* tmp_mem = tmp.memptr();
-      
-      #pragma omp parallel for schedule(static) num_threads(int(n_threads))
-      for(uword row_B=0; row_B < B_n_rows; ++row_B)
-        {
-        const uword thread_id = uword(omp_get_thread_num());
-        
-        eT* B_rowdata = tmp_mem + (B_n_cols * thread_id);
-        
-        gemm_emul_large_mp_helper::copy_row(B_rowdata, B, row_B);
-        
-        for(uword col_A=0; col_A < A_n_cols; ++col_A)
-          {
-          const eT acc = op_dot::direct_dot(A_n_rows, B_rowdata, A.colptr(col_A));
-          
-               if( (use_alpha == false) && (use_beta == false) )  { C.at(col_A,row_B) =       acc;                          }
-          else if( (use_alpha == true ) && (use_beta == false) )  { C.at(col_A,row_B) = alpha*acc;                          }
-          else if( (use_alpha == false) && (use_beta == true ) )  { C.at(col_A,row_B) =       acc + beta*C.at(col_A,row_B); }
-          else if( (use_alpha == true ) && (use_beta == true ) )  { C.at(col_A,row_B) = alpha*acc + beta*C.at(col_A,row_B); }
-          }
-        }
-      }
-    }
+  public:
   
-  };
-#endif
-
-
-
-//! emulation of gemm(), for non-complex matrices only, as it assumes only simple transposes (ie. doesn't do hermitian transposes)
-template<const bool do_trans_A=false, const bool do_trans_B=false, const bool use_alpha=false, const bool use_beta=false>
-struct gemm_emul_large
-  {
   template<typename eT, typename TA, typename TB>
   arma_hot
   inline
@@ -227,28 +76,13 @@ struct gemm_emul_large
     const eT       beta  = eT(0)
     )
     {
-    arma_debug_sigprint();
-    
+    arma_extra_debug_sigprint();
+
     const uword A_n_rows = A.n_rows;
     const uword A_n_cols = A.n_cols;
     
     const uword B_n_rows = B.n_rows;
     const uword B_n_cols = B.n_cols;
-    
-    #if defined(ARMA_USE_OPENMP)
-      {
-      // TODO: replace with more sophisticated threshold mechanism
-      
-      constexpr uword threshold = uword(30);
-      
-      if( (A_n_rows >= threshold) && (A_n_cols >= threshold) && (B_n_rows >= threshold) && (B_n_cols >= threshold) && (mp_thread_limit::in_parallel() == false) )
-        {
-        gemm_emul_large_mp<do_trans_A, do_trans_B, use_alpha, use_beta>::apply(C,A,B,alpha,beta);
-        
-        return;
-        }
-      }
-    #endif
     
     if( (do_trans_A == false) && (do_trans_B == false) )
       {
@@ -262,7 +96,7 @@ struct gemm_emul_large
         
         for(uword col_B=0; col_B < B_n_cols; ++col_B)
           {
-          const eT acc = op_dot::direct_dot(B_n_rows, A_rowdata, B.colptr(col_B));
+          const eT acc = op_dot::direct_dot_arma(B_n_rows, A_rowdata, B.colptr(col_B));
           
                if( (use_alpha == false) && (use_beta == false) )  { C.at(row_A,col_B) =       acc;                          }
           else if( (use_alpha == true ) && (use_beta == false) )  { C.at(row_A,col_B) = alpha*acc;                          }
@@ -282,7 +116,7 @@ struct gemm_emul_large
         
         for(uword col_B=0; col_B < B_n_cols; ++col_B)
           {
-          const eT acc = op_dot::direct_dot(B_n_rows, A_coldata, B.colptr(col_B));
+          const eT acc = op_dot::direct_dot_arma(B_n_rows, A_coldata, B.colptr(col_B));
           
                if( (use_alpha == false) && (use_beta == false) )  { C.at(col_A,col_B) =       acc;                          }
           else if( (use_alpha == true ) && (use_beta == false) )  { C.at(col_A,col_B) = alpha*acc;                          }
@@ -318,7 +152,7 @@ struct gemm_emul_large
         
         for(uword col_A=0; col_A < A_n_cols; ++col_A)
           {
-          const eT acc = op_dot::direct_dot(A_n_rows, B_rowdata, A.colptr(col_A));
+          const eT acc = op_dot::direct_dot_arma(A_n_rows, B_rowdata, A.colptr(col_A));
           
                if( (use_alpha == false) && (use_beta == false) )  { C.at(col_A,row_B) =       acc;                          }
           else if( (use_alpha == true ) && (use_beta == false) )  { C.at(col_A,row_B) = alpha*acc;                          }
@@ -334,8 +168,11 @@ struct gemm_emul_large
 
 
 template<const bool do_trans_A=false, const bool do_trans_B=false, const bool use_alpha=false, const bool use_beta=false>
-struct gemm_emul
+class gemm_emul
   {
+  public:
+  
+  
   template<typename eT, typename TA, typename TB>
   arma_hot
   inline
@@ -348,10 +185,10 @@ struct gemm_emul
     const TB&      B,
     const eT       alpha = eT(1),
     const eT       beta  = eT(0),
-    const typename arma_not_cx<eT>::result* junk = nullptr
+    const typename arma_not_cx<eT>::result* junk = 0
     )
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     arma_ignore(junk);
     
     gemm_emul_large<do_trans_A, do_trans_B, use_alpha, use_beta>::apply(C, A, B, alpha, beta);
@@ -371,10 +208,10 @@ struct gemm_emul
     const Mat<eT>& B,
     const eT       alpha = eT(1),
     const eT       beta  = eT(0),
-    const typename arma_cx_only<eT>::result* junk = nullptr
+    const typename arma_cx_only<eT>::result* junk = 0
     )
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     arma_ignore(junk);
     
     // "better than nothing" handling of hermitian transposes for complex number matrices
@@ -396,19 +233,21 @@ struct gemm_emul
 
 
 //! \brief
-//! Wrapper for BLAS dgemm function, using template arguments to control the arguments passed to dgemm.
-//! Matrix 'C' is assumed to have been set to the correct size (ie. taking into account transposes)
+//! Wrapper for ATLAS/BLAS dgemm function, using template arguments to control the arguments passed to dgemm.
+//! Matrix 'C' is assumed to have been set to the correct size (i.e. taking into account transposes)
 
 template<const bool do_trans_A=false, const bool do_trans_B=false, const bool use_alpha=false, const bool use_beta=false>
-struct gemm
+class gemm
   {
+  public:
+  
   template<typename eT, typename TA, typename TB>
   inline
   static
   void
   apply_blas_type( Mat<eT>& C, const TA& A, const TB& B, const eT alpha = eT(1), const eT beta = eT(0) )
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     
     if( (A.n_rows <= 4) && (A.n_rows == A.n_cols) && (A.n_rows == B.n_rows) && (B.n_rows == B.n_cols) && (is_cx<eT>::no) ) 
       {
@@ -418,7 +257,7 @@ struct gemm
         }
       else
         {
-        Mat<eT> BB(B.n_rows, B.n_rows, arma_nozeros_indicator());
+        Mat<eT> BB(B.n_rows, B.n_rows);
         
         op_strans::apply_mat_noalias_tinysq(BB, B);
         
@@ -429,15 +268,15 @@ struct gemm
       {
       #if defined(ARMA_USE_ATLAS)
         {
-        arma_debug_print("atlas::cblas_gemm()");
+        arma_extra_debug_print("atlas::cblas_gemm()");
         
-        arma_conform_assert_atlas_size(A,B);
+        arma_debug_assert_atlas_size(A,B);
         
         atlas::cblas_gemm<eT>
           (
-          atlas_CblasColMajor,
-          (do_trans_A) ? ( is_cx<eT>::yes ? atlas_CblasConjTrans : atlas_CblasTrans ) : atlas_CblasNoTrans,
-          (do_trans_B) ? ( is_cx<eT>::yes ? atlas_CblasConjTrans : atlas_CblasTrans ) : atlas_CblasNoTrans,
+          atlas::CblasColMajor,
+          (do_trans_A) ? ( is_cx<eT>::yes ? CblasConjTrans : atlas::CblasTrans ) : atlas::CblasNoTrans,
+          (do_trans_B) ? ( is_cx<eT>::yes ? CblasConjTrans : atlas::CblasTrans ) : atlas::CblasNoTrans,
           C.n_rows,
           C.n_cols,
           (do_trans_A) ? A.n_rows : A.n_cols,
@@ -453,9 +292,9 @@ struct gemm
         }
       #elif defined(ARMA_USE_BLAS)
         {
-        arma_debug_print("blas::gemm()");
+        arma_extra_debug_print("blas::gemm()");
         
-        arma_conform_assert_blas_size(A,B);
+        arma_debug_assert_blas_size(A,B);
         
         const char trans_A = (do_trans_A) ? ( is_cx<eT>::yes ? 'C' : 'T' ) : 'N';
         const char trans_B = (do_trans_B) ? ( is_cx<eT>::yes ? 'C' : 'T' ) : 'N';
@@ -471,8 +310,8 @@ struct gemm
         
         const eT local_beta  = (use_beta) ? beta : eT(0);
         
-        arma_debug_print( arma_str::format("blas::gemm(): trans_A: %c") % trans_A );
-        arma_debug_print( arma_str::format("blas::gemm(): trans_B: %c") % trans_B );
+        arma_extra_debug_print( arma_str::format("blas::gemm(): trans_A = %c") % trans_A );
+        arma_extra_debug_print( arma_str::format("blas::gemm(): trans_B = %c") % trans_B );
         
         blas::gemm<eT>
           (

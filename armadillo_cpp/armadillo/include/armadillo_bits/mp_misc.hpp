@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,7 +32,12 @@ struct mp_gate
       {
       const bool length_ok = (is_cx<eT>::yes || use_smaller_thresh) ? (n_elem >= (arma_config::mp_threshold/uword(2))) : (n_elem >= arma_config::mp_threshold);
       
-      return (length_ok) ? (bool(omp_in_parallel()) == false) : false;
+      if(length_ok)
+        {
+        if(omp_in_parallel())  { return false; }
+        }
+      
+      return length_ok;
       }
     #else
       {
@@ -62,22 +65,6 @@ struct mp_thread_limit
     #endif
     
     return n_threads;
-    }
-  
-  arma_inline
-  static
-  bool
-  in_parallel()
-    {
-    #if defined(ARMA_USE_OPENMP)
-      {
-      return bool(omp_in_parallel());
-      }
-    #else
-      {
-      return false;
-      }
-    #endif
     }
   };
 

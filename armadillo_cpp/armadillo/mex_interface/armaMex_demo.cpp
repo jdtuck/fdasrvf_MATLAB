@@ -30,7 +30,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // Check type of input.
   if ( (mxGetClassID(prhs[0]) != mxDOUBLE_CLASS) || (mxGetClassID(prhs[1]) != mxDOUBLE_CLASS) )
-    mexErrMsgTxt("Input must me of type double.");
+    mexErrMsgTxt("Input must be of type double.");
   
   // Check if input is real.
   if ( (mxIsComplex(prhs[0])) || (mxIsComplex(prhs[1])) )
@@ -41,7 +41,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   mat Y = armaGetPr(prhs[1]);
   
   // Our calculations require that matrices must be of the same size 
-  if ( arma::size(X) != arma::size(Y) )
+  if ( size(X) != size(Y) )
     mexErrMsgTxt("Matrices should be of same size.");
   
   // Perform calculations

@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,14 +22,14 @@
 template<typename elem_type, typename derived>
 struct SpBase_eval_SpMat
   {
-  arma_warn_unused inline const derived& eval() const;
+  inline const derived& eval() const;
   };
 
 
 template<typename elem_type, typename derived>
 struct SpBase_eval_expr
   {
-  arma_warn_unused inline SpMat<elem_type> eval() const;   //!< force the immediate evaluation of a delayed expression
+  inline SpMat<elem_type> eval() const;   //!< force the immediate evaluation of a delayed expression
   };
 
 
@@ -52,65 +50,33 @@ struct SpBase
   {
   arma_inline const derived& get_ref() const;
   
-  arma_inline bool is_alias(const SpMat<elem_type>& X) const;
+  inline const SpOp<derived,spop_htrans>  t() const;  //!< Hermitian transpose
+  inline const SpOp<derived,spop_htrans> ht() const;  //!< Hermitian transpose
+  inline const SpOp<derived,spop_strans> st() const;  //!< simple transpose
   
-  arma_warn_unused inline const SpOp<derived,spop_htrans>  t() const;  //!< Hermitian transpose
-  arma_warn_unused inline const SpOp<derived,spop_htrans> ht() const;  //!< Hermitian transpose
-  arma_warn_unused inline const SpOp<derived,spop_strans> st() const;  //!< simple transpose
+  inline void print(                           const std::string extra_text = "") const;
+  inline void print(std::ostream& user_stream, const std::string extra_text = "") const;
   
-  arma_cold inline void print(                           const std::string extra_text = "") const;
-  arma_cold inline void print(std::ostream& user_stream, const std::string extra_text = "") const;
+  inline void raw_print(                           const std::string extra_text = "") const;
+  inline void raw_print(std::ostream& user_stream, const std::string extra_text = "") const;
   
-  arma_cold inline void raw_print(                           const std::string extra_text = "") const;
-  arma_cold inline void raw_print(std::ostream& user_stream, const std::string extra_text = "") const;
+  inline void print_dense(                           const std::string extra_text = "") const;
+  inline void print_dense(std::ostream& user_stream, const std::string extra_text = "") const;
   
-  arma_cold inline void print_dense(                           const std::string extra_text = "") const;
-  arma_cold inline void print_dense(std::ostream& user_stream, const std::string extra_text = "") const;
+  inline void raw_print_dense(                           const std::string extra_text = "") const;
+  inline void raw_print_dense(std::ostream& user_stream, const std::string extra_text = "") const;
   
-  arma_cold inline void raw_print_dense(                           const std::string extra_text = "") const;
-  arma_cold inline void raw_print_dense(std::ostream& user_stream, const std::string extra_text = "") const;
+  inline arma_warn_unused elem_type min() const;
+  inline arma_warn_unused elem_type max() const;
   
-  arma_cold inline void brief_print(                           const std::string extra_text = "") const;
-  arma_cold inline void brief_print(std::ostream& user_stream, const std::string extra_text = "") const;
+  inline elem_type min(uword& index_of_min_val) const;
+  inline elem_type max(uword& index_of_max_val) const;
   
-  arma_warn_unused inline elem_type min() const;
-  arma_warn_unused inline elem_type max() const;
+  inline elem_type min(uword& row_of_min_val, uword& col_of_min_val) const;
+  inline elem_type max(uword& row_of_max_val, uword& col_of_max_val) const;
   
-  [[deprecated("use .index_min() instead")]] inline elem_type min(uword& index_of_min_val) const;
-  [[deprecated("use .index_max() instead")]] inline elem_type max(uword& index_of_max_val) const;
-  
-  [[deprecated("use .index_min() with ind2sub() instead")]] inline elem_type min(uword& row_of_min_val, uword& col_of_min_val) const;
-  [[deprecated("use .index_max() with ind2sub() instead")]] inline elem_type max(uword& row_of_max_val, uword& col_of_max_val) const;
-  
-  arma_warn_unused inline uword index_min() const;
-  arma_warn_unused inline uword index_max() const;
-  
-  arma_warn_unused inline bool is_symmetric() const;
-  arma_warn_unused inline bool is_symmetric(const typename get_pod_type<elem_type>::result tol) const;
-  
-  arma_warn_unused inline bool is_hermitian() const;
-  arma_warn_unused inline bool is_hermitian(const typename get_pod_type<elem_type>::result tol) const;
-  
-  arma_warn_unused inline bool is_zero(const typename get_pod_type<elem_type>::result tol = 0) const;
-  
-  arma_warn_unused inline bool is_trimatu() const;
-  arma_warn_unused inline bool is_trimatl() const;
-  arma_warn_unused inline bool is_diagmat() const;
-  arma_warn_unused inline bool is_empty()   const;
-  arma_warn_unused inline bool is_square()  const;
-  arma_warn_unused inline bool is_vec()     const;
-  arma_warn_unused inline bool is_colvec()  const;
-  arma_warn_unused inline bool is_rowvec()  const;
-  arma_warn_unused inline bool is_finite()  const;
-  
-  arma_warn_unused inline bool has_inf()       const;
-  arma_warn_unused inline bool has_nan()       const;
-  arma_warn_unused inline bool has_nonfinite() const;
-  
-  arma_warn_unused inline const SpOp<derived,spop_vectorise_col> as_col() const;
-  arma_warn_unused inline const SpOp<derived,spop_vectorise_row> as_row() const;
-  
-  arma_warn_unused inline const SpToDOp<derived,op_sp_as_dense> as_dense() const;
+  inline arma_warn_unused uword index_min() const;
+  inline arma_warn_unused uword index_max() const;
   };
 
 

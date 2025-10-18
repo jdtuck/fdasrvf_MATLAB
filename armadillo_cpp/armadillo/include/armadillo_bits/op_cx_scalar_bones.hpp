@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +19,10 @@
 
 
 
-struct op_cx_scalar_times
-  : public traits_op_passthru
+class op_cx_scalar_times
   {
+  public:
+  
   template<typename T1>
   inline static void
   apply
@@ -39,13 +38,15 @@ struct op_cx_scalar_times
              Cube< typename std::complex<typename T1::pod_type> >& out,
     const mtOpCube<typename std::complex<typename T1::pod_type>, T1, op_cx_scalar_times>& X
     );
+
   };
 
 
 
-struct op_cx_scalar_plus
-  : public traits_op_passthru
+class op_cx_scalar_plus
   {
+  public:
+  
   template<typename T1>
   inline static void
   apply
@@ -61,13 +62,15 @@ struct op_cx_scalar_plus
              Cube< typename std::complex<typename T1::pod_type> >& out,
     const mtOpCube<typename std::complex<typename T1::pod_type>, T1, op_cx_scalar_plus>& X
     );
+
   };
 
 
 
-struct op_cx_scalar_minus_pre
-  : public traits_op_passthru
+class op_cx_scalar_minus_pre
   {
+  public:
+  
   template<typename T1>
   inline static void
   apply
@@ -83,13 +86,15 @@ struct op_cx_scalar_minus_pre
              Cube< typename std::complex<typename T1::pod_type> >& out,
     const mtOpCube<typename std::complex<typename T1::pod_type>, T1, op_cx_scalar_minus_pre>& X
     );
+
   };
 
 
 
-struct op_cx_scalar_minus_post
-  : public traits_op_passthru
+class op_cx_scalar_minus_post
   {
+  public:
+  
   template<typename T1>
   inline static void
   apply
@@ -105,13 +110,15 @@ struct op_cx_scalar_minus_post
              Cube< typename std::complex<typename T1::pod_type> >& out,
     const mtOpCube<typename std::complex<typename T1::pod_type>, T1, op_cx_scalar_minus_post>& X
     );
+
   };
 
 
 
-struct op_cx_scalar_div_pre
-  : public traits_op_passthru
+class op_cx_scalar_div_pre
   {
+  public:
+  
   template<typename T1>
   inline static void
   apply
@@ -127,13 +134,15 @@ struct op_cx_scalar_div_pre
              Cube< typename std::complex<typename T1::pod_type> >& out,
     const mtOpCube<typename std::complex<typename T1::pod_type>, T1, op_cx_scalar_div_pre>& X
     );
+
   };
 
 
 
-struct op_cx_scalar_div_post
-  : public traits_op_passthru
+class op_cx_scalar_div_post
   {
+  public:
+  
   template<typename T1>
   inline static void
   apply
@@ -149,6 +158,7 @@ struct op_cx_scalar_div_post
              Cube< typename std::complex<typename T1::pod_type> >& out,
     const mtOpCube<typename std::complex<typename T1::pod_type>, T1, op_cx_scalar_div_post>& X
     );
+
   };
 
 

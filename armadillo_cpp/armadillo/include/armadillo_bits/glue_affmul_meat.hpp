@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +24,7 @@ inline
 void
 glue_affmul::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_affmul>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -56,13 +54,13 @@ inline
 void
 glue_affmul::apply_noalias(Mat<typename T1::elem_type>& out, const T1& A, const T2& B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const uword A_n_cols = A.n_cols;
   const uword A_n_rows = A.n_rows;
   const uword B_n_rows = B.n_rows;
   
-  arma_conform_check( (A_n_cols != B_n_rows+1), "affmul(): size mismatch" );
+  arma_debug_check( (A_n_cols != B_n_rows+1), "affmul(): size mismatch" );
   
   if(A_n_rows == A_n_cols)
     {
@@ -86,7 +84,7 @@ inline
 void
 glue_affmul::apply_noalias_square(Mat<typename T1::elem_type>& out, const T1& A, const T2& B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -242,7 +240,7 @@ glue_affmul::apply_noalias_square(Mat<typename T1::elem_type>& out, const T1& A,
       {
       if(B_n_cols == 1)
         {
-        Col<eT> tmp(N, arma_nozeros_indicator());
+        Col<eT> tmp(N);
         eT*     tmp_mem = tmp.memptr();
         
         arrayops::copy(tmp_mem, B.memptr(), N-1);
@@ -253,7 +251,7 @@ glue_affmul::apply_noalias_square(Mat<typename T1::elem_type>& out, const T1& A,
         }
       else
         {
-        Mat<eT> tmp(N, B_n_cols, arma_nozeros_indicator());
+        Mat<eT> tmp(N, B_n_cols);
         
         for(uword col=0; col < B_n_cols; ++col)
           {
@@ -278,7 +276,7 @@ inline
 void
 glue_affmul::apply_noalias_rectangle(Mat<typename T1::elem_type>& out, const T1& A, const T2& B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -425,7 +423,7 @@ glue_affmul::apply_noalias_rectangle(Mat<typename T1::elem_type>& out, const T1&
       
       if(B_n_cols == 1)
         {
-        Col<eT> tmp(A_n_cols, arma_nozeros_indicator());
+        Col<eT> tmp(A_n_cols);
         eT*     tmp_mem = tmp.memptr();
         
         arrayops::copy(tmp_mem, B.memptr(), A_n_cols-1);
@@ -436,7 +434,7 @@ glue_affmul::apply_noalias_rectangle(Mat<typename T1::elem_type>& out, const T1&
         }
       else
         {
-        Mat<eT> tmp(A_n_cols, B_n_cols, arma_nozeros_indicator());
+        Mat<eT> tmp(A_n_cols, B_n_cols);
         
         for(uword col=0; col < B_n_cols; ++col)
           {
@@ -461,7 +459,7 @@ inline
 void
 glue_affmul::apply_noalias_generic(Mat<typename T1::elem_type>& out, const T1& A, const T2& B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -470,7 +468,7 @@ glue_affmul::apply_noalias_generic(Mat<typename T1::elem_type>& out, const T1& A
   const uword B_n_rows = B.n_rows;
   const uword B_n_cols = B.n_cols;
   
-  Mat<eT> tmp(B_n_rows+1, B_n_cols, arma_nozeros_indicator());
+  Mat<eT> tmp(B_n_rows+1, B_n_cols);
   
   for(uword col=0; col < B_n_cols; ++col)
     {

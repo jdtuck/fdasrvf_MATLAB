@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +26,7 @@ inline
 void
 glue_kron::direct_kron(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const uword A_rows = A.n_rows;
   const uword A_cols = A.n_cols;
@@ -58,7 +56,7 @@ inline
 void
 glue_kron::direct_kron(Mat< std::complex<T> >& out, const Mat< std::complex<T> >& A, const Mat<T>& B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename std::complex<T> eT;
   
@@ -92,7 +90,7 @@ inline
 void
 glue_kron::direct_kron(Mat< std::complex<T> >& out, const Mat<T>& A, const Mat< std::complex<T> >& B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const uword A_rows = A.n_rows;
   const uword A_cols = A.n_cols;
@@ -121,24 +119,27 @@ inline
 void
 glue_kron::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_kron>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
-  const quasi_unwrap<T1> UA(X.A);
-  const quasi_unwrap<T2> UB(X.B);
+  const unwrap<T1> A_tmp(X.A);
+  const unwrap<T2> B_tmp(X.B);
   
-  if(UA.is_alias(out) || UB.is_alias(out))
+  const Mat<eT>& A = A_tmp.M;
+  const Mat<eT>& B = B_tmp.M;
+  
+  if( (&out != &A) && (&out != &B) )
     {
-    Mat<eT> tmp;
-    
-    glue_kron::direct_kron(tmp, UA.M, UB.M);
-    
-    out.steal_mem(tmp);
+    glue_kron::direct_kron(out, A, B); 
     }
   else
     {
-    glue_kron::direct_kron(out, UA.M, UB.M); 
+    Mat<eT> tmp;
+    
+    glue_kron::direct_kron(tmp, A, B);
+    
+    out.steal_mem(tmp);
     }
   }
 

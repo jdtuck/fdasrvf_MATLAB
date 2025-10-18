@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,9 +26,9 @@ class gmm_diag
   {
   public:
   
-  const Mat<eT> means;
-  const Mat<eT> dcovs;
-  const Row<eT> hefts;
+  arma_aligned const Mat<eT> means;
+  arma_aligned const Mat<eT> dcovs;
+  arma_aligned const Row<eT> hefts;
   
   //
   //
@@ -64,11 +62,11 @@ class gmm_diag
   inline Col<eT> generate()              const;
   inline Mat<eT> generate(const uword N) const;
   
-  template<typename T1> inline eT      log_p(const T1& expr, const gmm_empty_arg& junk1 = gmm_empty_arg(), typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == true ))>::result* junk2 = nullptr) const;
-  template<typename T1> inline eT      log_p(const T1& expr, const uword gaus_id,                          typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == true ))>::result* junk2 = nullptr) const;
+  template<typename T1> inline eT      log_p(const T1& expr, const gmm_empty_arg& junk1 = gmm_empty_arg(), typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == true ))>::result* junk2 = 0) const;
+  template<typename T1> inline eT      log_p(const T1& expr, const uword gaus_id,                          typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == true ))>::result* junk2 = 0) const;
   
-  template<typename T1> inline Row<eT> log_p(const T1& expr, const gmm_empty_arg& junk1 = gmm_empty_arg(), typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == false))>::result* junk2 = nullptr) const;
-  template<typename T1> inline Row<eT> log_p(const T1& expr, const uword gaus_id,                          typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == false))>::result* junk2 = nullptr) const;
+  template<typename T1> inline Row<eT> log_p(const T1& expr, const gmm_empty_arg& junk1 = gmm_empty_arg(), typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == false))>::result* junk2 = 0) const;
+  template<typename T1> inline Row<eT> log_p(const T1& expr, const uword gaus_id,                          typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == false))>::result* junk2 = 0) const;
   
   template<typename T1> inline eT  sum_log_p(const Base<eT,T1>& expr)                      const;
   template<typename T1> inline eT  sum_log_p(const Base<eT,T1>& expr, const uword gaus_id) const;
@@ -76,8 +74,8 @@ class gmm_diag
   template<typename T1> inline eT  avg_log_p(const Base<eT,T1>& expr)                      const;
   template<typename T1> inline eT  avg_log_p(const Base<eT,T1>& expr, const uword gaus_id) const;
   
-  template<typename T1> inline uword   assign(const T1& expr, const gmm_dist_mode& dist, typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == true ))>::result* junk = nullptr) const;
-  template<typename T1> inline urowvec assign(const T1& expr, const gmm_dist_mode& dist, typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == false))>::result* junk = nullptr) const;
+  template<typename T1> inline uword   assign(const T1& expr, const gmm_dist_mode& dist, typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == true ))>::result* junk = 0) const;
+  template<typename T1> inline urowvec assign(const T1& expr, const gmm_dist_mode& dist, typename enable_if<((is_arma_type<T1>::value) && (resolves_to_colvector<T1>::value == false))>::result* junk = 0) const;
   
   template<typename T1> inline urowvec  raw_hist(const Base<eT,T1>& expr, const gmm_dist_mode& dist_mode) const;
   template<typename T1> inline Row<eT> norm_hist(const Base<eT,T1>& expr, const gmm_dist_mode& dist_mode) const;
@@ -116,10 +114,10 @@ class gmm_diag
   
   protected:
   
-  Mat<eT> inv_dcovs;
-  Row<eT> log_det_etc;
-  Row<eT> log_hefts;
-  Col<eT> mah_aux;
+  arma_aligned Mat<eT> inv_dcovs;
+  arma_aligned Row<eT> log_det_etc;
+  arma_aligned Row<eT> log_hefts;
+  arma_aligned Col<eT> mah_aux;
   
   //
   
@@ -135,18 +133,18 @@ class gmm_diag
   inline eT internal_scalar_log_p(const eT* x                     ) const;
   inline eT internal_scalar_log_p(const eT* x, const uword gaus_id) const;
   
-  inline Row<eT> internal_vec_log_p(const Mat<eT>& X                     ) const;
-  inline Row<eT> internal_vec_log_p(const Mat<eT>& X, const uword gaus_id) const;
+  template<typename T1> inline Row<eT> internal_vec_log_p(const T1& X                     ) const;
+  template<typename T1> inline Row<eT> internal_vec_log_p(const T1& X, const uword gaus_id) const;
   
-  inline eT internal_sum_log_p(const Mat<eT>& X                     ) const;
-  inline eT internal_sum_log_p(const Mat<eT>& X, const uword gaus_id) const;
+  template<typename T1> inline eT internal_sum_log_p(const T1& X                     ) const;
+  template<typename T1> inline eT internal_sum_log_p(const T1& X, const uword gaus_id) const;
   
-  inline eT internal_avg_log_p(const Mat<eT>& X                     ) const;
-  inline eT internal_avg_log_p(const Mat<eT>& X, const uword gaus_id) const;
+  template<typename T1> inline eT internal_avg_log_p(const T1& X                     ) const;
+  template<typename T1> inline eT internal_avg_log_p(const T1& X, const uword gaus_id) const;
   
-  inline uword internal_scalar_assign(const Mat<eT>& X, const gmm_dist_mode& dist_mode) const;
+  template<typename T1> inline uword internal_scalar_assign(const T1& X, const gmm_dist_mode& dist_mode) const;
   
-  inline void internal_vec_assign(urowvec& out, const Mat<eT>& X, const gmm_dist_mode& dist_mode) const;
+  template<typename T1> inline void internal_vec_assign(urowvec& out, const T1& X, const gmm_dist_mode& dist_mode) const;
   
   inline void internal_raw_hist(urowvec& hist, const Mat<eT>& X, const gmm_dist_mode& dist_mode) const;
   

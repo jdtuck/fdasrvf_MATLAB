@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +26,7 @@
 template<typename eT>
 inline
 SpMat<eT>::iterator_base::iterator_base()
-  : M(nullptr)
+  : M(NULL)
   , internal_col(0)
   , internal_pos(0)
   {
@@ -82,8 +80,6 @@ SpMat<eT>::const_iterator::const_iterator()
   {
   }
 
-
-
 template<typename eT>
 inline
 SpMat<eT>::const_iterator::const_iterator(const SpMat<eT>& in_M, uword initial_pos)
@@ -95,7 +91,7 @@ SpMat<eT>::const_iterator::const_iterator(const SpMat<eT>& in_M, uword initial_p
     iterator_base::internal_col = in_M.n_cols;
     return;
     }
-  
+
   // Determine which column we should be in.
   while(iterator_base::M->col_ptrs[iterator_base::internal_col + 1] <= iterator_base::internal_pos)
     {
@@ -112,13 +108,13 @@ SpMat<eT>::const_iterator::const_iterator(const SpMat<eT>& in_M, uword in_row, u
   {
   // So we have a position we want to be right after.  Skip to the column.
   iterator_base::internal_pos = iterator_base::M->col_ptrs[iterator_base::internal_col];
-  
+
   // Now we have to make sure that is the right column.
   while(iterator_base::M->col_ptrs[iterator_base::internal_col + 1] <= iterator_base::internal_pos)
     {
     iterator_base::internal_col++;
     }
-  
+
   // Now we have to get to the right row.
   while((iterator_base::M->row_indices[iterator_base::internal_pos] < in_row) && (iterator_base::internal_col == in_col))
     {
@@ -150,23 +146,24 @@ SpMat<eT>::const_iterator::const_iterator(const typename SpMat<eT>::const_iterat
 
 template<typename eT>
 inline
+arma_hot
 typename SpMat<eT>::const_iterator&
 SpMat<eT>::const_iterator::operator++()
   {
   ++iterator_base::internal_pos;
-  
-  if(iterator_base::internal_pos == iterator_base::M->n_nonzero)
+
+  if (iterator_base::internal_pos == iterator_base::M->n_nonzero)
     {
     iterator_base::internal_col = iterator_base::M->n_cols;
     return *this;
     }
-  
+
   // Check to see if we moved a column.
-  while(iterator_base::M->col_ptrs[iterator_base::internal_col + 1] <= iterator_base::internal_pos)
+  while (iterator_base::M->col_ptrs[iterator_base::internal_col + 1] <= iterator_base::internal_pos)
     {
     ++iterator_base::internal_col;
     }
-  
+
   return *this;
   }
 
@@ -174,13 +171,14 @@ SpMat<eT>::const_iterator::operator++()
 
 template<typename eT>
 inline
+arma_warn_unused
 typename SpMat<eT>::const_iterator
 SpMat<eT>::const_iterator::operator++(int)
   {
   typename SpMat<eT>::const_iterator tmp(*this);
-  
+
   ++(*this);
-  
+
   return tmp;
   }
 
@@ -188,17 +186,27 @@ SpMat<eT>::const_iterator::operator++(int)
 
 template<typename eT>
 inline
+arma_hot
 typename SpMat<eT>::const_iterator&
 SpMat<eT>::const_iterator::operator--()
   {
+  //iterator_base::M.print("M");
+  
+  // printf("decrement from %d, %d, %d\n", iterator_base::internal_pos, iterator_base::internal_col, iterator_base::row());
+  
   --iterator_base::internal_pos;
   
+  // printf("now pos %d\n", iterator_base::internal_pos);
+
   // First, see if we moved back a column.
-  while(iterator_base::internal_pos < iterator_base::M->col_ptrs[iterator_base::internal_col])
+  while (iterator_base::internal_pos < iterator_base::M->col_ptrs[iterator_base::internal_col])
     {
+    // printf("colptr %d (col %d)\n", iterator_base::M.col_ptrs[iterator_base::internal_col], iterator_base::internal_col);
+    
     --iterator_base::internal_col;
     }
-  
+
+
   return *this;
   }
 
@@ -206,13 +214,14 @@ SpMat<eT>::const_iterator::operator--()
 
 template<typename eT>
 inline
+arma_warn_unused
 typename SpMat<eT>::const_iterator
 SpMat<eT>::const_iterator::operator--(int)
   {
   typename SpMat<eT>::const_iterator tmp(*this);
-  
+
   --(*this);
-  
+
   return tmp;
   }
 
@@ -220,6 +229,7 @@ SpMat<eT>::const_iterator::operator--(int)
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_iterator::operator==(const const_iterator& rhs) const
   {
@@ -230,6 +240,7 @@ SpMat<eT>::const_iterator::operator==(const const_iterator& rhs) const
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_iterator::operator!=(const const_iterator& rhs) const
   {
@@ -240,6 +251,7 @@ SpMat<eT>::const_iterator::operator!=(const const_iterator& rhs) const
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_iterator::operator==(const typename SpSubview<eT>::const_iterator& rhs) const
   {
@@ -250,6 +262,7 @@ SpMat<eT>::const_iterator::operator==(const typename SpSubview<eT>::const_iterat
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_iterator::operator!=(const typename SpSubview<eT>::const_iterator& rhs) const
   {
@@ -260,6 +273,7 @@ SpMat<eT>::const_iterator::operator!=(const typename SpSubview<eT>::const_iterat
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_iterator::operator==(const const_row_iterator& rhs) const
   {
@@ -270,6 +284,7 @@ SpMat<eT>::const_iterator::operator==(const const_row_iterator& rhs) const
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_iterator::operator!=(const const_row_iterator& rhs) const
   {
@@ -280,6 +295,7 @@ SpMat<eT>::const_iterator::operator!=(const const_row_iterator& rhs) const
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_iterator::operator==(const typename SpSubview<eT>::const_row_iterator& rhs) const
   {
@@ -290,6 +306,7 @@ SpMat<eT>::const_iterator::operator==(const typename SpSubview<eT>::const_row_it
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_iterator::operator!=(const typename SpSubview<eT>::const_row_iterator& rhs) const
   {
@@ -304,10 +321,11 @@ SpMat<eT>::const_iterator::operator!=(const typename SpSubview<eT>::const_row_it
 
 template<typename eT>
 inline
-SpValProxy< SpMat<eT> >
+arma_hot
+SpValProxy<SpMat<eT> >
 SpMat<eT>::iterator::operator*()
   {
-  return SpValProxy< SpMat<eT> >(
+  return SpValProxy<SpMat<eT> >(
     iterator_base::M->row_indices[iterator_base::internal_pos],
     iterator_base::internal_col,
     access::rw(*iterator_base::M),
@@ -318,11 +336,11 @@ SpMat<eT>::iterator::operator*()
 
 template<typename eT>
 inline
+arma_hot
 typename SpMat<eT>::iterator&
 SpMat<eT>::iterator::operator++()
   {
   const_iterator::operator++();
-  
   return *this;
   }
 
@@ -330,13 +348,14 @@ SpMat<eT>::iterator::operator++()
 
 template<typename eT>
 inline
+arma_warn_unused
 typename SpMat<eT>::iterator
 SpMat<eT>::iterator::operator++(int)
   {
   typename SpMat<eT>::iterator tmp(*this);
-  
+
   const_iterator::operator++();
-  
+
   return tmp;
   }
 
@@ -344,11 +363,11 @@ SpMat<eT>::iterator::operator++(int)
 
 template<typename eT>
 inline
+arma_hot
 typename SpMat<eT>::iterator&
 SpMat<eT>::iterator::operator--()
   {
   const_iterator::operator--();
-  
   return *this;
   }
 
@@ -356,13 +375,14 @@ SpMat<eT>::iterator::operator--()
 
 template<typename eT>
 inline
+arma_warn_unused
 typename SpMat<eT>::iterator
 SpMat<eT>::iterator::operator--(int)
   {
   typename SpMat<eT>::iterator tmp(*this);
-  
+
   const_iterator::operator--();
-  
+
   return tmp;
   }
 
@@ -394,76 +414,63 @@ SpMat<eT>::const_row_iterator::const_row_iterator(const SpMat<eT>& in_M, uword i
   , internal_row(0)
   , actual_pos(0)
   {
-  // Corner case for the end of a matrix.
-  if(initial_pos == in_M.n_nonzero)
+  // Corner case for empty matrix.
+  if(in_M.n_nonzero == 0)
     {
     iterator_base::internal_col = 0;
     internal_row = in_M.n_rows;
-    actual_pos = in_M.n_nonzero;
-    iterator_base::internal_pos = in_M.n_nonzero;
-    
     return;
     }
-  
+
   // We don't count zeros in our position count, so we have to find the nonzero
   // value corresponding to the given initial position.  We assume initial_pos
   // is valid.
-  
-  // This is irritating because we don't know where the elements are in each row.
-  // What we will do is loop across all columns looking for elements in row 0
-  // (and add to our sum), then in row 1, and so forth, until we get to the desired position.
+
+  // This is irritating because we don't know where the elements are in each
+  // row.  What we will do is loop across all columns looking for elements in
+  // row 0 (and add to our sum), then in row 1, and so forth, until we get to
+  // the desired position.
   uword cur_pos = std::numeric_limits<uword>::max(); // Invalid value.
-  uword cur_actual_pos = 0;
-  
-  for(uword row = 0; row < iterator_base::M->n_rows; ++row)
+  uword cur_row = 0;
+  uword cur_col = 0;
+
+  while(true) // This loop is terminated from the inside.
     {
-    for(uword col = 0; col < iterator_base::M->n_cols; ++col)
+    // Is there anything in the column we are looking at?
+    for (uword ind = 0; ((iterator_base::M->col_ptrs[cur_col] + ind < iterator_base::M->col_ptrs[cur_col + 1]) && (iterator_base::M->row_indices[iterator_base::M->col_ptrs[cur_col] + ind] <= cur_row)); ind++)
       {
-      // Find the first element with row greater than or equal to in_row.
-      const uword      col_offset = iterator_base::M->col_ptrs[col    ];
-      const uword next_col_offset = iterator_base::M->col_ptrs[col + 1];
-      
-      const uword* start_ptr = &iterator_base::M->row_indices[     col_offset];
-      const uword*   end_ptr = &iterator_base::M->row_indices[next_col_offset];
-      
-      if(start_ptr != end_ptr)
+      // There is something in this column.  Is it in the row we are looking at?
+      const uword row_index = iterator_base::M->row_indices[iterator_base::M->col_ptrs[cur_col] + ind];
+      if (row_index == cur_row)
         {
-        const uword* pos_ptr = std::lower_bound(start_ptr, end_ptr, row);
-        
-        // This is the number of elements in the column with row index less than in_row.
-        const uword offset = uword(pos_ptr - start_ptr);
-        
-        if(iterator_base::M->row_indices[col_offset + offset] == row)
+        // Yes, it is what we are looking for.  Increment our current position.
+        if (++cur_pos == iterator_base::internal_pos)   // TODO: HACK: if cur_pos is std::numeric_limits<uword>::max(), ++cur_pos relies on a wraparound/overflow, which is not portable
           {
-          cur_actual_pos = col_offset + offset;
-          
-          // Increment position portably.
-          if(cur_pos == std::numeric_limits<uword>::max())
-            { cur_pos = 0; }
-          else
-            { ++cur_pos; }
-          
-          // Do we terminate?
-          if(cur_pos == initial_pos)
-            {
-            internal_row = row;
-            iterator_base::internal_col = col;
-            iterator_base::internal_pos = cur_pos;
-            actual_pos = cur_actual_pos;
-            
-            return;
-            }
+          actual_pos = iterator_base::M->col_ptrs[cur_col] + ind;
+          internal_row = cur_row;
+          iterator_base::internal_col = cur_col;
+
+          return;
           }
+
+        // We are done with this column.  Break to the column incrementing code (directly below).
+        break;
+        }
+      else if(row_index > cur_row)
+        {
+        break; // Can't be in this column.
         }
       }
+
+    cur_col++; // Done with the column.  Move on.
+    if (cur_col == iterator_base::M->n_cols)
+      {
+      // We are out of columns.  Loop back to the beginning and look on the
+      // next row.
+      cur_col = 0;
+      cur_row++;
+      }
     }
-  
-  // If we got to here, then we have gone past the end of the matrix.
-  // This shouldn't happen...
-  iterator_base::internal_pos = iterator_base::M->n_nonzero;
-  iterator_base::internal_col = 0;
-  internal_row = iterator_base::M->n_rows;
-  actual_pos = iterator_base::M->n_nonzero;
   }
 
 
@@ -475,63 +482,25 @@ SpMat<eT>::const_row_iterator::const_row_iterator(const SpMat<eT>& in_M, uword i
   , internal_row(0)
   , actual_pos(0)
   {
-  // Start our search in the given row.  We need to find two things:
-  //
-  //   1. The first nonzero element (iterating by rows) after (in_row, in_col).
-  //   2. The number of nonzero elements (iterating by rows) that come before
-  //      (in_row, in_col).
-  //
-  // We'll find these simultaneously, though we will have to loop over all
-  // columns.
+  // TODO: replace with more efficient implementation
   
-  // This will hold the total number of points with rows less than in_row.
-  uword cur_pos = 0;
-  uword cur_min_row = iterator_base::M->n_rows;
-  uword cur_min_col = 0;
-  uword cur_actual_pos = 0;
+  // So we have a destination we want to be just after,
+  // but don't know what position that is.
+  // Make another iterator to find out.
   
-  for(uword col = 0; col < iterator_base::M->n_cols; ++col)
+  const_row_iterator it(in_M, 0);
+  
+  while((it.row() < in_row) || ((it.row() == in_row) && (it.col() < in_col)))
     {
-    // Find the first element with row greater than or equal to in_row.
-    const uword      col_offset = iterator_base::M->col_ptrs[col    ];
-    const uword next_col_offset = iterator_base::M->col_ptrs[col + 1];
-    
-    const uword* start_ptr = &iterator_base::M->row_indices[     col_offset];
-    const uword*   end_ptr = &iterator_base::M->row_indices[next_col_offset];
-
-    if(start_ptr != end_ptr)
-      {
-      const uword* pos_ptr = std::lower_bound(start_ptr, end_ptr, in_row);
-      
-      // This is the number of elements in the column with row index less than in_row.
-      const uword offset = uword(pos_ptr - start_ptr);
-      
-      cur_pos += offset;
-      
-      if(pos_ptr != end_ptr)
-        {
-        // This is the row index of the first element in the column with row index
-        // greater than or equal to in_row.
-        if((*pos_ptr) < cur_min_row)
-          {
-          // If we are in the desired row but before the desired column,
-          // we can't take this.
-          if(col >= in_col)
-            {
-            cur_min_row = (*pos_ptr);
-            cur_min_col = col;
-            cur_actual_pos = col_offset + offset;
-            }
-          }
-        }
-      }
+    ++it;
     }
   
-  // Now we know what the minimum row is.
-  internal_row = cur_min_row;
-  iterator_base::internal_col = cur_min_col;
-  iterator_base::internal_pos = cur_pos;
-  actual_pos = cur_actual_pos;
+  // Now that it is at the right place, take its position.
+  iterator_base::internal_col = it.internal_col;
+  iterator_base::internal_pos = it.internal_pos;
+  
+  internal_row = it.internal_row;
+  actual_pos   = it.actual_pos;
   }
 
 
@@ -556,122 +525,49 @@ SpMat<eT>::const_row_iterator::const_row_iterator(const typename SpMat<eT>::cons
  */
 template<typename eT>
 inline
+arma_hot
 typename SpMat<eT>::const_row_iterator&
 SpMat<eT>::const_row_iterator::operator++()
   {
   // We just need to find the next nonzero element.
   iterator_base::internal_pos++;
-  
+
   if(iterator_base::internal_pos == iterator_base::M->n_nonzero)
     {
     internal_row = iterator_base::M->n_rows;
     iterator_base::internal_col = 0;
-    
+    actual_pos = iterator_base::M->n_nonzero;
+
     return *this;
     }
-  
-  // Otherwise, we need to search.  We can start in the next column and use
-  // lower_bound() to find the next element.
-  uword next_min_row = iterator_base::M->n_rows;
-  uword next_min_col = iterator_base::M->n_cols;
-  uword next_actual_pos = 0;
-  
-  // Search from the current column to the end of the matrix.
-  for(uword col = iterator_base::internal_col + 1; col < iterator_base::M->n_cols; ++col)
+
+  // Otherwise, we need to search.
+  uword cur_col = iterator_base::internal_col;
+  uword cur_row = internal_row;
+
+  while (true) // This loop is terminated from the inside.
     {
-    // Find the first element with row greater than or equal to in_row.
-    const uword      col_offset = iterator_base::M->col_ptrs[col    ];
-    const uword next_col_offset = iterator_base::M->col_ptrs[col + 1];
-    
-    const uword* start_ptr = &iterator_base::M->row_indices[     col_offset];
-    const uword*   end_ptr = &iterator_base::M->row_indices[next_col_offset];
-    
-    if(start_ptr != end_ptr)
+    // Increment the current column and see if we are now on a new row.
+    if (++cur_col == iterator_base::M->n_cols)
       {
-      // Find the first element in the column with row greater than or equal to
-      // the current row.
-      const uword* pos_ptr = std::lower_bound(start_ptr, end_ptr, internal_row);
-      
-      if(pos_ptr != end_ptr)
+      cur_col = 0;
+      cur_row++;
+      }
+
+    // Is there anything in this new column?
+    for (uword ind = 0; ((iterator_base::M->col_ptrs[cur_col] + ind < iterator_base::M->col_ptrs[cur_col + 1]) && (iterator_base::M->row_indices[iterator_base::M->col_ptrs[cur_col] + ind] <= cur_row)); ind++)
+      {
+      if (iterator_base::M->row_indices[iterator_base::M->col_ptrs[cur_col] + ind] == cur_row)
         {
-        // We found something in the column, but is the row index correct?
-        if((*pos_ptr) == internal_row)
-          {
-          // Exact match---so we are done.
-          iterator_base::internal_col = col;
-          actual_pos = col_offset + (pos_ptr - start_ptr);
-          return *this;
-          }
-        else if((*pos_ptr) < next_min_row)
-          {
-          // The first element in this column is in a subsequent row, but it's
-          // the minimum row we've seen so far.
-          next_min_row = (*pos_ptr);
-          next_min_col = col;
-          next_actual_pos = col_offset + (pos_ptr - start_ptr);
-          }
-        else if((*pos_ptr) == next_min_row && col < next_min_col)
-          {
-          // The first element in this column is in a subsequent row that we
-          // already have another element for, but the column index is less so
-          // this element will come first.
-          next_min_col = col;
-          next_actual_pos = col_offset + (pos_ptr - start_ptr);
-          }
+        // We have successfully incremented.
+        internal_row = cur_row;
+        iterator_base::internal_col = cur_col;
+        actual_pos = iterator_base::M->col_ptrs[cur_col] + ind;
+
+        return *this; // Now we are done.
         }
       }
     }
-  
-  // Restart the search in the next row.
-  for(uword col = 0; col <= iterator_base::internal_col; ++col)
-    {
-    // Find the first element with row greater than or equal to in_row + 1.
-    const uword      col_offset = iterator_base::M->col_ptrs[col    ];
-    const uword next_col_offset = iterator_base::M->col_ptrs[col + 1];
-    
-    const uword* start_ptr = &iterator_base::M->row_indices[     col_offset];
-    const uword*   end_ptr = &iterator_base::M->row_indices[next_col_offset];
-    
-    if(start_ptr != end_ptr)
-      {
-      const uword* pos_ptr = std::lower_bound(start_ptr, end_ptr, internal_row + 1);
-      
-      if(pos_ptr != end_ptr)
-        {
-        // We found something in the column, but is the row index correct?
-        if((*pos_ptr) == internal_row + 1)
-          {
-          // Exact match---so we are done.
-          iterator_base::internal_col = col;
-          internal_row++;
-          actual_pos = col_offset + (pos_ptr - start_ptr);
-          return *this;
-          }
-        else if((*pos_ptr) < next_min_row)
-          {
-          // The first element in this column is in a subsequent row,
-          // but it's the minimum row we've seen so far.
-          next_min_row = (*pos_ptr);
-          next_min_col = col;
-          next_actual_pos = col_offset + (pos_ptr - start_ptr);
-          }
-        else if((*pos_ptr) == next_min_row && col < next_min_col)
-          {
-          // The first element in this column is in a subsequent row that we
-          // already have another element for, but the column index is less so
-          // this element will come first.
-          next_min_col = col;
-          next_actual_pos = col_offset + (pos_ptr - start_ptr);
-          }
-        }
-      }
-    }
-  
-  iterator_base::internal_col = next_min_col;
-  internal_row = next_min_row;
-  actual_pos = next_actual_pos;
-  
-  return *this; // Now we are done.
   }
 
 
@@ -681,13 +577,14 @@ SpMat<eT>::const_row_iterator::operator++()
  */
 template<typename eT>
 inline
+arma_warn_unused
 typename SpMat<eT>::const_row_iterator
 SpMat<eT>::const_row_iterator::operator++(int)
   {
   typename SpMat<eT>::const_row_iterator tmp(*this);
-  
+
   ++(*this);
-  
+
   return tmp;
   }
 
@@ -698,99 +595,39 @@ SpMat<eT>::const_row_iterator::operator++(int)
  */
 template<typename eT>
 inline
+arma_hot
 typename SpMat<eT>::const_row_iterator&
 SpMat<eT>::const_row_iterator::operator--()
   {
-  if(iterator_base::internal_pos == 0)
-    {
-    // Do nothing; we are already at the beginning.
-    return *this;
-    }
-  
   iterator_base::internal_pos--;
-  
-  // We have to search backwards.  We'll do this by going backwards over columns
-  // and seeing if we find an element in the same row.
-  uword max_row = 0;
-  uword max_col = 0;
-  uword next_actual_pos = 0;
-  
-  //for(uword col = iterator_base::internal_col; col > 1; --col)
-  for(uword col = iterator_base::internal_col; col >= 1; --col)
+
+  // We have to search backwards.
+  uword cur_col = iterator_base::internal_col;
+  uword cur_row = internal_row;
+
+  while (true) // This loop is terminated from the inside.
     {
-    // Find the first element with row greater than or equal to in_row + 1.
-    const uword      col_offset = iterator_base::M->col_ptrs[col - 1];
-    const uword next_col_offset = iterator_base::M->col_ptrs[col    ];
-    
-    const uword* start_ptr = &iterator_base::M->row_indices[     col_offset];
-    const uword*   end_ptr = &iterator_base::M->row_indices[next_col_offset];
-    
-    if(start_ptr != end_ptr)
+    // Decrement the current column and see if we are now on a new row.  This is a uword so a negativity check won't work.
+    if (--cur_col > iterator_base::M->n_cols /* this means it underflew */)
       {
-      // There are elements in this column.
-      const uword* pos_ptr = std::lower_bound(start_ptr, end_ptr, internal_row + 1);
-      
-      if(pos_ptr != start_ptr)
+      cur_col = iterator_base::M->n_cols - 1;
+      cur_row--;
+      }
+
+    // Is there anything in this new column?
+    for (uword ind = 0; ((iterator_base::M->col_ptrs[cur_col] + ind < iterator_base::M->col_ptrs[cur_col + 1]) && (iterator_base::M->row_indices[iterator_base::M->col_ptrs[cur_col] + ind] <= cur_row)); ind++)
+      {
+      if (iterator_base::M->row_indices[iterator_base::M->col_ptrs[cur_col] + ind] == cur_row)
         {
-        // The element before pos_ptr is the one we are interested in.
-        if(*(pos_ptr - 1) > max_row)
-          {
-          max_row = *(pos_ptr - 1);
-          max_col = col - 1;
-          next_actual_pos = col_offset + (pos_ptr - 1 - start_ptr);
-          }
-        else if(*(pos_ptr - 1) == max_row && (col - 1) > max_col)
-          {
-          max_col = col - 1;
-          next_actual_pos = col_offset + (pos_ptr - 1 - start_ptr);
-          }
+        // We have successfully decremented.
+        iterator_base::internal_col = cur_col;
+        internal_row = cur_row;
+        actual_pos = iterator_base::M->col_ptrs[cur_col] + ind;
+
+        return *this; // Now we are done.
         }
       }
     }
-  
-  // Now loop around to the columns at the end of the matrix.
-  for(uword col = iterator_base::M->n_cols - 1; col >= iterator_base::internal_col; --col)
-    {
-    // Find the first element with row greater than or equal to in_row + 1.
-    const uword      col_offset = iterator_base::M->col_ptrs[col    ];
-    const uword next_col_offset = iterator_base::M->col_ptrs[col + 1];
-    
-    const uword* start_ptr = &iterator_base::M->row_indices[     col_offset];
-    const uword*   end_ptr = &iterator_base::M->row_indices[next_col_offset];
-    
-    if(start_ptr != end_ptr)
-      {
-      // There are elements in this column.
-      const uword* pos_ptr = std::lower_bound(start_ptr, end_ptr, internal_row);
-      
-      if(pos_ptr != start_ptr)
-        {
-        // There are elements in this column with row index < internal_row.
-        if(*(pos_ptr - 1) > max_row)
-          {
-          max_row = *(pos_ptr - 1);
-          max_col = col;
-          next_actual_pos = col_offset + (pos_ptr - 1 - start_ptr);
-          }
-        else if(*(pos_ptr - 1) == max_row && col > max_col)
-          {
-          max_col = col;
-          next_actual_pos = col_offset + (pos_ptr - 1 - start_ptr);
-          }
-        }
-      }
-    
-    if(col == 0) // Catch edge case that the loop termination condition won't.
-      {
-      break;
-      }
-    }
-  
-  iterator_base::internal_col = max_col;
-  internal_row = max_row;
-  actual_pos = next_actual_pos;
-  
-  return *this;
   }
 
 
@@ -800,13 +637,14 @@ SpMat<eT>::const_row_iterator::operator--()
  */
 template<typename eT>
 inline
+arma_warn_unused
 typename SpMat<eT>::const_row_iterator
 SpMat<eT>::const_row_iterator::operator--(int)
   {
   typename SpMat<eT>::const_row_iterator tmp(*this);
-  
+
   --(*this);
-  
+
   return tmp;
   }
 
@@ -814,6 +652,7 @@ SpMat<eT>::const_row_iterator::operator--(int)
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_row_iterator::operator==(const const_iterator& rhs) const
   {
@@ -824,6 +663,7 @@ SpMat<eT>::const_row_iterator::operator==(const const_iterator& rhs) const
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_row_iterator::operator!=(const const_iterator& rhs) const
   {
@@ -834,6 +674,7 @@ SpMat<eT>::const_row_iterator::operator!=(const const_iterator& rhs) const
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_row_iterator::operator==(const typename SpSubview<eT>::const_iterator& rhs) const
   {
@@ -844,6 +685,7 @@ SpMat<eT>::const_row_iterator::operator==(const typename SpSubview<eT>::const_it
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_row_iterator::operator!=(const typename SpSubview<eT>::const_iterator& rhs) const
   {
@@ -854,6 +696,7 @@ SpMat<eT>::const_row_iterator::operator!=(const typename SpSubview<eT>::const_it
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_row_iterator::operator==(const const_row_iterator& rhs) const
   {
@@ -864,6 +707,7 @@ SpMat<eT>::const_row_iterator::operator==(const const_row_iterator& rhs) const
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_row_iterator::operator!=(const const_row_iterator& rhs) const
   {
@@ -874,6 +718,7 @@ SpMat<eT>::const_row_iterator::operator!=(const const_row_iterator& rhs) const
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_row_iterator::operator==(const typename SpSubview<eT>::const_row_iterator& rhs) const
   {
@@ -884,6 +729,7 @@ SpMat<eT>::const_row_iterator::operator==(const typename SpSubview<eT>::const_ro
 
 template<typename eT>
 inline
+arma_hot
 bool
 SpMat<eT>::const_row_iterator::operator!=(const typename SpSubview<eT>::const_row_iterator& rhs) const
   {
@@ -898,25 +744,26 @@ SpMat<eT>::const_row_iterator::operator!=(const typename SpSubview<eT>::const_ro
 
 template<typename eT>
 inline
-SpValProxy< SpMat<eT> >
+arma_hot
+SpValProxy<SpMat<eT> >
 SpMat<eT>::row_iterator::operator*()
   {
-  return SpValProxy< SpMat<eT> >(
-      const_row_iterator::internal_row,
-      iterator_base::internal_col,
-      access::rw(*iterator_base::M),
-      &access::rw(iterator_base::M->values[const_row_iterator::actual_pos]));
+  return SpValProxy<SpMat<eT> >(
+    const_row_iterator::internal_row,
+    iterator_base::internal_col,
+    access::rw(*iterator_base::M),
+    &access::rw(iterator_base::M->values[const_row_iterator::actual_pos]));
   }
 
 
 
 template<typename eT>
 inline
+arma_hot
 typename SpMat<eT>::row_iterator&
 SpMat<eT>::row_iterator::operator++()
   {
   const_row_iterator::operator++();
-  
   return *this;
   }
 
@@ -924,13 +771,14 @@ SpMat<eT>::row_iterator::operator++()
 
 template<typename eT>
 inline
+arma_warn_unused
 typename SpMat<eT>::row_iterator
 SpMat<eT>::row_iterator::operator++(int)
   {
   typename SpMat<eT>::row_iterator tmp(*this);
-  
+
   const_row_iterator::operator++();
-  
+
   return tmp;
   }
 
@@ -938,11 +786,11 @@ SpMat<eT>::row_iterator::operator++(int)
 
 template<typename eT>
 inline
+arma_hot
 typename SpMat<eT>::row_iterator&
 SpMat<eT>::row_iterator::operator--()
   {
   const_row_iterator::operator--();
-  
   return *this;
   }
 
@@ -950,15 +798,15 @@ SpMat<eT>::row_iterator::operator--()
 
 template<typename eT>
 inline
+arma_warn_unused
 typename SpMat<eT>::row_iterator
 SpMat<eT>::row_iterator::operator--(int)
   {
   typename SpMat<eT>::row_iterator tmp(*this);
-  
+
   const_row_iterator::operator--();
-  
+
   return tmp;
   }
-
 
 //! @}

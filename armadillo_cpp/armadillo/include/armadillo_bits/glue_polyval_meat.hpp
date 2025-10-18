@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +24,7 @@ inline
 void
 glue_polyval::apply_noalias(Mat<eT>& out, const Mat<eT>& P, const Mat<eT>& X)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   out.set_size(X.n_rows, X.n_cols);
   
@@ -48,7 +46,7 @@ inline
 void
 glue_polyval::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_polyval>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -58,7 +56,7 @@ glue_polyval::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_poly
   const Mat<eT>& P = UP.M;
   const Mat<eT>& X = UX.M;
   
-  arma_conform_check( ((P.is_vec() == false) && (P.is_empty() == false)), "polyval(): argument P must be a vector" );
+  arma_debug_check( ((P.is_vec() == false) && (P.is_empty() == false)), "polyval(): argument P must be a vector" );
   
   if(P.is_empty() || X.is_empty())
     {

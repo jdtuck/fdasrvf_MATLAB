@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,15 +19,9 @@
 
 
 
-struct glue_mixed_times
+class glue_mixed_times
   {
-  template<typename T1, typename T2>
-  struct traits
-    {
-    static constexpr bool is_row  = T1::is_row;
-    static constexpr bool is_col  = T2::is_col;
-    static constexpr bool is_xvec = false;
-    };
+  public:
   
   template<typename T1, typename T2>
   inline static void apply(Mat<typename eT_promoter<T1,T2>::eT>& out, const mtGlue<typename eT_promoter<T1,T2>::eT, T1, T2, glue_mixed_times>& X);
@@ -37,9 +29,10 @@ struct glue_mixed_times
 
 
 
-struct glue_mixed_plus
-  : public traits_glue_or
+class glue_mixed_plus
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat<typename eT_promoter<T1,T2>::eT>& out, const mtGlue<typename eT_promoter<T1,T2>::eT, T1, T2, glue_mixed_plus>& X);
   
@@ -49,9 +42,10 @@ struct glue_mixed_plus
 
 
 
-struct glue_mixed_minus
-  : public traits_glue_or
+class glue_mixed_minus
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat<typename eT_promoter<T1,T2>::eT>& out, const mtGlue<typename eT_promoter<T1,T2>::eT, T1, T2, glue_mixed_minus>& X);
   
@@ -61,9 +55,10 @@ struct glue_mixed_minus
 
 
 
-struct glue_mixed_div
-  : public traits_glue_or
+class glue_mixed_div
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat<typename eT_promoter<T1,T2>::eT>& out, const mtGlue<typename eT_promoter<T1,T2>::eT, T1, T2, glue_mixed_div>& X);
   
@@ -73,9 +68,10 @@ struct glue_mixed_div
 
 
 
-struct glue_mixed_schur
-  : public traits_glue_or
+class glue_mixed_schur
   {
+  public:
+  
   template<typename T1, typename T2>
   inline static void apply(Mat<typename eT_promoter<T1,T2>::eT>& out, const mtGlue<typename eT_promoter<T1,T2>::eT, T1, T2, glue_mixed_schur>& X);
   

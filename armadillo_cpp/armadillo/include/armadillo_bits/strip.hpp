@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,14 +24,14 @@ struct strip_diagmat
   {
   typedef T1 stored_type;
   
-  inline
+  arma_hot inline
   strip_diagmat(const T1& X)
     : M(X)
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     }
   
-  static constexpr bool do_diagmat = false;
+  static const bool do_diagmat = false;
   
   const T1& M;
   };
@@ -45,14 +43,14 @@ struct strip_diagmat< Op<T1, op_diagmat> >
   {
   typedef T1 stored_type;
   
-  inline
+  arma_hot inline
   strip_diagmat(const Op<T1, op_diagmat>& X)
     : M(X.m)
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     }
   
-  static constexpr bool do_diagmat = true;
+  static const bool do_diagmat = true;
   
   const T1& M;
   };
@@ -64,166 +62,54 @@ struct strip_inv
   {
   typedef T1 stored_type;
   
-  inline
+  arma_hot inline
   strip_inv(const T1& X)
     : M(X)
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     }
   
   const T1& M;
   
-  static constexpr bool do_inv_gen = false;
-  static constexpr bool do_inv_spd = false;
+  static const bool do_inv = false;
   };
 
 
 
 template<typename T1>
-struct strip_inv< Op<T1, op_inv_gen_default> >
+struct strip_inv< Op<T1, op_inv> >
   {
   typedef T1 stored_type;
   
-  inline
-  strip_inv(const Op<T1, op_inv_gen_default>& X)
+  arma_hot inline
+  strip_inv(const Op<T1, op_inv>& X)
     : M(X.m)
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     }
   
   const T1& M;
   
-  static constexpr bool do_inv_gen = true;
-  static constexpr bool do_inv_spd = false;
+  static const bool do_inv = true;
   };
 
 
 
 template<typename T1>
-struct strip_inv< Op<T1, op_inv_spd_default> >
+struct strip_inv< Op<T1, op_inv_sympd> >
   {
   typedef T1 stored_type;
   
-  inline
-  strip_inv(const Op<T1, op_inv_spd_default>& X)
+  arma_hot inline
+  strip_inv(const Op<T1, op_inv_sympd>& X)
     : M(X.m)
     {
-    arma_debug_sigprint();
+    arma_extra_debug_sigprint();
     }
   
   const T1& M;
   
-  static constexpr bool do_inv_gen = false;
-  static constexpr bool do_inv_spd = true;
-  };
-
-
-
-template<typename T1>
-struct strip_trimat
-  {
-  typedef T1 stored_type;
-  
-  const T1& M;
-  
-  static constexpr bool do_trimat = false;
-  static constexpr bool do_triu   = false;
-  static constexpr bool do_tril   = false;
-  
-  inline
-  strip_trimat(const T1& X)
-    : M(X)
-    {
-    arma_debug_sigprint();
-    }
-  };
-
-
-
-template<typename T1>
-struct strip_trimat< Op<T1, op_trimat> >
-  {
-  typedef T1 stored_type;
-  
-  const T1& M;
-  
-  static constexpr bool do_trimat = true;
-  
-  const bool do_triu;
-  const bool do_tril;
-  
-  inline
-  strip_trimat(const Op<T1, op_trimat>& X)
-    : M(X.m)
-    , do_triu(X.aux_uword_a == 0)
-    , do_tril(X.aux_uword_a == 1)
-    {
-    arma_debug_sigprint();
-    }
-  };
-
-
-
-//
-
-
-
-template<typename T1>
-struct sp_strip_trans
-  {
-  typedef T1 stored_type;
-  
-  inline
-  sp_strip_trans(const T1& X)
-    : M(X)
-    {
-    arma_debug_sigprint();
-    }
-  
-  static constexpr bool do_htrans = false;
-  static constexpr bool do_strans = false;
-  
-  const T1& M;
-  };
-
-
-
-template<typename T1>
-struct sp_strip_trans< SpOp<T1, spop_htrans> >
-  {
-  typedef T1 stored_type;
-  
-  inline
-  sp_strip_trans(const SpOp<T1, spop_htrans>& X)
-    : M(X.m)
-    {
-    arma_debug_sigprint();
-    }
-  
-  static constexpr bool do_htrans = true;
-  static constexpr bool do_strans = false;
-  
-  const T1& M;
-  };
-
-
-
-template<typename T1>
-struct sp_strip_trans< SpOp<T1, spop_strans> >
-  {
-  typedef T1 stored_type;
-  
-  inline
-  sp_strip_trans(const SpOp<T1, spop_strans>& X)
-    : M(X.m)
-    {
-    arma_debug_sigprint();
-    }
-  
-  static constexpr bool do_htrans = false;
-  static constexpr bool do_strans = true;
-  
-  const T1& M;
+  static const bool do_inv = true;
   };
 
 

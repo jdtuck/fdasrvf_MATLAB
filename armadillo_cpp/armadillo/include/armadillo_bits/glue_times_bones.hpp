@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,18 +22,18 @@
 //! \brief
 //! Template metaprogram depth_lhs
 //! calculates the number of Glue<Tx,Ty, glue_type> instances on the left hand side argument of Glue<Tx,Ty, glue_type>
-//! ie. it recursively expands each Tx, until the type of Tx is not "Glue<..,.., glue_type>"  (i.e the "glue_type" changes)
+//! i.e. it recursively expands each Tx, until the type of Tx is not "Glue<..,.., glue_type>"  (i.e the "glue_type" changes)
 
 template<typename glue_type, typename T1>
 struct depth_lhs
   {
-  static constexpr uword num = 0;
+  static const uword num = 0;
   };
 
 template<typename glue_type, typename T1, typename T2>
 struct depth_lhs< glue_type, Glue<T1,T2,glue_type> >
   {
-  static constexpr uword num = 1 + depth_lhs<glue_type, T1>::num;
+  static const uword num = 1 + depth_lhs<glue_type, T1>::num;
   };
 
 
@@ -108,15 +106,10 @@ struct glue_times_redirect<4>
 
 
 //! Class which implements the immediate multiplication of two or more matrices
-struct glue_times
+class glue_times
   {
-  template<typename T1, typename T2>
-  struct traits
-    {
-    static constexpr bool is_row  = T1::is_row;
-    static constexpr bool is_col  = T2::is_col;
-    static constexpr bool is_xvec = false;
-    };
+  public:
+  
   
   template<typename T1, typename T2>
   arma_hot inline static void apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_times>& X);
@@ -145,20 +138,16 @@ struct glue_times
 
 
 
-struct glue_times_diag
+class glue_times_diag
   {
-  template<typename T1, typename T2>
-  struct traits
-    {
-    static constexpr bool is_row  = T1::is_row;
-    static constexpr bool is_col  = T2::is_col;
-    static constexpr bool is_xvec = false;
-    };
+  public:
   
   template<typename T1, typename T2>
   arma_hot inline static void apply(Mat<typename T1::elem_type>& out, const Glue<T1, T2, glue_times_diag>& X);
+  
   };
 
 
 
 //! @}
+

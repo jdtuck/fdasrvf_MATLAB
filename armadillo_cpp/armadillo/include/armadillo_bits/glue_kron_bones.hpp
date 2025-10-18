@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,16 +20,10 @@
 
 
 
-struct glue_kron
+class glue_kron
   {
-  template<typename T1, typename T2>
-  struct traits
-    {
-    static constexpr bool is_row  = (T1::is_row && T2::is_row);
-    static constexpr bool is_col  = (T1::is_col && T2::is_col);
-    static constexpr bool is_xvec = false;
-    };
-  
+  public:
+
   template<typename eT> inline static void direct_kron(Mat<eT>&                out, const Mat<eT>&                A, const Mat<eT>&                B);
   template<typename T>  inline static void direct_kron(Mat< std::complex<T> >& out, const Mat< std::complex<T> >& A, const Mat<T>&                 B);
   template<typename T>  inline static void direct_kron(Mat< std::complex<T> >& out, const Mat<T>&                 A, const Mat< std::complex<T> >& B);
@@ -42,3 +34,4 @@ struct glue_kron
 
 
 //! @}
+

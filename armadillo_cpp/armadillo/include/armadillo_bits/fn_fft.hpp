@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,7 +34,7 @@ enable_if2
   >::result
 fft(const T1& A)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return mtOp<std::complex<typename T1::pod_type>, T1, op_fft_real>(A, uword(0), uword(1));
   }
@@ -54,7 +52,7 @@ enable_if2
   >::result
 fft(const T1& A, const uword N)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return mtOp<std::complex<typename T1::pod_type>, T1, op_fft_real>(A, N, uword(0));
   }
@@ -67,12 +65,12 @@ inline
 typename
 enable_if2
   <
-  (is_arma_type<T1>::value && is_cx<typename T1::elem_type>::yes),
+  (is_arma_type<T1>::value && is_complex_strict<typename T1::elem_type>::value),
   const Op<T1, op_fft_cx>
   >::result
 fft(const T1& A)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return Op<T1, op_fft_cx>(A, uword(0), uword(1));
   }
@@ -85,12 +83,12 @@ inline
 typename
 enable_if2
   <
-  (is_arma_type<T1>::value && is_cx<typename T1::elem_type>::yes),
+  (is_arma_type<T1>::value && is_complex_strict<typename T1::elem_type>::value),
   const Op<T1, op_fft_cx>
   >::result
 fft(const T1& A, const uword N)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return Op<T1, op_fft_cx>(A, N, uword(0));
   }
@@ -103,12 +101,12 @@ inline
 typename
 enable_if2
   <
-  (is_arma_type<T1>::value && is_cx<typename T1::elem_type>::yes),
+  (is_arma_type<T1>::value && is_complex_strict<typename T1::elem_type>::value),
   const Op<T1, op_ifft_cx>
   >::result
 ifft(const T1& A)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return Op<T1, op_ifft_cx>(A, uword(0), uword(1));
   }
@@ -121,12 +119,12 @@ inline
 typename
 enable_if2
   <
-  (is_arma_type<T1>::value && is_cx<typename T1::elem_type>::yes),
+  (is_arma_type<T1>::value && is_complex_strict<typename T1::elem_type>::value),
   const Op<T1, op_ifft_cx>
   >::result
 ifft(const T1& A, const uword N)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   return Op<T1, op_ifft_cx>(A, N, uword(0));
   }

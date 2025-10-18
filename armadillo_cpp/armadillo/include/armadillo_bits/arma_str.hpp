@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,57 +20,54 @@
 
 namespace arma_str
   {
-  class char_buffer
-    {
-    public:
-    
-    static constexpr uword n_chars_prealloc = 1024;
-    
-    char* mem     = nullptr;
-    uword n_chars = 0;
-    
-    char local_mem[n_chars_prealloc];
-    
-    inline
-    ~char_buffer()
-      {
-      if(n_chars > n_chars_prealloc)  { std::free(mem); }
-      
-      mem     = nullptr; 
-      n_chars = 0;
-      }
-    
-    inline
-    char_buffer()
-      {
-      mem     = &(local_mem[0]);
-      n_chars = n_chars_prealloc;
-      
-      if(n_chars > 0)  { mem[0] = char(0); }
-      }
-    
-    inline
-    void
-    set_size(const uword new_n_chars)
-      {
-      if(n_chars > n_chars_prealloc)  { std::free(mem); }
-      
-      mem     = (new_n_chars <= n_chars_prealloc) ? &(local_mem[0])  : (char*)std::malloc(new_n_chars);
-      n_chars = (new_n_chars <= n_chars_prealloc) ? n_chars_prealloc : new_n_chars;
-      
-      if(n_chars > 0)  { mem[0] = char(0); }
-      }
-    };
   
+  #if ( defined(ARMA_USE_CXX11) || defined(ARMA_HAVE_SNPRINTF) )
+    
+    #define arma_snprintf std::snprintf
+    
+  #else
+    
+    // better-than-nothing emulation of C99 snprintf(),
+    // with correct return value and null-terminated output string.
+    // note that _snprintf() provided by MS is not a good substitute for snprintf()
+    
+    inline
+    int
+    arma_snprintf(char* out, size_t size, const char* fmt, ...)
+      {
+      size_t i;
+      
+      for(i=0; i<size; ++i)
+        {
+        out[i] = fmt[i];
+        if(fmt[i] == char(0))
+          break;
+        }
+      
+      if(size > 0)
+        out[size-1] = char(0);
+      
+      return int(i);
+      }
+    
+  #endif
   
   class format
     {
     public:
     
-    const std::string fmt;
+    format(const char* in_fmt)
+      : A(in_fmt)
+      {
+      }
     
-    inline format(const char*        in_fmt) : fmt(in_fmt) { }
-    inline format(const std::string& in_fmt) : fmt(in_fmt) { }
+    format(const std::string& in_fmt)
+      : A(in_fmt)
+      {
+      }
+    
+    
+    const std::string A;
     
     private:
     format();
@@ -85,10 +80,14 @@ namespace arma_str
     {
     public:
     
+    basic_format(const T1& in_A, const T2& in_B)
+      : A(in_A)
+      , B(in_B)
+      {
+      }
+    
     const T1& A;
     const T2& B;
-    
-    inline basic_format(const T1& in_A, const T2& in_B) : A(in_A) , B(in_B) { }
     
     private:
     basic_format();
@@ -121,30 +120,47 @@ namespace arma_str
   std::string
   str(const basic_format< format, T2>& X)
     {
+    char  local_buffer[1024];
+    char* buffer = local_buffer;
+    
+    int buffer_size   = 1024;
+    int required_size = buffer_size;
+    
+    bool using_local_buffer = true;
+    
     std::string out;
-    char_buffer buf;
     
-    bool status = false;
-    
-    while(status == false)
+    do
       {
-      int required_size = (std::snprintf)(buf.mem, size_t(buf.n_chars), X.A.fmt.c_str(), X.B);
-      
-      if(required_size < 0)  { break; }
-      
-      if(uword(required_size) >= buf.n_chars)
+      if(using_local_buffer == false)
         {
-        if(buf.n_chars > char_buffer::n_chars_prealloc)  { break; }
-        
-        buf.set_size(1 + uword(required_size));
+        buffer = new char[buffer_size];
+        }
+      
+      required_size = arma_snprintf(buffer, size_t(buffer_size), X.A.A.c_str(), X.B);
+      
+      if(required_size < buffer_size)
+        {
+        if(required_size > 0)
+          {
+          out = buffer;
+          }
         }
       else
         {
-        status = true;
+        buffer_size *= 2;
         }
       
-      if(status)  { out = buf.mem; }
-      }
+      if(using_local_buffer)
+        {
+        using_local_buffer = false;
+        }
+      else
+        {
+        delete[] buffer;
+        }
+      
+      } while( (required_size >= buffer_size) );
     
     return out;
     }
@@ -156,30 +172,47 @@ namespace arma_str
   std::string
   str(const basic_format< basic_format< format, T2>, T3>& X)
     {
-    char_buffer buf;
+    char  local_buffer[1024];
+    char* buffer = local_buffer;
+    
+    int buffer_size   = 1024;
+    int required_size = buffer_size;
+    
+    bool using_local_buffer = true;
+    
     std::string out;
     
-    bool status = false;
-    
-    while(status == false)
+    do
       {
-      int required_size = (std::snprintf)(buf.mem, size_t(buf.n_chars), X.A.A.fmt.c_str(), X.A.B, X.B);
-      
-      if(required_size < 0)  { break; }
-      
-      if(uword(required_size) >= buf.n_chars)
+      if(using_local_buffer == false)
         {
-        if(buf.n_chars > char_buffer::n_chars_prealloc)  { break; }
-        
-        buf.set_size(1 + uword(required_size));
+        buffer = new char[buffer_size];
+        }
+      
+      required_size = arma_snprintf(buffer, size_t(buffer_size), X.A.A.A.c_str(), X.A.B, X.B);
+      
+      if(required_size < buffer_size)
+        {
+        if(required_size > 0)
+          {
+          out = buffer;
+          }
         }
       else
         {
-        status = true;
+        buffer_size *= 2;
         }
       
-      if(status)  { out = buf.mem; }
-      }
+      if(using_local_buffer)
+        {
+        using_local_buffer = false;
+        }
+      else
+        {
+        delete[] buffer;
+        }
+      
+      } while( (required_size >= buffer_size) );
     
     return out;
     }
@@ -191,30 +224,47 @@ namespace arma_str
   std::string
   str(const basic_format< basic_format< basic_format< format, T2>, T3>, T4>& X)
     {
-    char_buffer buf;
+    char  local_buffer[1024];
+    char* buffer = local_buffer;
+    
+    int buffer_size   = 1024;
+    int required_size = buffer_size;
+    
+    bool using_local_buffer = true;
+    
     std::string out;
     
-    bool status = false;
-    
-    while(status == false)
+    do
       {
-      int required_size = (std::snprintf)(buf.mem, size_t(buf.n_chars), X.A.A.A.fmt.c_str(), X.A.A.B, X.A.B, X.B);
-      
-      if(required_size < 0)  { break; }
-      
-      if(uword(required_size) >= buf.n_chars)
+      if(using_local_buffer == false)
         {
-        if(buf.n_chars > char_buffer::n_chars_prealloc)  { break; }
-        
-        buf.set_size(1 + uword(required_size));
+        buffer = new char[buffer_size];
+        }
+      
+      required_size = arma_snprintf(buffer, size_t(buffer_size), X.A.A.A.A.c_str(), X.A.A.B, X.A.B, X.B);
+      
+      if(required_size < buffer_size)
+        {
+        if(required_size > 0)
+          {
+          out = buffer;
+          }
         }
       else
         {
-        status = true;
+        buffer_size *= 2;
         }
       
-      if(status)  { out = buf.mem; }
-      }
+      if(using_local_buffer)
+        {
+        using_local_buffer = false;
+        }
+      else
+        {
+        delete[] buffer;
+        }
+      
+      } while( (required_size >= buffer_size) );
     
     return out;
     }
@@ -226,30 +276,47 @@ namespace arma_str
   std::string
   str(const basic_format< basic_format< basic_format< basic_format< format, T2>, T3>, T4>, T5>& X)
     {
-    char_buffer buf;
+    char  local_buffer[1024];
+    char* buffer = local_buffer;
+    
+    int buffer_size   = 1024;
+    int required_size = buffer_size;
+    
+    bool using_local_buffer = true;
+    
     std::string out;
     
-    bool status = false;
-    
-    while(status == false)
+    do
       {
-      int required_size = (std::snprintf)(buf.mem, size_t(buf.n_chars), X.A.A.A.A.fmt.c_str(), X.A.A.A.B, X.A.A.B, X.A.B, X.B);
-      
-      if(required_size < 0)  { break; }
-      
-      if(uword(required_size) >= buf.n_chars)
+      if(using_local_buffer == false)
         {
-        if(buf.n_chars > char_buffer::n_chars_prealloc)  { break; }
-        
-        buf.set_size(1 + uword(required_size));
+        buffer = new char[buffer_size];
+        }
+      
+      required_size = arma_snprintf(buffer, size_t(buffer_size), X.A.A.A.A.A.c_str(), X.A.A.A.B, X.A.A.B, X.A.B, X.B);
+      
+      if(required_size < buffer_size)
+        {
+        if(required_size > 0)
+          {
+          out = buffer;
+          }
         }
       else
         {
-        status = true;
+        buffer_size *= 2;
         }
       
-      if(status)  { out = buf.mem; }
-      }
+      if(using_local_buffer)
+        {
+        using_local_buffer = false;
+        }
+      else
+        {
+        delete[] buffer;
+        }
+      
+      } while( (required_size >= buffer_size) );
     
     return out;
     }
@@ -261,30 +328,47 @@ namespace arma_str
   std::string
   str(const basic_format< basic_format< basic_format< basic_format< basic_format< format, T2>, T3>, T4>, T5>, T6>& X)
     {
-    char_buffer buf;
+    char  local_buffer[1024];
+    char* buffer = local_buffer;
+    
+    int buffer_size   = 1024;
+    int required_size = buffer_size;
+    
+    bool using_local_buffer = true;
+    
     std::string out;
     
-    bool status = false;
-    
-    while(status == false)
+    do
       {
-      int required_size = (std::snprintf)(buf.mem, size_t(buf.n_chars), X.A.A.A.A.A.fmt.c_str(), X.A.A.A.A.B, X.A.A.A.B, X.A.A.B, X.A.B, X.B);
-      
-      if(required_size < 0)  { break; }
-      
-      if(uword(required_size) >= buf.n_chars)
+      if(using_local_buffer == false)
         {
-        if(buf.n_chars > char_buffer::n_chars_prealloc)  { break; }
-        
-        buf.set_size(1 + uword(required_size));
+        buffer = new char[buffer_size];
+        }
+      
+      required_size = arma_snprintf(buffer, size_t(buffer_size), X.A.A.A.A.A.A.c_str(), X.A.A.A.A.B, X.A.A.A.B, X.A.A.B, X.A.B, X.B);
+      
+      if(required_size < buffer_size)
+        {
+        if(required_size > 0)
+          {
+          out = buffer;
+          }
         }
       else
         {
-        status = true;
+        buffer_size *= 2;
         }
       
-      if(status)  { out = buf.mem; }
-      }
+      if(using_local_buffer)
+        {
+        using_local_buffer = false;
+        }
+      else
+        {
+        delete[] buffer;
+        }
+      
+      } while( (required_size >= buffer_size) );
     
     return out;
     }
@@ -296,30 +380,47 @@ namespace arma_str
   std::string
   str(const basic_format< basic_format< basic_format< basic_format< basic_format< basic_format< format, T2>, T3>, T4>, T5>, T6>, T7>& X)
     {
-    char_buffer buf;
+    char  local_buffer[1024];
+    char* buffer = local_buffer;
+    
+    int buffer_size   = 1024;
+    int required_size = buffer_size;
+    
+    bool using_local_buffer = true;
+    
     std::string out;
     
-    bool status = false;
-    
-    while(status == false)
+    do
       {
-      int required_size = (std::snprintf)(buf.mem, size_t(buf.n_chars), X.A.A.A.A.A.A.fmt.c_str(), X.A.A.A.A.A.B, X.A.A.A.A.B, X.A.A.A.B, X.A.A.B, X.A.B, X.B);
-      
-      if(required_size < 0)  { break; }
-      
-      if(uword(required_size) >= buf.n_chars)
+      if(using_local_buffer == false)
         {
-        if(buf.n_chars > char_buffer::n_chars_prealloc)  { break; }
-        
-        buf.set_size(1 + uword(required_size));
+        buffer = new char[buffer_size];
+        }
+      
+      required_size = arma_snprintf(buffer, size_t(buffer_size), X.A.A.A.A.A.A.A.c_str(), X.A.A.A.A.A.B, X.A.A.A.A.B, X.A.A.A.B, X.A.A.B, X.A.B, X.B);
+      
+      if(required_size < buffer_size)
+        {
+        if(required_size > 0)
+          {
+          out = buffer;
+          }
         }
       else
         {
-        status = true;
+        buffer_size *= 2;
         }
       
-      if(status)  { out = buf.mem; }
-      }
+      if(using_local_buffer)
+        {
+        using_local_buffer = false;
+        }
+      else
+        {
+        delete[] buffer;
+        }
+      
+      } while( (required_size >= buffer_size) );
     
     return out;
     }
@@ -329,7 +430,7 @@ namespace arma_str
   template<typename T1>
   struct format_metaprog
     {
-    static constexpr uword depth = 0;
+    static const uword depth = 0;
     
     inline
     static  
@@ -346,7 +447,7 @@ namespace arma_str
   template<typename T1, typename T2>
   struct format_metaprog< basic_format<T1,T2> >
     {
-    static constexpr uword depth = 1 + format_metaprog<T1>::depth;
+    static const uword depth = 1 + format_metaprog<T1>::depth;
     
     inline
     static
@@ -398,7 +499,7 @@ namespace arma_str
   inline
   static
   const T1&
-  str_wrapper(const T1& x, const typename string_only<T1>::result* junk = nullptr)
+  str_wrapper(const T1& x, const typename string_only<T1>::result* junk = 0)
     {
     arma_ignore(junk);
     
@@ -411,7 +512,7 @@ namespace arma_str
   inline
   static
   const T1*
-  str_wrapper(const T1* x, const typename char_only<T1>::result* junk = nullptr)
+  str_wrapper(const T1* x, const typename char_only<T1>::result* junk = 0)
     {
     arma_ignore(junk);
     
@@ -424,7 +525,7 @@ namespace arma_str
   inline
   static
   std::string
-  str_wrapper(const T1& x, const typename basic_format_only<T1>::result* junk = nullptr)
+  str_wrapper(const T1& x, const typename basic_format_only<T1>::result* junk = 0)
     {
     arma_ignore(junk);
     

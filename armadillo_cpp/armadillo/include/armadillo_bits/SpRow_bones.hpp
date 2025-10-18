@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,13 +23,12 @@ template<typename eT>
 class SpRow : public SpMat<eT>
   {
   public:
-  
+
   typedef eT                                elem_type;
   typedef typename get_pod_type<eT>::result pod_type;
   
-  static constexpr bool is_row  = true;
-  static constexpr bool is_col  = false;
-  static constexpr bool is_xvec = false;
+  static const bool is_row = true;
+  static const bool is_col = false;
   
   
   inline          SpRow();
@@ -47,9 +44,7 @@ class SpRow : public SpMat<eT>
   
   inline SpRow& operator=(const eT val);
   
-  inline SpRow(const Row<eT>& X);  // for backwards compatibility
-  
-  template<typename T1> inline explicit   SpRow(const Base<eT,T1>& X);
+  template<typename T1> inline            SpRow(const Base<eT,T1>& X);
   template<typename T1> inline SpRow& operator=(const Base<eT,T1>& X);
   
   template<typename T1> inline            SpRow(const SpBase<eT,T1>& X);
@@ -57,12 +52,6 @@ class SpRow : public SpMat<eT>
   
   template<typename T1, typename T2>
   inline explicit SpRow(const SpBase<pod_type,T1>& A, const SpBase<pod_type,T2>& B);
-  
-  arma_warn_unused inline const SpOp<SpRow<eT>,spop_htrans>  t() const;
-  arma_warn_unused inline const SpOp<SpRow<eT>,spop_htrans> ht() const;
-  arma_warn_unused inline const SpOp<SpRow<eT>,spop_strans> st() const;
-  
-  arma_warn_unused inline const SpToDOp<SpRow<eT>,op_sp_as_dense> as_dense() const;
   
   inline void shed_col (const uword col_num);
   inline void shed_cols(const uword in_col1, const uword in_col2);
@@ -79,7 +68,7 @@ class SpRow : public SpMat<eT>
   inline       row_iterator end_row(const uword row_num = 0);
   inline const_row_iterator end_row(const uword row_num = 0) const;
   
-  #if defined(ARMA_EXTRA_SPROW_PROTO)
+  #ifdef ARMA_EXTRA_SPROW_PROTO
     #include ARMA_INCFILE_WRAP(ARMA_EXTRA_SPROW_PROTO)
   #endif
   };

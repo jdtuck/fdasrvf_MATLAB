@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +25,7 @@ Glue<T1,T2,glue_type>::Glue(const T1& in_A, const T2& in_B)
   : A(in_A)
   , B(in_B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   }
 
 
@@ -39,7 +37,7 @@ Glue<T1,T2,glue_type>::Glue(const T1& in_A, const T2& in_B, const uword in_aux_u
   , B(in_B)
   , aux_uword(in_aux_uword)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   }
 
 
@@ -48,20 +46,7 @@ template<typename T1, typename T2, typename glue_type>
 inline
 Glue<T1,T2,glue_type>::~Glue()
   {
-  arma_debug_sigprint();
-  }
-
-
-
-template<typename T1, typename T2, typename glue_type>
-template<typename eT2>
-inline
-bool
-Glue<T1,T2,glue_type>::is_alias(const Mat<eT2>& X) const
-  {
-  arma_debug_sigprint();
-  
-  return (A.is_alias(X) || B.is_alias(X));
+  arma_extra_debug_sigprint();
   }
 
 

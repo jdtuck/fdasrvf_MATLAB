@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +24,7 @@ inline
 void
 glue_atan2::apply(Mat<typename T1::elem_type>& out, const Glue<T1, T2, glue_atan2>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -58,7 +56,7 @@ inline
 void
 glue_atan2::apply_noalias(Mat<typename T1::elem_type>& out, const Proxy<T1>& P1, const Proxy<T2>& P2)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -70,8 +68,8 @@ glue_atan2::apply_noalias(Mat<typename T1::elem_type>& out, const Proxy<T1>& P1,
   
   eT* out_mem = out.memptr();
   
-  const     bool use_mp = arma_config::openmp && mp_gate<eT, (Proxy<T1>::use_mp || Proxy<T2>::use_mp)>::eval(n_elem);
-  constexpr bool use_at = Proxy<T1>::use_at || Proxy<T2>::use_at;
+  const bool use_mp = arma_config::cxx11 && arma_config::openmp && mp_gate<eT, (Proxy<T1>::use_mp || Proxy<T2>::use_mp)>::eval(n_elem);
+  const bool use_at = Proxy<T1>::use_at || Proxy<T2>::use_at;
   
   if(use_at == false)
     {
@@ -127,7 +125,7 @@ inline
 void
 glue_atan2::apply(Cube<typename T1::elem_type>& out, const GlueCube<T1, T2, glue_atan2>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -159,7 +157,7 @@ inline
 void
 glue_atan2::apply_noalias(Cube<typename T1::elem_type>& out, const ProxyCube<T1>& P1, const ProxyCube<T2>& P2)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -172,8 +170,8 @@ glue_atan2::apply_noalias(Cube<typename T1::elem_type>& out, const ProxyCube<T1>
   
   eT* out_mem = out.memptr();
   
-  const     bool use_mp = arma_config::openmp && mp_gate<eT, (ProxyCube<T1>::use_mp || ProxyCube<T2>::use_mp)>::eval(n_elem);
-  constexpr bool use_at = ProxyCube<T1>::use_at || ProxyCube<T2>::use_at;
+  const bool use_mp = arma_config::cxx11 && arma_config::openmp && mp_gate<eT, (ProxyCube<T1>::use_mp || ProxyCube<T2>::use_mp)>::eval(n_elem);
+  const bool use_at = ProxyCube<T1>::use_at || ProxyCube<T2>::use_at;
   
   if(use_at == false)
     {

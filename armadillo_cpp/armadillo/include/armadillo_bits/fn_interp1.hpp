@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +24,7 @@ inline
 void
 interp1_helper_nearest(const Mat<eT>& XG, const Mat<eT>& YG, const Mat<eT>& XI, Mat<eT>& YI, const eT extrap_val)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const eT XG_min = XG.min();
   const eT XG_max = XG.max();
@@ -52,11 +50,6 @@ interp1_helper_nearest(const Mat<eT>& XG, const Mat<eT>& YG, const Mat<eT>& XI, 
     if((XI_val < XG_min) || (XI_val > XG_max))
       {
       YI_mem[i] = extrap_val;
-      }
-    else
-    if(arma_isnan(XI_val))
-      {
-      YI_mem[i] = Datum<eT>::nan;
       }
     else
       {
@@ -92,7 +85,7 @@ inline
 void
 interp1_helper_linear(const Mat<eT>& XG, const Mat<eT>& YG, const Mat<eT>& XI, Mat<eT>& YI, const eT extrap_val)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const eT XG_min = XG.min();
   const eT XG_max = XG.max();
@@ -117,11 +110,6 @@ interp1_helper_linear(const Mat<eT>& XG, const Mat<eT>& YG, const Mat<eT>& XI, M
     if((XI_val < XG_min) || (XI_val > XG_max))
       {
       YI_mem[i] = extrap_val;
-      }
-    else
-    if(arma_isnan(XI_val))
-      {
-      YI_mem[i] = Datum<eT>::nan;
       }
     else
       {
@@ -182,13 +170,13 @@ inline
 void
 interp1_helper(const Mat<eT>& X, const Mat<eT>& Y, const Mat<eT>& XI, Mat<eT>& YI, const uword sig, const eT extrap_val)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
-  arma_conform_check( ((X.is_vec() == false) || (Y.is_vec() == false) || (XI.is_vec() == false)), "interp1(): currently only vectors are supported" );
+  arma_debug_check( ((X.is_vec() == false) || (Y.is_vec() == false) || (XI.is_vec() == false)), "interp1(): currently only vectors are supported" );
   
-  arma_conform_check( (X.n_elem != Y.n_elem), "interp1(): X and Y must have the same number of elements" );
+  arma_debug_check( (X.n_elem != Y.n_elem), "interp1(): X and Y must have the same number of elements" );
   
-  arma_conform_check( (X.n_elem < 2), "interp1(): X must have at least two unique elements" );
+  arma_debug_check( (X.n_elem < 2), "interp1(): X must have at least two unique elements" );
   
   // sig = 10: nearest neighbour
   // sig = 11: nearest neighbour, assume monotonic increase in X and XI
@@ -208,10 +196,10 @@ interp1_helper(const Mat<eT>& X, const Mat<eT>& Y, const Mat<eT>& XI, Mat<eT>& Y
   
   const uword N_subset = X_indices.n_elem;
   
-  arma_conform_check( (N_subset < 2), "interp1(): X must have at least two unique elements" );
+  arma_debug_check( (N_subset < 2), "interp1(): X must have at least two unique elements" );
   
-  Mat<eT> X_sanitised(N_subset, 1, arma_nozeros_indicator());
-  Mat<eT> Y_sanitised(N_subset, 1, arma_nozeros_indicator());
+  Mat<eT> X_sanitised(N_subset,1);
+  Mat<eT> Y_sanitised(N_subset,1);
   
   eT* X_sanitised_mem = X_sanitised.memptr();
   eT* Y_sanitised_mem = Y_sanitised.memptr();
@@ -233,11 +221,11 @@ interp1_helper(const Mat<eT>& X, const Mat<eT>& Y, const Mat<eT>& XI, Mat<eT>& Y
   Mat<eT> XI_tmp;
   uvec    XI_indices;
   
-  const bool XI_is_sorted = XI.is_sorted();  // NOTE: .is_sorted() currently doesn't detect NaN
+  const bool XI_is_sorted = XI.is_sorted();
   
   if(XI_is_sorted == false)
     {
-    XI_indices = sort_index(XI);  // NOTE: sort_index() will throw if XI has NaN
+    XI_indices = sort_index(XI);
     
     const uword N = XI.n_elem;
     
@@ -255,8 +243,6 @@ interp1_helper(const Mat<eT>& X, const Mat<eT>& Y, const Mat<eT>& XI, Mat<eT>& Y
     }
   
   const Mat<eT>& XI_sorted = (XI_is_sorted) ? XI : XI_tmp;
-  
-  // NOTE: XI_sorted may have NaN
   
   
        if(sig == 10)  { interp1_helper_nearest(X_sanitised, Y_sanitised, XI_sorted, YI, extrap_val); }
@@ -304,13 +290,13 @@ interp1
   const typename T1::elem_type            extrap_val = Datum<typename T1::elem_type>::nan
   )
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
   uword sig = 0;
   
-  if(method    != nullptr)
+  if(method    != NULL   )
   if(method[0] != char(0))
   if(method[1] != char(0))
     {
@@ -321,12 +307,12 @@ interp1
     else if(c1 == 'l')  { sig = 20; }  // linear
     else
       {
-      if( (c1 == '*') && (c2 == 'n') )  { sig = 11; }  // nearest neighbour, assume monotonic increase in X and XI
+      if( (c1 == '*') && (c2 == 'n') )  { sig = 11; }  // nearest neighour, assume monotonic increase in X and XI
       if( (c1 == '*') && (c2 == 'l') )  { sig = 21; }  // linear, assume monotonic increase in X and XI
       }
     }
   
-  arma_conform_check( (sig == 0), "interp1(): unsupported interpolation type" ); 
+  arma_debug_check( (sig == 0), "interp1(): unsupported interpolation type" ); 
   
   const quasi_unwrap<T1>  X_tmp( X.get_ref());
   const quasi_unwrap<T2>  Y_tmp( Y.get_ref());

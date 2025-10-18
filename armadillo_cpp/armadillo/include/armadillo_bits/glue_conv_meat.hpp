@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-// 
-// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
+// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// https://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +25,7 @@ inline
 void
 glue_conv::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B, const bool A_is_col)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const Mat<eT>& h = (A.n_elem <= B.n_elem) ? A : B;
   const Mat<eT>& x = (A.n_elem <= B.n_elem) ? B : A;
@@ -40,15 +38,18 @@ glue_conv::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B, const bool A_
   if( (h_n_elem == 0) || (x_n_elem == 0) )  { out.zeros(); return; }
   
   
-  Col<eT> hh(h_n_elem, arma_nozeros_indicator());  // flipped version of h
+  Col<eT> hh(h_n_elem);  // flipped version of h
   
   const eT*   h_mem =  h.memptr();
         eT*  hh_mem = hh.memptr();
   
-  for(uword i=0; i < h_n_elem; ++i)  { hh_mem[h_n_elem_m1-i] = h_mem[i]; }
+  for(uword i=0; i < h_n_elem; ++i)
+    {
+    hh_mem[h_n_elem_m1-i] = h_mem[i];
+    }
   
   
-  Col<eT> xx( (x_n_elem + 2*h_n_elem_m1), arma_zeros_indicator() );  // zero padded version of x
+  Col<eT> xx( (x_n_elem + 2*h_n_elem_m1), fill::zeros );  // zero padded version of x
   
   const eT*  x_mem =  x.memptr();
         eT* xx_mem = xx.memptr();
@@ -60,28 +61,11 @@ glue_conv::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B, const bool A_
   
   eT* out_mem = out.memptr();
   
-  if( (arma_config::openmp) && (x_n_elem >= 128) && (h_n_elem >= 64) && (mp_thread_limit::in_parallel() == false) )
+  for(uword i=0; i < out_n_elem; ++i)
     {
-    #if defined(ARMA_USE_OPENMP)
-      {
-      const int n_threads = mp_thread_limit::get();
-      
-      #pragma omp parallel for schedule(static) num_threads(n_threads)
-      for(uword i=0; i < out_n_elem; ++i)
-        {
-        out_mem[i] = op_dot::direct_dot( h_n_elem, hh_mem, &(xx_mem[i]) );
-        }
-      }
-    #endif
-    }
-  else
-    {
-    for(uword i=0; i < out_n_elem; ++i)
-      {
-      // out_mem[i] = dot( hh, xx.subvec(i, (i + h_n_elem_m1)) );
-      
-      out_mem[i] = op_dot::direct_dot( h_n_elem, hh_mem, &(xx_mem[i]) );
-      }
+    // out_mem[i] = dot( hh, xx.subvec(i, (i + h_n_elem_m1)) );
+    
+    out_mem[i] = op_dot::direct_dot( h_n_elem, hh_mem, &(xx_mem[i]) );
     }
   }
 
@@ -93,7 +77,7 @@ glue_conv::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B, const bool A_
 // void
 // glue_conv::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B, const bool A_is_col)
 //   {
-//   arma_debug_sigprint();
+//   arma_extra_debug_sigprint();
 //   
 //   const Mat<eT>& h = (A.n_elem <= B.n_elem) ? A : B;
 //   const Mat<eT>& x = (A.n_elem <= B.n_elem) ? B : A;
@@ -106,7 +90,7 @@ glue_conv::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B, const bool A_
 //   if( (h_n_elem == 0) || (x_n_elem == 0) )  { out.zeros(); return; }
 //   
 //   
-//   Col<eT> hh(h_n_elem, arma_nozeros_indicator());  // flipped version of h
+//   Col<eT> hh(h_n_elem);  // flipped version of h
 //   
 //   const eT*   h_mem =  h.memptr();
 //         eT*  hh_mem = hh.memptr();
@@ -122,7 +106,7 @@ glue_conv::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B, const bool A_
 //   
 //   const uword HH_n_rows = h_n_elem + (N_copies-1);
 //   
-//   Mat<eT> HH(HH_n_rows, N_copies, arma_zeros_indicator());
+//   Mat<eT> HH(HH_n_rows, N_copies, fill::zeros);
 //   
 //   for(uword i=0; i<N_copies; ++i)
 //     {
@@ -131,7 +115,7 @@ glue_conv::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B, const bool A_
 //   
 //   
 //   
-//   Col<eT> xx( (x_n_elem + 2*h_n_elem_m1), arma_zeros_indicator() );  // zero padded version of x
+//   Col<eT> xx( (x_n_elem + 2*h_n_elem_m1), fill::zeros );  // zero padded version of x
 //   
 //   const eT*  x_mem =  x.memptr();
 //         eT* xx_mem = xx.memptr();
@@ -184,7 +168,7 @@ inline
 void
 glue_conv::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_conv>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -194,10 +178,10 @@ glue_conv::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_conv>& 
   const Mat<eT>& A = UA.M;
   const Mat<eT>& B = UB.M;
   
-  arma_conform_check
+  arma_debug_check
     (
     ( ((A.is_vec() == false) && (A.is_empty() == false)) || ((B.is_vec() == false) && (B.is_empty() == false)) ),
-    "conv(): given object must be a vector"
+    "conv(): given object is not a vector"
     );
   
   const bool A_is_col = ((T1::is_col) || (A.n_cols == 1));
@@ -226,26 +210,6 @@ glue_conv::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_conv>& 
       out.zeros( arma::size(A) );
       }
     }
-  else
-  if(mode == 2)  // valid convolution
-    {
-    Mat<eT> tmp;
-    
-    glue_conv::apply(tmp, A, B, A_is_col);
-    
-    const uword out_len = (A.n_elem >= B.n_elem) ? uword(A.n_elem - B.n_elem + 1) : uword(0);
-    
-    const SizeMat out_size = (A_is_col) ? SizeMat(out_len, 1) : SizeMat(1, out_len);
-    
-    if( (out_len > 0) && (tmp.is_empty() == false) && (A.is_empty() == false) && (B.is_empty() == false) )
-      {
-      out = (A_is_col) ? tmp(B.n_elem - 1, 0, out_size) : tmp(0, B.n_elem - 1, out_size);
-      }
-    else
-      {
-      out.zeros( out_size );
-      }
-    }
   }
 
 
@@ -260,7 +224,7 @@ inline
 void
 glue_conv2::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   const Mat<eT>& G = (A.n_elem <= B.n_elem) ? A : B;   // unflipped filter coefficients
   const Mat<eT>& W = (A.n_elem <= B.n_elem) ? B : A;   // original 2D image
@@ -271,7 +235,7 @@ glue_conv2::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B)
   if(G.is_empty() || W.is_empty())  { out.zeros(); return; }
   
   
-  Mat<eT> H(G.n_rows, G.n_cols, arma_nozeros_indicator());  // flipped filter coefficients
+  Mat<eT> H(G.n_rows, G.n_cols);  // flipped filter coefficients
   
   const uword H_n_rows = H.n_rows;
   const uword H_n_cols = H.n_cols;
@@ -291,64 +255,31 @@ glue_conv2::apply(Mat<eT>& out, const Mat<eT>& A, const Mat<eT>& B)
     }
   
   
-  Mat<eT> X( (W.n_rows + 2*H_n_rows_m1), (W.n_cols + 2*H_n_cols_m1), arma_zeros_indicator() );
+  Mat<eT> X( (W.n_rows + 2*H_n_rows_m1), (W.n_cols + 2*H_n_cols_m1), fill::zeros );
   
   X( H_n_rows_m1, H_n_cols_m1, arma::size(W) ) = W;  // zero padded version of 2D image
   
   
   out.set_size( out_n_rows, out_n_cols );
   
-  if( (arma_config::openmp) && (out_n_cols >= 2) && (mp_thread_limit::in_parallel() == false) )
+  for(uword col=0; col < out_n_cols; ++col)
     {
-    #if defined(ARMA_USE_OPENMP)
+    eT* out_colptr = out.colptr(col);
+    
+    for(uword row=0; row < out_n_rows; ++row)
       {
-      const int n_threads = mp_thread_limit::get();
+      // out.at(row, col) = accu( H % X(row, col, size(H)) );
       
-      #pragma omp parallel for schedule(static) num_threads(n_threads)
-      for(uword col=0; col < out_n_cols; ++col)
-        {
-        eT* out_colptr = out.colptr(col);
-        
-        for(uword row=0; row < out_n_rows; ++row)
-          {
-          // out.at(row, col) = accu( H % X(row, col, size(H)) );
-          
-          eT acc = eT(0);
-          
-          for(uword H_col = 0; H_col < H_n_cols; ++H_col)
-            {
-            const eT* X_colptr = X.colptr(col + H_col);
-            
-            acc += op_dot::direct_dot( H_n_rows, H.colptr(H_col), &(X_colptr[row]) );
-            }
-          
-          out_colptr[row] = acc;
-          }
-        }
-      }
-    #endif
-    }
-  else
-    {
-    for(uword col=0; col < out_n_cols; ++col)
-      {
-      eT* out_colptr = out.colptr(col);
+      eT acc = eT(0);
       
-      for(uword row=0; row < out_n_rows; ++row)
+      for(uword H_col = 0; H_col < H_n_cols; ++H_col)
         {
-        // out.at(row, col) = accu( H % X(row, col, size(H)) );
+        const eT* X_colptr = X.colptr(col + H_col);
         
-        eT acc = eT(0);
-        
-        for(uword H_col = 0; H_col < H_n_cols; ++H_col)
-          {
-          const eT* X_colptr = X.colptr(col + H_col);
-          
-          acc += op_dot::direct_dot( H_n_rows, H.colptr(H_col), &(X_colptr[row]) );
-          }
-        
-        out_colptr[row] = acc;
+        acc += op_dot::direct_dot( H_n_rows, H.colptr(H_col), &(X_colptr[row]) );
         }
+      
+      out_colptr[row] = acc;
       }
     }
   }
@@ -360,7 +291,7 @@ inline
 void
 glue_conv2::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_conv2>& expr)
   {
-  arma_debug_sigprint();
+  arma_extra_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -393,27 +324,6 @@ glue_conv2::apply(Mat<typename T1::elem_type>& out, const Glue<T1,T2,glue_conv2>
     else
       {
       out.zeros( arma::size(A) );
-      }
-    }
-  else
-  if(mode == 2)  // valid convolution
-    {
-    Mat<eT> tmp;
-    
-    glue_conv2::apply(tmp, A, B);
-    
-    const uword out_n_rows = (A.n_rows >= B.n_rows) ? uword(A.n_rows - B.n_rows + 1) : uword(0);
-    const uword out_n_cols = (A.n_cols >= B.n_cols) ? uword(A.n_cols - B.n_cols + 1) : uword(0);
-    
-    const SizeMat out_size = SizeMat(out_n_rows, out_n_cols);
-    
-    if( (out_n_rows > 0) && (out_n_cols > 0) && (tmp.is_empty() == false) && (A.is_empty() == false) && (B.is_empty() == false) )
-      {
-      out = tmp(B.n_rows - 1, B.n_cols - 1, out_size);
-      }
-    else
-      {
-      out.zeros( out_size );
       }
     }
   }
