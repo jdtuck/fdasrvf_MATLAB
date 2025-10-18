@@ -42,7 +42,9 @@ jobs:
             Curve_Fitting_Toolbox
             Statistics_and_Machine_Learning_Toolbox
       - if: runner.os == 'Windows'
-        uses: rbreaves/install-mingw@v1
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64 # Or x86 for 32-bit builds
       - if: runner.os == 'Windows'
         uses: matlab-actions/run-command@v2
         with:
