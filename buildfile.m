@@ -34,7 +34,7 @@ if ismac
     options = ["-ld_classic" "-llapack" "-lblas"];
 elseif ispc
     libDir = fullfile(matlabroot,"/extern/lib/win64/microsoft");
-    options = [sprintf('-L"%s"',libDir) "-ld_classic" "-lmwlapack" "-lmwblas"];
+    options = [sprintf('-L"%s"',libDir) "LINKFLAGS=''$LINKFLAGS -ld_classic''" "-lmwlapack" "-lmwblas"];
 else
     options = ["-llapack" "-lblas"];
 end
@@ -42,7 +42,7 @@ plan("mex:c_rlbfgs") = MexTask("armadillo_cpp/c_rlbfgs.cpp","mex",Options=option
 
 
 % Add a task to run tests
-plan("test") = TestTask;
+plan("test") = TestTask();
 
 % Make the "archive" task the default task in the plan
 plan.DefaultTasks = "package";
