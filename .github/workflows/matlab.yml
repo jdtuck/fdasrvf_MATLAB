@@ -34,20 +34,20 @@ jobs:
           sudo apt install gcc-10 g++-10 -y
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10
           sudo apt-get install -y libopenblas-dev
-      - name: Set up MATLAB
+      - if: runner.os == 'Windows'
         uses: matlab-actions/setup-matlab@v2
         with:
           release: ${{ matrix.release }}
           products: >
             Curve_Fitting_Toolbox
             Statistics_and_Machine_Learning_Toolbox
-      - if: runner.os == 'Windows'
-        uses: egor-tensin/setup-mingw@v2
+            MATLAB_Support_for_MinGW-w64_C/C++/Fortran_Compiler
+      - if: runner.os == 'Linux' or runner.os == 'macOS'
+        uses: matlab-actions/setup-matlab@v2
         with:
-          platform: x64 # Or x86 for 32-bit builds
-      - if: runner.os == 'Windows'
-        uses: matlab-actions/run-command@v2
-        with:
-          command: mex -setup C++ # Or C for C language compilation
+          release: ${{ matrix.release }}
+          products: >
+            Curve_Fitting_Toolbox
+            Statistics_and_Machine_Learning_Toolbox
       - name: Run build
         uses: matlab-actions/run-build@v2
