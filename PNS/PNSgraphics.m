@@ -203,7 +203,7 @@ if d > 3
         if existSMfiles1 == 2
             projplot1SM(resmat(1,:),1,paramstruct);
         else
-            hist(resmat(1,:));ylabel('hist. of scores')
+            histogram(resmat(1,:));ylabel('hist. of scores')
         end
         xlabel('1st PNS');
         title(['var_1 = ' num2str(propPNS(1),'%3.2f') '%'])
@@ -226,7 +226,7 @@ if d > 3
         if existSMfiles1 == 2
             projplot1SM(resmat(2,:),1,paramstruct);
         else
-            hist(resmat(2,:));ylabel('hist. of scores')
+            histogram(resmat(2,:));ylabel('hist. of scores')
         end
         xlabel('2nd PNS')
         title(['var_2 = ' num2str(propPNS(2),'%3.2f') '%'])
@@ -260,7 +260,7 @@ else
         if existSMfiles1 == 2
             projplot1SM(resmat(1,:),1,paramstruct);
         else
-            hist(resmat(1,:));ylabel('hist. of scores')
+            histogram(resmat(1,:));ylabel('hist. of scores')
         end
         xlabel('1st PNS')
         title(['var_1 = ' num2str(propPNS(1),'%3.2f') '%'])

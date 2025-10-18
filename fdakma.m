@@ -472,7 +472,7 @@ classdef fdakma
             
             K = length(obj.fn);
             colors = varycolor(K);
-            figure(2); clf; hold all
+            figure(2); clf; hold on
             for k=1:K
                 plot(obj.time, obj.templates(:,k), 'Color', colors(k,:));
             end
@@ -480,7 +480,7 @@ classdef fdakma
             
             figure(3); clf;
             plot(obj.time, obj.fn{1}, 'Color', colors(1,:));
-            hold all
+            hold on
             for k = 2:K
                 plot(obj.time, obj.fn{k}, 'Color', colors(k,:));
             end
@@ -491,7 +491,7 @@ classdef fdakma
             
             figure(4); clf;
             plot(obj.time, obj.qn{1}, 'Color', colors(1,:));
-            hold all
+            hold on
             for k = 2:K
                 plot(obj.time, obj.qn{k}, 'Color', colors(k,:));
             end

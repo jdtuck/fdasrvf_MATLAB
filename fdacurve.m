@@ -658,7 +658,7 @@ classdef fdacurve
             end
             
             if (~isempty(obj.samples))
-                figure(4);clf;hold all;
+                figure(4);clf;hold on;
                 K = size(obj.samples,3);
                 n = size(obj.samples,1);
                 for ii = 1:K
