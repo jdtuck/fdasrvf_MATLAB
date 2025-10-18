@@ -46,8 +46,8 @@ jobs:
         uses: matlab-actions/run-command@v2
         with:
           command: |
-            mex -setup cpp
-            mex -setup c
+            mex -setup:D:\hostedtoolcache\windows\MATLAB\2025.2.999\x64\bin\win64\mexopts\mingw64_g++.xml C++
+            mex -setup:D:\hostedtoolcache\windows\MATLAB\2025.2.999\x64\bin\win64\mexopts\mingw64.xml C
       - if: runner.os == 'Linux'
         uses: matlab-actions/setup-matlab@v2
         with:
