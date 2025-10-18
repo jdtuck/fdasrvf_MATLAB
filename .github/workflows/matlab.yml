@@ -43,6 +43,7 @@ jobs:
             Statistics_and_Machine_Learning_Toolbox
       - if: runner.os == 'Windows'
         uses: rbreaves/install-mingw@v1
+      - if: runner.os == 'Windows'
         uses: matlab-actions/run-command@v2
         with:
           command: mex -setup C++ # Or C for C language compilation
