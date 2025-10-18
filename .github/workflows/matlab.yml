@@ -19,7 +19,7 @@ jobs:
     # The type of runner that the job will run on
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         release: [R2025b]
     
     runs-on: ${{ matrix.os }}
@@ -27,6 +27,13 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - if: runner.os == 'Windows'
+        run: |
+          Invoke-WebRequest -Uri https://aka.ms/vs/16/release/vs_buildtools.exe -OutFile vs_buildtools.exe
+          ./vs_buildtools.exe --quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 --add Microsoft.VisualStudio.Component.VC.140 --includeRecommended 
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y libopenblas-dev
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
       - name: Run build
