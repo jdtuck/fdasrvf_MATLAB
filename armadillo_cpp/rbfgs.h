@@ -42,8 +42,8 @@ class rlbfgs {
         double cost;
         // constructor
         rlbfgs(vec q1i, vec q2i, vec timei) {  
-        q1 = normalise( q1i, 2 );
-        q2 = normalise( q2i, 2 );
+        q1 = q1i;
+        q2 = q2i;
         time = timei;
 
         T = timei.n_elem;
