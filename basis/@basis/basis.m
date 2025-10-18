@@ -363,8 +363,6 @@ switch fdtype
         fdtype = 'const';
     case 'const'
         fdtype = 'const';
-    case 'const'
-        fdtype = 'const';
 
     %  exponential basis
 
