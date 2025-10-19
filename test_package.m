@@ -23,6 +23,14 @@ gam = optimum_reparam(q1', q1', timet', 0, 'DP1');
 q1a = warp_q_gamma(q1, gam, timet); 
 assert(sum(q1(:)-q1a(:))<=1e-15,'Warping Not Identity')
 
+%% Test rbfgs
+M = 101;
+q1 = sin(linspace(0,2*pi,M));
+timet = linspace(0,1,M);
+gam = optimum_reparam(q1', q1', timet', 0, 'RBFGS'); 
+q1a = warp_f_gamma(q1, gam, timet); 
+assert(sum(q1(:)-q1a(:))<=1e-15,'Warping Not Identity')
+
 %% Test rbfgsM
 M = 101;
 q1 = sin(linspace(0,2*pi,M));
