@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +26,7 @@ inline
 SpCol<eT>::SpCol()
   : SpMat<eT>(arma_vec_indicator(), 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   }
 
 
@@ -34,7 +36,7 @@ inline
 SpCol<eT>::SpCol(const uword in_n_elem)
   : SpMat<eT>(arma_vec_indicator(), in_n_elem, 1, 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   }
 
 
@@ -44,7 +46,7 @@ inline
 SpCol<eT>::SpCol(const uword in_n_rows, const uword in_n_cols)
   : SpMat<eT>(arma_vec_indicator(), in_n_rows, in_n_cols, 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   }
 
 
@@ -54,7 +56,7 @@ inline
 SpCol<eT>::SpCol(const SizeMat& s)
   : SpMat<eT>(arma_vec_indicator(), 0, 0, 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::init(s.n_rows, s.n_cols);
   }
@@ -66,7 +68,7 @@ inline
 SpCol<eT>::SpCol(const char* text)
   : SpMat<eT>(arma_vec_indicator(), 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::init(std::string(text));
   }
@@ -78,7 +80,7 @@ inline
 SpCol<eT>&
 SpCol<eT>::operator=(const char* text)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::init(std::string(text));
   
@@ -92,7 +94,7 @@ inline
 SpCol<eT>::SpCol(const std::string& text)
   : SpMat<eT>(arma_vec_indicator(), 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::init(text);
   }
@@ -104,7 +106,7 @@ inline
 SpCol<eT>&
 SpCol<eT>::operator=(const std::string& text)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::init(text);
   
@@ -118,7 +120,7 @@ inline
 SpCol<eT>&
 SpCol<eT>::operator=(const eT val)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
 
   SpMat<eT>::operator=(val);
 
@@ -133,9 +135,21 @@ inline
 SpCol<eT>::SpCol(const Base<eT,T1>& X)
   : SpMat<eT>(arma_vec_indicator(), 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::operator=(X.get_ref());
+  }
+
+
+
+template<typename eT>
+inline
+SpCol<eT>::SpCol(const Col<eT>& X)
+  : SpMat<eT>(arma_vec_indicator(), 1)
+  {
+  arma_debug_sigprint();
+  
+  SpMat<eT>::operator=(X);
   }
 
 
@@ -146,7 +160,7 @@ inline
 SpCol<eT>&
 SpCol<eT>::operator=(const Base<eT,T1>& X)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::operator=(X.get_ref());
   
@@ -161,7 +175,7 @@ inline
 SpCol<eT>::SpCol(const SpBase<eT,T1>& X)
   : SpMat<eT>(arma_vec_indicator(), 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::operator=(X.get_ref());
   }
@@ -174,7 +188,7 @@ inline
 SpCol<eT>&
 SpCol<eT>::operator=(const SpBase<eT,T1>& X)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::operator=(X.get_ref());
   
@@ -193,9 +207,49 @@ SpCol<eT>::SpCol
   )
   : SpMat<eT>(arma_vec_indicator(), 1)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   SpMat<eT>::init(A,B);
+  }
+
+
+
+template<typename eT>
+inline
+const SpOp<SpCol<eT>,spop_htrans>
+SpCol<eT>::t() const
+  {
+  return SpOp<SpCol<eT>,spop_htrans>(*this);
+  }
+
+
+
+template<typename eT>
+inline
+const SpOp<SpCol<eT>,spop_htrans>
+SpCol<eT>::ht() const
+  {
+  return SpOp<SpCol<eT>,spop_htrans>(*this);
+  }
+
+
+
+template<typename eT>
+inline
+const SpOp<SpCol<eT>,spop_strans>
+SpCol<eT>::st() const
+  {
+  return SpOp<SpCol<eT>,spop_strans>(*this);
+  }
+
+
+
+template<typename eT>
+inline
+const SpToDOp<SpCol<eT>,op_sp_as_dense>
+SpCol<eT>::as_dense() const
+  {
+  return SpToDOp<SpCol<eT>,op_sp_as_dense>(*this);
   }
 
 
@@ -206,9 +260,9 @@ inline
 void
 SpCol<eT>::shed_row(const uword row_num)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
 
-  arma_debug_check( row_num >= SpMat<eT>::n_rows, "SpCol::shed_row(): out of bounds");
+  arma_conform_check_bounds( row_num >= SpMat<eT>::n_rows, "SpCol::shed_row(): out of bounds" );
   
   shed_rows(row_num, row_num);
   }
@@ -221,9 +275,9 @@ inline
 void
 SpCol<eT>::shed_rows(const uword in_row1, const uword in_row2)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
 
-  arma_debug_check
+  arma_conform_check_bounds
     (
     (in_row1 > in_row2) || (in_row2 >= SpMat<eT>::n_rows),
     "SpCol::shed_rows(): indices out of bounds or incorrectly used"
@@ -239,14 +293,14 @@ SpCol<eT>::shed_rows(const uword in_row1, const uword in_row2)
   for(uword i = 0; i < SpMat<eT>::n_nonzero; ++i)
     {
     // Start position found?
-    if (SpMat<eT>::row_indices[i] >= in_row1 && !start_found)
+    if(SpMat<eT>::row_indices[i] >= in_row1 && !start_found)
       {
       start = i;
       start_found = true;
       }
 
     // End position found?
-    if (SpMat<eT>::row_indices[i] > in_row2)
+    if(SpMat<eT>::row_indices[i] > in_row2)
       {
       end = i;
       end_found = true;
@@ -254,28 +308,28 @@ SpCol<eT>::shed_rows(const uword in_row1, const uword in_row2)
       }
     }
 
-  if (!end_found)
+  if(!end_found)
     {
     end = SpMat<eT>::n_nonzero;
     }
 
   // Now we can make the copy.
-  if (start != end)
+  if(start != end)
     {
     const uword elem_diff = end - start;
 
-    eT*    new_values      = memory::acquire_chunked<eT>   (SpMat<eT>::n_nonzero - elem_diff);
-    uword* new_row_indices = memory::acquire_chunked<uword>(SpMat<eT>::n_nonzero - elem_diff);
+    eT*    new_values      = memory::acquire<eT>   (SpMat<eT>::n_nonzero - elem_diff);
+    uword* new_row_indices = memory::acquire<uword>(SpMat<eT>::n_nonzero - elem_diff);
 
     // Copy before the section we are dropping (if it exists).
-    if (start > 0)
+    if(start > 0)
       {
       arrayops::copy(new_values, SpMat<eT>::values, start);
       arrayops::copy(new_row_indices, SpMat<eT>::row_indices, start);
       }
 
     // Copy after the section we are dropping (if it exists).
-    if (end != SpMat<eT>::n_nonzero)
+    if(end != SpMat<eT>::n_nonzero)
       {
       arrayops::copy(new_values + start, SpMat<eT>::values + end, (SpMat<eT>::n_nonzero - end));
       arrayops::copy(new_row_indices + start, SpMat<eT>::row_indices + end, (SpMat<eT>::n_nonzero - end));
@@ -307,15 +361,15 @@ SpCol<eT>::shed_rows(const uword in_row1, const uword in_row2)
 // void
 // SpCol<eT>::insert_rows(const uword row_num, const uword N, const bool set_to_zero)
 //   {
-//   arma_extra_debug_sigprint();
+//   arma_debug_sigprint();
 // 
-//   arma_debug_check(set_to_zero == false, "SpCol::insert_rows(): cannot set nonzero values");
+//   arma_conform_check(set_to_zero == false, "SpCol::insert_rows(): cannot set nonzero values");
 // 
-//   arma_debug_check((row_num > SpMat<eT>::n_rows), "SpCol::insert_rows(): out of bounds");
+//   arma_conform_check_bounds((row_num > SpMat<eT>::n_rows), "SpCol::insert_rows(): out of bounds");
 // 
 //   for(uword row = 0; row < SpMat<eT>::n_rows; ++row)
 //     {
-//     if (SpMat<eT>::row_indices[row] >= row_num)
+//     if(SpMat<eT>::row_indices[row] >= row_num)
 //       {
 //       access::rw(SpMat<eT>::row_indices[row]) += N;
 //       }
@@ -332,9 +386,9 @@ inline
 typename SpCol<eT>::row_iterator
 SpCol<eT>::begin_row(const uword row_num)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  arma_debug_check( (row_num >= SpMat<eT>::n_rows), "SpCol::begin_row(): index out of bounds");
+  arma_conform_check_bounds( (row_num >= SpMat<eT>::n_rows), "SpCol::begin_row(): index out of bounds" );
   
   SpMat<eT>::sync_csc();
   
@@ -348,9 +402,9 @@ inline
 typename SpCol<eT>::const_row_iterator
 SpCol<eT>::begin_row(const uword row_num) const
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  arma_debug_check( (row_num >= SpMat<eT>::n_rows), "SpCol::begin_row(): index out of bounds");
+  arma_conform_check_bounds( (row_num >= SpMat<eT>::n_rows), "SpCol::begin_row(): index out of bounds" );
   
   SpMat<eT>::sync_csc();
   
@@ -364,9 +418,9 @@ inline
 typename SpCol<eT>::row_iterator
 SpCol<eT>::end_row(const uword row_num)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  arma_debug_check( (row_num >= SpMat<eT>::n_rows), "SpCol::end_row(): index out of bounds");
+  arma_conform_check_bounds( (row_num >= SpMat<eT>::n_rows), "SpCol::end_row(): index out of bounds" );
   
   SpMat<eT>::sync_csc();
   
@@ -380,9 +434,9 @@ inline
 typename SpCol<eT>::const_row_iterator
 SpCol<eT>::end_row(const uword row_num) const
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
-  arma_debug_check( (row_num >= SpMat<eT>::n_rows), "SpCol::end_row(): index out of bounds");
+  arma_conform_check_bounds( (row_num >= SpMat<eT>::n_rows), "SpCol::end_row(): index out of bounds" );
   
   SpMat<eT>::sync_csc();
   
@@ -391,7 +445,7 @@ SpCol<eT>::end_row(const uword row_num) const
 
 
 
-#ifdef ARMA_EXTRA_SPCOL_MEAT
+#if defined(ARMA_EXTRA_SPCOL_MEAT)
   #include ARMA_INCFILE_WRAP(ARMA_EXTRA_SPCOL_MEAT)
 #endif
 

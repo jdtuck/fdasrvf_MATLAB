@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,16 +30,16 @@ inline
 bool
 is_band(uword& out_KL, uword& out_KU, const Mat<eT>& A, const uword N_min)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   // NOTE: assuming that A has a square size
-  // NOTE  assuming that N_min is >= 4
+  // NOTE: assuming that N_min is >= 4
   
   const uword N = A.n_rows;
   
   if(N < N_min)  { return false; }
   
-  // first, quickly check bottom-right and top-left corners
+  // first, quickly check bottom-left and top-right corners
   
   const eT eT_zero = eT(0);
   
@@ -80,8 +82,8 @@ is_band(uword& out_KL, uword& out_KU, const Mat<eT>& A, const uword N_min)
     
     if( (L_count > KL) || (U_count > KU) )
       {
-      KL = L_count;
-      KU = U_count;
+      KL = (std::max)(KL, L_count);
+      KU = (std::max)(KU, U_count);
       
       const uword n_nonzero = N*(KL+KU+1) - (KL*(KL+1) + KU*(KU+1))/2;
       
@@ -106,16 +108,16 @@ inline
 bool
 is_band_lower(uword& out_KD, const Mat<eT>& A, const uword N_min)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   // NOTE: assuming that A has a square size
-  // NOTE  assuming that N_min is >= 4
+  // NOTE: assuming that N_min is >= 4
   
   const uword N = A.n_rows;
   
   if(N < N_min)  { return false; }
   
-  // first, quickly check bottom-right corner
+  // first, quickly check bottom-left corner
   
   const eT eT_zero = eT(0);
   
@@ -169,16 +171,16 @@ inline
 bool
 is_band_upper(uword& out_KD, const Mat<eT>& A, const uword N_min)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   // NOTE: assuming that A has a square size
-  // NOTE  assuming that N_min is >= 4
+  // NOTE: assuming that N_min is >= 4
   
   const uword N = A.n_rows;
   
   if(N < N_min)  { return false; }
   
-  // first, quickly check top-left corner
+  // first, quickly check top-right corner
   
   const eT eT_zero = eT(0);
   
@@ -232,7 +234,7 @@ inline
 void
 compress(Mat<eT>& AB, const Mat<eT>& A, const uword KL, const uword KU, const bool use_offset)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   // NOTE: assuming that A has a square size
   
@@ -240,7 +242,7 @@ compress(Mat<eT>& AB, const Mat<eT>& A, const uword KL, const uword KU, const bo
   // http://www.netlib.org/lapack/lug/node124.html  
   
   // for ?gbsv,  matrix AB size: 2*KL+KU+1 x N; band representation of A stored in rows KL+1 to 2*KL+KU+1  (note: fortran counts from 1)
-  // for ?gbsvx, matrix AB size:   KL+KU+1 x N; band representaiton of A stored in rows    1 to   KL+KU+1  (note: fortran counts from 1)
+  // for ?gbsvx, matrix AB size:   KL+KU+1 x N; band representation of A stored in rows    1 to   KL+KU+1  (note: fortran counts from 1)
   //
   // the +1 in the above formulas is to take into account the main diagonal
   
@@ -285,12 +287,12 @@ inline
 void
 uncompress(Mat<eT>& A, const Mat<eT>& AB, const uword KL, const uword KU, const bool use_offset)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   const uword AB_n_rows = AB.n_rows;
   const uword N         = AB.n_cols;
   
-  arma_debug_check( (AB_n_rows != ((use_offset) ? uword(2*KL + KU + 1) : uword(KL + KU + 1))), "band_helper::uncompress(): detected inconsistency" );
+  arma_conform_check( (AB_n_rows != ((use_offset) ? uword(2*KL + KU + 1) : uword(KL + KU + 1))), "band_helper::uncompress(): detected inconsistency" );
   
   A.zeros(N,N);  // assuming there is no aliasing between A and AB
   
@@ -317,6 +319,56 @@ uncompress(Mat<eT>& A, const Mat<eT>& AB, const uword KL, const uword KU, const 
       arrayops::copy( A_colptr, AB_colptr, length );
       }
     }
+  }
+
+
+
+template<typename eT>
+inline
+void
+extract_tridiag(Mat<eT>& out, const Mat<eT>& A)
+  {
+  arma_debug_sigprint();
+  
+  // NOTE: assuming that A has a square size and is at least 2x2
+  
+  const uword N = A.n_rows;
+  
+  out.set_size(N, 3);  // assuming there is no aliasing between 'out' and 'A'
+  
+  if(N < 2)  { return; }
+  
+  eT* DL = out.colptr(0);
+  eT* DD = out.colptr(1);
+  eT* DU = out.colptr(2);
+  
+  DD[0] = A[0];
+  DL[0] = A[1];
+  
+  const uword Nm1 = N-1;
+  const uword Nm2 = N-2;
+  
+  for(uword i=0; i < Nm2; ++i)
+    {
+    const uword ip1 = i+1;
+    
+    const eT* data = &(A.at(i, ip1));
+    
+    const eT tmp0 = data[0];
+    const eT tmp1 = data[1];
+    const eT tmp2 = data[2];
+    
+    DL[ip1] = tmp2;
+    DD[ip1] = tmp1;
+    DU[i  ] = tmp0;
+    }
+  
+  const eT* data = &(A.at(Nm2, Nm1));
+  
+  DL[Nm1] = 0;
+  DU[Nm2] = data[0];
+  DU[Nm1] = 0;
+  DD[Nm1] = data[1]; 
   }
 
 

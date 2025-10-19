@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +26,7 @@ inline
 bool
 op_find_unique::apply_helper(Mat<uword>& out, const Proxy<T1>& P, const bool ascending_indices)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   typedef typename T1::elem_type eT;
   
@@ -33,7 +35,7 @@ op_find_unique::apply_helper(Mat<uword>& out, const Proxy<T1>& P, const bool asc
   if(n_elem == 0)  { out.set_size(0,1);             return true; }
   if(n_elem == 1)  { out.set_size(1,1); out[0] = 0; return true; }
   
-  uvec indices(n_elem);
+  uvec indices(n_elem, arma_nozeros_indicator());
   
   std::vector< arma_find_unique_packet<eT> > packet_vec(n_elem);
   
@@ -107,7 +109,7 @@ inline
 void
 op_find_unique::apply(Mat<uword>& out, const mtOp<uword,T1,op_find_unique>& in)
   {
-  arma_extra_debug_sigprint();
+  arma_debug_sigprint();
   
   const Proxy<T1> P(in.m);
   
@@ -117,7 +119,7 @@ op_find_unique::apply(Mat<uword>& out, const mtOp<uword,T1,op_find_unique>& in)
   
   if(all_non_nan == false)
     {
-    arma_debug_check( true, "find_unique(): detected NaN" );
+    arma_conform_check( true, "find_unique(): detected NaN" );
     
     out.reset();
     }

@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,17 +22,18 @@
 
 //! Class for storing data required to extract and set the diagonals of a sparse matrix
 template<typename eT>
-class spdiagview : public SpBase<eT, spdiagview<eT> >
+class spdiagview : public SpBase< eT, spdiagview<eT> >
   {
   public:
   
   typedef eT                                elem_type;
   typedef typename get_pod_type<eT>::result pod_type;
   
-  arma_aligned const SpMat<eT>& m;
+  const SpMat<eT>& m;
   
-  static const bool is_row = false;
-  static const bool is_col = true;
+  static constexpr bool is_row  = false;
+  static constexpr bool is_col  = true;
+  static constexpr bool is_xvec = false;
   
   const uword row_offset;
   const uword col_offset;
@@ -38,7 +41,7 @@ class spdiagview : public SpBase<eT, spdiagview<eT> >
   const uword n_rows;     // equal to n_elem
   const uword n_elem;
   
-  static const uword n_cols = 1;
+  static constexpr uword n_cols = 1;
   
   
   protected:
@@ -49,6 +52,7 @@ class spdiagview : public SpBase<eT, spdiagview<eT> >
   public:
   
   inline ~spdiagview();
+  inline  spdiagview() = delete;
   
   inline void operator=(const spdiagview& x);
   
@@ -69,21 +73,27 @@ class spdiagview : public SpBase<eT, spdiagview<eT> >
   template<typename T1> inline void operator%=(const SpBase<eT,T1>& x);
   template<typename T1> inline void operator/=(const SpBase<eT,T1>& x);
   
-  inline MapMat_elem<eT> operator[](const uword ii);
-  inline eT              operator[](const uword ii) const;
+  inline SpMat_MapMat_val<eT> operator[](const uword ii);
+  inline eT                   operator[](const uword ii) const;
   
-  inline MapMat_elem<eT> at(const uword ii);
-  inline eT              at(const uword ii) const;
+  inline SpMat_MapMat_val<eT> at(const uword ii);
+  inline eT                   at(const uword ii) const;
   
-  inline MapMat_elem<eT> operator()(const uword ii);
-  inline eT              operator()(const uword ii) const;
+  inline SpMat_MapMat_val<eT> operator()(const uword ii);
+  inline eT                   operator()(const uword ii) const;
   
-  inline MapMat_elem<eT> at(const uword in_n_row, const uword);
-  inline eT              at(const uword in_n_row, const uword) const;
+  inline SpMat_MapMat_val<eT> at(const uword in_n_row, const uword);
+  inline eT                   at(const uword in_n_row, const uword) const;
   
-  inline MapMat_elem<eT> operator()(const uword in_n_row, const uword in_n_col);
-  inline eT              operator()(const uword in_n_row, const uword in_n_col) const;
+  inline SpMat_MapMat_val<eT> operator()(const uword in_n_row, const uword in_n_col);
+  inline eT                   operator()(const uword in_n_row, const uword in_n_col) const;
   
+  
+  inline void replace(const eT old_val, const eT new_val);
+  
+  inline void clean(const pod_type threshold);
+  
+  inline void clamp(const eT min_val, const eT max_val);
   
   inline void fill(const eT val);
   inline void zeros();
@@ -96,10 +106,7 @@ class spdiagview : public SpBase<eT, spdiagview<eT> >
   inline static void extract(  Mat<eT>& out, const spdiagview& in);
   
   
-  private:
-  
   friend class SpMat<eT>;
-  spdiagview();
   };
 
 

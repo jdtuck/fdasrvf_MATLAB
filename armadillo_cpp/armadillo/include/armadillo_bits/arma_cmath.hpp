@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,90 +27,83 @@
 
 
 template<typename eT>
-arma_inline
+inline
 bool
-arma_isfinite(eT val)
+arma_isfinite(eT)
   {
-  arma_ignore(val);
-  
   return true;
   }
 
 
 
 template<>
-arma_inline
+inline
 bool
 arma_isfinite(float x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::isfinite(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::isfinite(x);
-    }
-  #elif defined(ARMA_HAVE_ISFINITE)
-    {
-    return (std::isfinite(x) != 0);
-    }
-  #else
-    {
-    const float y = (std::numeric_limits<float>::max)();
-    
-    const volatile float xx = x;
-    
-    return (xx == xx) && (x >= -y) && (x <= y);
-    }
-  #endif
+  return std::isfinite(x);
   }
 
 
 
 template<>
-arma_inline
+inline
 bool
 arma_isfinite(double x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::isfinite(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::isfinite(x);
-    }
-  #elif defined(ARMA_HAVE_ISFINITE)
-    {
-    return (std::isfinite(x) != 0);
-    }
-  #else
-    {
-    const double y = (std::numeric_limits<double>::max)();
-    
-    const volatile double xx = x;
-    
-    return (xx == xx) && (x >= -y) && (x <= y);
-    }
-  #endif
+  return std::isfinite(x);
   }
 
 
 
 template<typename T>
-arma_inline
+inline
 bool
 arma_isfinite(const std::complex<T>& x)
   {
-  if( (arma_isfinite(x.real()) == false) || (arma_isfinite(x.imag()) == false) )
-    {
-    return false;
-    }
-  else
-    {
-    return true;
-    }
+  return ( arma_isfinite(x.real()) && arma_isfinite(x.imag()) );
+  }
+
+
+//
+
+
+template<typename eT>
+inline
+bool
+arma_isnonfinite(eT)
+  {
+  return false;
+  }
+
+
+
+template<>
+inline
+bool
+arma_isnonfinite(float x)
+  {
+  return (std::isfinite(x) == false);
+  }
+
+
+
+template<>
+inline
+bool
+arma_isnonfinite(double x)
+  {
+  return (std::isfinite(x) == false);
+  }
+
+
+
+template<typename T>
+inline
+bool
+arma_isnonfinite(const std::complex<T>& x)
+  {
+  return ( (std::isfinite(x.real()) == false) || (std::isfinite(x.imag()) == false) );
   }
 
 
@@ -118,71 +113,37 @@ arma_isfinite(const std::complex<T>& x)
 
 
 template<typename eT>
-arma_inline
+inline
 bool
-arma_isinf(eT val)
+arma_isinf(eT)
   {
-  arma_ignore(val);
-    
   return false;
   }
 
 
 
 template<>
-arma_inline
+inline
 bool
 arma_isinf(float x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::isinf(x);
-    }
-  #elif defined(ARMA_HAVE_ISINF)
-    {
-    return (std::isinf(x) != 0);
-    }
-  #else
-    {
-    const float y = (std::numeric_limits<float>::max)();
-    
-    const volatile float xx = x;
-    
-    return (xx == xx) && ((x < -y) || (x > y));
-    }
-  #endif
+  return std::isinf(x);
   }
 
 
 
 template<>
-arma_inline
+inline
 bool
 arma_isinf(double x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::isinf(x);
-    }
-  #elif defined(ARMA_HAVE_ISINF)
-    {
-    return (std::isinf(x) != 0);
-    }
-  #else
-    {
-    const double y = (std::numeric_limits<double>::max)();
-    
-    const volatile double xx = x;
-    
-    return (xx == xx) && ((x < -y) || (x > y));
-    }
-  #endif
+  return std::isinf(x);
   }
 
 
 
 template<typename T>
-arma_inline
+inline
 bool
 arma_isinf(const std::complex<T>& x)
   {
@@ -196,7 +157,7 @@ arma_isinf(const std::complex<T>& x)
 
 
 template<typename eT>
-arma_inline
+inline
 bool
 arma_isnan(eT val)
   {
@@ -208,55 +169,27 @@ arma_isnan(eT val)
 
 
 template<>
-arma_inline
+inline
 bool
 arma_isnan(float x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::isnan(x);
-    }
-  #elif defined(ARMA_HAVE_ISNAN)
-    {
-    return (std::isnan(x) != 0);
-    }
-  #else
-    {
-    const volatile float xx = x;
-    
-    return (xx != xx);
-    }
-  #endif
+  return std::isnan(x);
   }
 
 
 
 template<>
-arma_inline
+inline
 bool
 arma_isnan(double x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::isnan(x);
-    }
-  #elif defined(ARMA_HAVE_ISNAN)
-    {
-    return (std::isnan(x) != 0);
-    }
-  #else
-    {
-    const volatile double xx = x;
-    
-    return (xx != xx);
-    }
-  #endif
+  return std::isnan(x);
   }
 
 
 
 template<typename T>
-arma_inline
+inline
 bool
 arma_isnan(const std::complex<T>& x)
   {
@@ -265,386 +198,77 @@ arma_isnan(const std::complex<T>& x)
 
 
 
-// rudimentary wrappers for log1p()
+//
+// wrapper for pow; see also the associated FP16 specialisation
 
-arma_inline
-float
-arma_log1p(const float x)
+
+
+template<typename eT, typename exponent_eT>
+inline
+eT
+arma_pow(eT base, exponent_eT pow)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::log1p(x);
-    }
-  #else
-    {
-    if((x >= float(0)) && (x < std::numeric_limits<float>::epsilon()))
-      {
-      return x;
-      }
-    else
-    if((x < float(0)) && (-x < std::numeric_limits<float>::epsilon()))
-      {
-      return x;
-      }
-    else
-      {
-      return std::log(float(1) + x);
-      }
-    }
-  #endif
+  return std::pow(base, pow);
   }
-
-
-
-arma_inline
-double
-arma_log1p(const double x)
-  {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::log1p(x);
-    }
-  #elif defined(ARMA_HAVE_LOG1P)
-    {
-    return log1p(x);
-    }
-  #else
-    {
-    if((x >= double(0)) && (x < std::numeric_limits<double>::epsilon()))
-      {
-      return x;
-      }
-    else
-    if((x < double(0)) && (-x < std::numeric_limits<double>::epsilon()))
-      {
-      return x;
-      }
-    else
-      {
-      return std::log(double(1) + x);
-      }
-    }
-  #endif
-  }
-
-
 
 
 
 //
-// wrappers for trigonometric functions
-// 
-// wherever possible, try to use C++11 or TR1 versions of the following functions:
-// 
-// complex acos
-// complex asin
-// complex atan
-//
-// real    acosh
-// real    asinh
-// real    atanh
-//
-// complex acosh
-// complex asinh
-// complex atanh
-// 
-// 
-// if C++11 or TR1 are not available, we have rudimentary versions of:
-// 
-// real    acosh
-// real    asinh
-// real    atanh
+// implementation of arma_sign()
 
 
-
-template<typename T>
-arma_inline
-std::complex<T>
-arma_acos(const std::complex<T>& x)
+template<typename eT>
+constexpr
+typename arma_unsigned_integral_only<eT>::result
+arma_sign(const eT x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::acos(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::acos(x);
-    }
-  #else
-    {
-    arma_ignore(x);
-    arma_stop_logic_error("acos(): C++11 compiler required");
-    
-    return std::complex<T>(0);
-    }
-  #endif
-  }
-
-
-
-template<typename T>
-arma_inline
-std::complex<T>
-arma_asin(const std::complex<T>& x)
-  {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::asin(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::asin(x);
-    }
-  #else
-    {
-    arma_ignore(x);
-    arma_stop_logic_error("asin(): C++11 compiler required");
-    
-    return std::complex<T>(0);
-    }
-  #endif
-  }
-
-
-
-template<typename T>
-arma_inline
-std::complex<T>
-arma_atan(const std::complex<T>& x)
-  {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::atan(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::atan(x);
-    }
-  #else
-    {
-    arma_ignore(x);
-    arma_stop_logic_error("atan(): C++11 compiler required");
-    
-    return std::complex<T>(0);
-    }
-  #endif
+  constexpr eT eT_zero = eT(0);
+  
+  return (x > eT_zero) ? eT(+1) : eT_zero;
   }
 
 
 
 template<typename eT>
-arma_inline
-eT
-arma_acosh(const eT x)
+constexpr
+typename arma_signed_integral_only<eT>::result
+arma_sign(const eT x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::acosh(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::acosh(x);
-    }
-  #else
-    {
-    if(x >= eT(1))
-      {
-      // http://functions.wolfram.com/ElementaryFunctions/ArcCosh/02/
-      return std::log( x + std::sqrt(x*x - eT(1)) );
-      }
-    else
-      {
-      if(std::numeric_limits<eT>::has_quiet_NaN)
-        {
-        return -(std::numeric_limits<eT>::quiet_NaN());
-        }
-      else
-        {
-        return eT(0);
-        }
-      }
-    }
-  #endif
+  constexpr eT eT_zero = eT(0);
+  
+  return (x > eT_zero) ? eT(+1) : ( (x < eT_zero) ? eT(-1) : eT_zero );
   }
 
 
 
 template<typename eT>
-arma_inline
-eT
-arma_asinh(const eT x)
+constexpr
+typename arma_real_only<eT>::result
+arma_sign(const eT x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::asinh(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::asinh(x);
-    }
-  #else
-    {
-    // http://functions.wolfram.com/ElementaryFunctions/ArcSinh/02/
-    return std::log( x + std::sqrt(x*x + eT(1)) );
-    }
-  #endif
+  constexpr eT eT_zero = eT(0);
+  
+  return (x > eT_zero) ? eT(+1) : ( (x < eT_zero) ? eT(-1) : ((x == eT_zero) ? eT_zero : x) );
   }
 
 
 
 template<typename eT>
-arma_inline
-eT
-arma_atanh(const eT x)
+inline
+typename arma_cx_only<eT>::result
+arma_sign(const eT& x)
   {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::atanh(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::atanh(x);
-    }
-  #else
-    {
-    if( (x >= eT(-1)) && (x <= eT(+1)) )
-      {
-      // http://functions.wolfram.com/ElementaryFunctions/ArcTanh/02/
-      return std::log( ( eT(1)+x ) / ( eT(1)-x ) ) / eT(2);
-      }
-    else
-      {
-      if(std::numeric_limits<eT>::has_quiet_NaN)
-        {
-        return -(std::numeric_limits<eT>::quiet_NaN());
-        }
-      else
-        {
-        return eT(0);
-        }
-      }
-    }
-  #endif
-  }
-
-
-
-template<typename T>
-arma_inline
-std::complex<T>
-arma_acosh(const std::complex<T>& x)
-  {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::acosh(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::acosh(x);
-    }
-  #else
-    {
-    arma_ignore(x);
-    arma_stop_logic_error("acosh(): C++11 compiler required");
-    
-    return std::complex<T>(0);
-    }
-  #endif
-  }
-
-
-
-template<typename T>
-arma_inline
-std::complex<T>
-arma_asinh(const std::complex<T>& x)
-  {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::asinh(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::asinh(x);
-    }
-  #else
-    {
-    arma_ignore(x);
-    arma_stop_logic_error("asinh(): C++11 compiler required");
-    
-    return std::complex<T>(0);
-    }
-  #endif
-  }
-
-
-
-template<typename T>
-arma_inline
-std::complex<T>
-arma_atanh(const std::complex<T>& x)
-  {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::atanh(x);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::atanh(x);
-    }
-  #else
-    {
-    arma_ignore(x);
-    arma_stop_logic_error("atanh(): C++11 compiler required");
-    
-    return std::complex<T>(0);
-    }
-  #endif
+  typedef typename eT::value_type T;
+  
+  const T abs_x = std::abs(x);
+  
+  return (abs_x != T(0)) ? (x / abs_x) : x;
   }
 
 
 
 //
 // wrappers for hypot(x, y) = sqrt(x^2 + y^2)
-
-
-template<typename eT>
-inline
-eT
-arma_hypot_generic(const eT x, const eT y)
-  {
-  #if defined(ARMA_USE_CXX11)
-    {
-    return std::hypot(x, y);
-    }
-  #elif defined(ARMA_HAVE_TR1)
-    {
-    return std::tr1::hypot(x, y);
-    }
-  #else
-    {
-    const eT xabs = std::abs(x);
-    const eT yabs = std::abs(y);
-    
-    eT larger;
-    eT ratio;
-    
-    if(xabs > yabs)
-      {
-      larger = xabs;
-      ratio  = yabs / xabs;
-      }
-    else
-      {
-      larger = yabs;
-      ratio  = xabs / yabs;
-      }
-    
-    return (larger == eT(0)) ? eT(0) : (larger * std::sqrt(eT(1) + ratio * ratio));
-    }
-  #endif
-  }
-
 
 
 template<typename eT>
@@ -663,21 +287,79 @@ arma_hypot(const eT x, const eT y)
 
 
 template<>
-arma_inline
+inline
 float
 arma_hypot(const float x, const float y)
   {
-  return arma_hypot_generic(x,y);
+  return std::hypot(x, y);
   }
 
 
 
 template<>
-arma_inline
+inline
 double
 arma_hypot(const double x, const double y)
   {
-  return arma_hypot_generic(x,y);
+  return std::hypot(x, y);
+  }
+
+
+
+//
+// implementation of arma_sinc()
+
+
+template<typename eT>
+inline
+eT
+arma_sinc_generic(const eT x)
+  {
+  typedef typename get_pod_type<eT>::result T;
+  
+  const eT tmp = Datum<T>::pi * x;
+  
+  return (tmp == eT(0)) ? eT(1) : eT( std::sin(tmp) / tmp );
+  }
+
+
+
+template<typename eT>
+inline
+eT
+arma_sinc(const eT x)
+  {
+  return eT( arma_sinc_generic( double(x) ) );
+  }
+
+
+
+template<>
+inline
+float
+arma_sinc(const float x)
+  {
+  return arma_sinc_generic(x);
+  }
+
+
+
+template<>
+inline
+double
+arma_sinc(const double x)
+  {
+  return arma_sinc_generic(x);
+  }
+
+
+
+template<typename T>
+inline
+std::complex<T>
+arma_sinc(const std::complex<T>& x)
+  {
+  return arma_sinc_generic(x);
   }
 
 
@@ -694,18 +376,7 @@ struct arma_arg
   eT
   eval(const eT x)
     {
-    #if defined(ARMA_USE_CXX11)
-      {
-      return eT( std::arg(x) );
-      }
-    #else
-      {
-      arma_ignore(x);
-      arma_stop_logic_error("arg(): C++11 compiler required");
-      
-      return eT(0);
-      }
-    #endif
+    return eT( std::arg(x) );
     }
   };
 
@@ -715,19 +386,11 @@ template<>
 struct arma_arg<float>
   {
   static
-  arma_inline
+  inline
   float
   eval(const float x)
     {
-    #if defined(ARMA_USE_CXX11)
-      {
-      return std::arg(x);
-      }
-    #else
-      {
-      return std::arg( std::complex<float>( x, float(0) ) );
-      }
-    #endif
+    return std::arg(x);
     }
   };
 
@@ -737,19 +400,11 @@ template<>
 struct arma_arg<double>
   {
   static
-  arma_inline
+  inline
   double
   eval(const double x)
     {
-    #if defined(ARMA_USE_CXX11)
-      {
-      return std::arg(x);
-      }
-    #else
-      {
-      return std::arg( std::complex<double>( x, double(0) ) );
-      }
-    #endif
+    return std::arg(x);
     }
   };
 
@@ -759,7 +414,7 @@ template<>
 struct arma_arg< std::complex<float> >
   {
   static
-  arma_inline
+  inline
   float
   eval(const std::complex<float>& x)
     {
@@ -773,13 +428,104 @@ template<>
 struct arma_arg< std::complex<double> >
   {
   static
-  arma_inline
+  inline
   double
   eval(const std::complex<double>& x)
     {
     return std::arg(x);
     }
   };
+
+
+
+//
+// extensions for half-precision fp16
+
+#if defined(ARMA_HAVE_FP16)
+
+template<>
+inline
+bool
+arma_isfinite(fp16 x)
+  {
+  return std::isfinite(x);
+  }
+
+
+
+template<>
+inline
+bool
+arma_isnonfinite(fp16 x)
+  {
+  return (std::isfinite(x) == false);
+  }
+
+
+
+template<>
+inline
+bool
+arma_isinf(fp16 x)
+  {
+  return std::isinf(x);
+  }
+
+
+
+template<>
+inline
+bool
+arma_isnan(fp16 x)
+  {
+  return std::isnan(x);
+  }
+
+
+
+template<typename exponent_eT>
+inline
+fp16
+arma_pow(fp16 base, exponent_eT pow)
+  {
+  return std::pow(base, fp16(pow));
+  }
+
+
+
+template<>
+inline
+fp16
+arma_hypot(const fp16 x, const fp16 y)
+  {
+  return std::hypot(x, y);
+  }
+
+
+
+template<>
+inline
+fp16
+arma_sinc(const fp16 x)
+  {
+  return arma_sinc_generic(x);
+  }
+
+
+
+template<>
+struct arma_arg<fp16>
+  {
+  static
+  inline
+  fp16
+  eval(const fp16 x)
+    {
+    return std::arg(x);
+    }
+  };
+
+#endif
 
 
 

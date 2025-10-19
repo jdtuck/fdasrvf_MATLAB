@@ -1,10 +1,12 @@
-// Copyright 2008-2016 Conrad Sanderson (http://conradsanderson.id.au)
+// SPDX-License-Identifier: Apache-2.0
+// 
+// Copyright 2008-2016 Conrad Sanderson (https://conradsanderson.id.au)
 // Copyright 2008-2016 National ICT Australia (NICTA)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
 // 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,28 +21,42 @@
 
 
 
-class spglue_times
+struct spglue_times
   {
-  public:
+  template<typename T1, typename T2>
+  struct traits
+    {
+    static constexpr bool is_row  = T1::is_row;
+    static constexpr bool is_col  = T2::is_col;
+    static constexpr bool is_xvec = false;
+    };
   
   template<typename T1, typename T2>
   inline static void apply(SpMat<typename T1::elem_type>& out, const SpGlue<T1,T2,spglue_times>& X);
   
-  template<typename eT, typename T1, typename T2>
-  arma_hot inline static void apply_noalias(SpMat<eT>& c, const SpProxy<T1>& pa, const SpProxy<T2>& pb);
+  template<typename T1, typename T2>
+  inline static void apply(SpMat<typename T1::elem_type>& out, const SpGlue<SpOp<T1,spop_scalar_times>,T2,spglue_times>& X);
+  
+  template<typename eT>
+  inline static void apply_noalias(SpMat<eT>& c, const SpMat<eT>& x, const SpMat<eT>& y);
   };
 
 
 
-class spglue_times2
+struct spglue_times_mixed
   {
-  public:
+  template<typename T1, typename T2>
+  struct traits
+    {
+    static constexpr bool is_row  = T1::is_row;
+    static constexpr bool is_col  = T2::is_col;
+    static constexpr bool is_xvec = false;
+    };
   
   template<typename T1, typename T2>
-  inline static void apply(SpMat<typename T1::elem_type>& out, const SpGlue<T1,T2,spglue_times2>& X);
+  inline static void apply(SpMat<typename eT_promoter<T1,T2>::eT>& out, const mtSpGlue<typename eT_promoter<T1,T2>::eT, T1, T2, spglue_times_mixed>& expr);
   };
 
 
 
 //! @}
-
