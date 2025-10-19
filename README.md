@@ -17,7 +17,9 @@ analysis
 The package is open source software; see [LICENSE.txt](LICENSE.txt) for the terms of the license (2-clause BSD). 
 
 For a list of contributors, see [CONTRIBUTORS.md](CONTRIBUTORS.md).
+
 For instructions on contributing, see [CONTRIBUTION_GUIDE.md](CONTRIBUTION_GUIDE.md).
+
 For release note, see [CHANGES.md](CHANGES.md)
 
 ### Installation
