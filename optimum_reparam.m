@@ -72,8 +72,6 @@ switch upper(method)
         gam0 = simul_gam(u,g1,g2,t2,s1,s2,t2);
     case 'RBFGS'
         t1 = linspace(0,1,length(t))';
-        q1 = q1 / norm(q1);
-        q2 = q2 / norm(q2);
         gam0 = c_rlbfgs(q1, q2, t1, 30, lambda, 0);
         gam0 = gam0';
     case 'RBFGSM'
