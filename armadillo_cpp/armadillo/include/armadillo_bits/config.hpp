@@ -71,7 +71,7 @@
 // #define ARMA_BLAS_LONG
 //// Uncomment the above line if your BLAS and LAPACK libraries use "long" instead of "int"
 
-// #define ARMA_BLAS_LONG_LONG
+#define ARMA_BLAS_LONG_LONG
 //// Uncomment the above line if your BLAS and LAPACK libraries use "long long" instead of "int"
 
 // #define ARMA_USE_TBB_ALLOC
@@ -99,7 +99,7 @@
 #endif
 
 #if !defined(ARMA_64BIT_WORD)
-// #define ARMA_64BIT_WORD
+#define ARMA_64BIT_WORD
 //// Uncomment the above line if you require matrices/vectors capable of holding more than 4 billion elements.
 //// Your machine and compiler must have support for 64 bit integers (eg. via "long" or "long long").
 //// Note that ARMA_64BIT_WORD is automatically enabled when a C++11 compiler is detected.
