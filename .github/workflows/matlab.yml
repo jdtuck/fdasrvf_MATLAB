@@ -81,12 +81,18 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Upload Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/fdasrvf.mltbx
-          asset_name: fdasrvf.mltbx
-          asset_content_type: application/mltbx
+          # unpacks default artifact into release/
+          # if `name: artifact` is omitted, the action will create extra parent dir
+          pattern: fdasrvf-*
+          path: release
+          merge-multiple: true
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: release/fdasrvf-*
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
