@@ -102,9 +102,6 @@
 //// Uncomment the above line if your BLAS and LAPACK libraries have function names with a trailing underscore.
 //// Conversely, comment it out if the function names don't have a trailing underscore.
 
-// #define ARMA_BLAS_LONG
-//// Uncomment the above line if your BLAS and LAPACK libraries use "long" instead of "int"
-
 #define ARMA_BLAS_LONG_LONG
 //// Uncomment the above line if your BLAS and LAPACK libraries use "long long" instead of "int"
 
