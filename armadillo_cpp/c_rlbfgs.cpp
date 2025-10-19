@@ -1,7 +1,7 @@
 #include "armadillo/mex_interface/armaMex.hpp"
-#include "mex.h"
-#include "matrix.h"
-#include "rbfgs.h"
+#include <mex.h>
+#include <mat.h>
+#include "rbfgs.hpp"
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Check the number of input arguments.
