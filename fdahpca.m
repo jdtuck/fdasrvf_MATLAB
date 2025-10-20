@@ -19,7 +19,8 @@ classdef fdahpca
     %   coef - coeficients
     %   vec - shooting vectors
     %   mu - Karcher Mean
-    %   tau - principal directions
+    %   stds - principal directions
+    %   new_coef - principal coefficients of new data  
     %
     %
     % fdahpca Methods:
@@ -41,6 +42,7 @@ classdef fdahpca
         vec       % shooting vectors
         mu        % Karcher Mean
         stds       % principal directions
+        new_coef  % principal coefficients of new data 
     end
     
     methods
@@ -119,6 +121,50 @@ classdef fdahpca
             
             obj.latent = Sig;
             obj.coef = c;
+        end
+
+        function project(obj, f)
+            % PROJECT Project new data onto fPCA basis
+            % -------------------------------------------------------------------------
+            % This function project new data onto fPCA basis
+            %
+            % Usage: obj.project(f)
+            %        obj.calc_fpca(no,id)
+            %
+            % Inputs:
+            % f:  array (MxN) of N functions on M time points
+            %
+
+            q1 = f_to_srvf(f, obj.warp_data.time);
+            M = length(obj.warp_data.time);
+            n = size(q1,2);
+            mq = obj.warp_data.mqn;
+            gam = zeros(M, n);
+            for ii = 1:n
+                gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
+            end
+
+            no = size(U,2);
+
+            mu_psi = obj.mu_psi;
+            vec = zeros(M, n);
+            psi = zeros(M, n);
+            time = linspace(0,1,M);
+            binsize = mean(diff(time));
+            for i = 1:n
+                psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
+                [out, ~] = inv_exp_map(mu_psi, psi(:,i));
+                vec(:, i) = out;
+            end
+
+            c = zeros(size(gam,1),no);
+            for jj = 1:no
+                for ii = 1:size(gam,2)
+                    c(ii,jj) = (vec(:,ii)-obj.vm).'*obj.U(:,jj);
+                end
+            end
+
+            obj.new_coef = c;
         end
         
         function plot(obj)

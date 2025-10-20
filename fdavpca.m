@@ -20,6 +20,7 @@ classdef fdavpca
     %   mqn - mean srvf
     %   U - eigenvectors
     %   stds - geodesic directions
+    %   new_coef - principal coefficients of new data  
     %
     %
     % fdavpca Methods:
@@ -41,6 +42,7 @@ classdef fdavpca
         mqn       % mean srvf
         U         % eigenvectors
         stds      % geodesic directions
+        new_coef  % principal coefficients of new data 
     end
     
     methods
@@ -131,6 +133,46 @@ classdef fdavpca
             obj.latent = s;
             obj.coef = c;
             obj.stds = stds;
+        end
+
+        function project(obj, f)
+            % PROJECT Project new data onto fPCA basis
+            % -------------------------------------------------------------------------
+            % This function project new data onto fPCA basis
+            %
+            % Usage: obj.project(f)
+            %        obj.calc_fpca(no,id)
+            %
+            % Inputs:
+            % f:  array (MxN) of N functions on M time points
+            %
+
+            q1 = f_to_srvf(f, obj.warp_data.time);
+            M = length(obj.warp_data.time);
+            n = size(q1,2);
+            mq = obj.warp_data.mqn;
+            fn = zeros(M, n);
+            qn = zeros(M, n);
+            gam = zeros(M, n);
+            for ii = 1:n
+                gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
+                fn(:, ii) = warp_f_gamma(f(:, ii), gam(:, ii), obj.warp_data.time);
+                qn(:, ii) = f_to_srvf(fn(:, ii), obj.warp_data.time);
+            end
+
+            no = size(U,2);
+
+            m_new = sign(fn(obj.id, :)) .* sqrt(abs(fn(obj.id, :)));
+            qn1 = [qn; m_new];
+
+            c = zeros(n,no);
+            for jj = 1:no
+                for ii = 1:n
+                    c(ii,jj) = dot([qn(:,ii);m_new(ii)]-obj.mqn,obj.U(:,jj));
+                end
+            end
+
+            obj.new_coef = c;
         end
         
         function plot(obj)

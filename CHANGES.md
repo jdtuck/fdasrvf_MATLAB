@@ -1,6 +1,7 @@
 # fdasrvf 3.6.X
 * update armadillo
 * update plotting colors to match other packages
+* add project to fpca functions
 
 # fdasrvf 3.6.8
 * move to buildfile, no longer run `setup.m`, now run buildtool to create mex files and test

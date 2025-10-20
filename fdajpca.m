@@ -23,6 +23,9 @@ classdef fdajpca
     %   mu_g - mean g
     %   C - scaling value
     %   stds - geodesic directions
+    %   new_coef - principal coefficients of new data
+    %  new_g - g of new data
+    %   srvf - srvf space used
     %
     %
     % fdajpca Methods:
@@ -47,6 +50,9 @@ classdef fdajpca
         mu_g      % mean g
         C         % scaling value
         stds      % geodesic directions
+        new_coef  % principal coefficients of new data 
+        new_g     % g of new data
+        srvf      % srvf space used
     end
     
     methods
@@ -60,7 +66,7 @@ classdef fdajpca
             obj.warp_data = fdawarp;
         end
         
-        function obj = calc_fpca(obj,no,id,stds)
+        function obj = calc_fpca(obj,no,id,stds,srvf)
             % CALC_FPCA Joint Functional Principal Component Analysis
             % -------------------------------------------------------------------------
             % This function calculates joint functional principal component analysis
@@ -75,6 +81,7 @@ classdef fdajpca
             % id: point to use for f(0) (default = midpoint)
             % stds: number of standard deviations along geodesic to compute
             %       (default = -2:2)
+            % srvf: use srvf (default = T)
             %
             % Output:
             % fdajpca object
@@ -83,6 +90,7 @@ classdef fdajpca
                 no = 3;
                 id = round(length(obj.warp_data.time)/2);
                 stds = -2:2;
+                srvf = true;
             end
             obj.id = id;
             fn = obj.warp_data.fn;
@@ -96,18 +104,22 @@ classdef fdajpca
             % set up for fPCA in q-space
             mq_new = mean(qn,2);
             id = round(length(time)/2);
-            m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  % scaled version
-            obj.mqn = [mq_new; mean(m_new)];
-            qn1 = [qn; m_new];
+            if srvf
+                m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  % scaled version
+                obj.mqn = [mq_new; mean(m_new)];
+                qn1 = [qn; m_new];
+            else
+                obj.mqn = mean(fn, 2);
+                qn1 = fn;
             
             % calculate vector space of warping functions
             [obj.mu_psi,~,~,vec] = SqrtMean(gam);
             
             % joint fPCA
-            f1 = @(x)find_C(x, qn1, vec, q0, no, obj.mu_psi);
+            f1 = @(x)find_C(x, qn1, vec, q0, no, obj.mu_psi, srvf);
             obj.C = fminbnd(f1, 0, 1e4);
             
-            [~, ~, a, obj.U, s, obj.mu_g] = jointfPCAd(qn1, vec, obj.C, no, obj.mu_psi);
+            [~, ~, a, obj.U, s, obj.mu_g] = jointfPCAd(qn1, vec, obj.C, no, obj.mu_psi, srvf);
             
             % geodesic paths
             obj.stds = stds;
@@ -116,23 +128,99 @@ classdef fdajpca
             
             for j = 1:no
                 for i = 1:length(stds)
-                    qhat = obj.mqn + obj.U(1:(M+1),j) * stds(i)*sqrt(s(j));
-                    vechat = obj.U((M+2):end,j) * (stds(i)*sqrt(s(j)))/obj.C;
-                    psihat = exp_map(obj.mu_psi,vechat);
-                    gamhat = cumtrapz(linspace(0,1,M), psihat.*psihat);
-                    gamhat = (gamhat - min(gamhat))/(max(gamhat)-min(gamhat));
-                    if (sum(vechat)==0)
-                        gamhat = linspace(0,1,M);
+                    if srvf
+                        qhat = obj.mqn + obj.U(1:(M+1),j) * stds(i)*sqrt(s(j));
+                        vechat = obj.U((M+2):end,j) * (stds(i)*sqrt(s(j)))/obj.C;
+                        psihat = exp_map(obj.mu_psi,vechat);
+                        gamhat = cumtrapz(linspace(0,1,M), psihat.*psihat);
+                        gamhat = (gamhat - min(gamhat))/(max(gamhat)-min(gamhat));
+                        if (sum(vechat)==0)
+                            gamhat = linspace(0,1,M);
+                        end
+                        
+                        fhat = cumtrapzmid(time, qhat(1:M).*abs(qhat(1:M)),sign(qhat(M+1)).*(qhat(M+1)^2), id);
+                        obj.f_pca(:,i,j) = warp_f_gamma(fhat, gamhat, linspace(0,1,M));
+                        obj.q_pca(:,i,j) = warp_q_gamma(qhat(1:M), gamhat, linspace(0,1,M));
+                    else
+                        qhat = obj.mqn + obj.U(1:(M+1),j) * stds(i)*sqrt(s(j));
+                        vechat = obj.U((M+2):end,j) * (stds(i)*sqrt(s(j)))/obj.C;
+                        psihat = exp_map(obj.mu_psi,vechat);
+                        gamhat = cumtrapz(linspace(0,1,M), psihat.*psihat);
+                        gamhat = (gamhat - min(gamhat))/(max(gamhat)-min(gamhat));
+                        if (sum(vechat)==0)
+                            gamhat = linspace(0,1,M);
+                        end
+                        
+                        obj.f_pca(:,i,j) = warp_f_gamma(qhat, gamhat, linspace(0,1,M));
+                        obj.q_pca(:,i,j) = f_to_srvf(obj.f_pca(:,i,j), linspace(0,1,M));
                     end
-                    
-                    fhat = cumtrapzmid(time, qhat(1:M).*abs(qhat(1:M)),sign(qhat(M+1)).*(qhat(M+1)^2), id);
-                    obj.f_pca(:,i,j) = warp_f_gamma(fhat, gamhat, linspace(0,1,M));
-                    obj.q_pca(:,i,j) = warp_q_gamma(qhat(1:M), gamhat, linspace(0,1,M));
                 end
             end
             
             obj.coef = a;
             obj.latent = s;
+            obj.srvf = srvf;
+        end
+
+        function project(obj, f)
+            % PROJECT Project new data onto fPCA basis
+            % -------------------------------------------------------------------------
+            % This function project new data onto fPCA basis
+            %
+            % Usage: obj.project(f)
+            %        obj.calc_fpca(no,id)
+            %
+            % Inputs:
+            % f:  array (MxN) of N functions on M time points
+            %
+
+            q1 = f_to_srvf(f, obj.warp_data.time);
+            M = length(obj.warp_data.time);
+            n = size(q1,2);
+            mq = obj.warp_data.mqn;
+            fn = zeros(M, n);
+            qn = zeros(M, n);
+            gam = zeros(M, n);
+            for ii = 1:n
+                gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
+                fn(:, ii) = warp_f_gamma(f(:, ii), gam(:, ii), obj.warp_data.time);
+                qn(:, ii) = f_to_srvf(fn(:, ii), obj.warp_data.time);
+            end
+
+            no = size(U,2);
+
+            if obj.srvf
+                m_new = sign(fn(obj.id, :)) .* sqrt(abs(fn(obj.id, :)));
+                qn1 = [qn; m_new];
+            else
+                qn1 = fn;
+            end
+
+            C = obj.C;
+            TT = length(obj.warp_data.time);
+            mu_g = obj.mu_g
+            mu_psi = obj.mu_psi;
+            vec = zeros(M, n);
+            psi = zeros(M, n);
+            time = linspace(0,1,M);
+            binsize = mean(diff(time));
+            for i = 1:n
+                psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
+                [out, ~] = inv_exp_map(mu_psi, psi(:,i));
+                vec(:, i) = out;
+            end
+
+            g = [qn1; C*vec];
+            c = zeros(n,no);
+            for jj = 1:no
+                for ii = 1:n
+                    tmp = g(:, i) - mu_g;
+                    c(ii,jj) = dot(tmp,obj.U(:,jj));
+                end
+            end
+
+            obj.new_coef = c;
+            obj.new_g = g
         end
         
         function plot(obj)
@@ -194,7 +282,7 @@ classdef fdajpca
     end
 end
 
-function [qhat, gamhat, a, U, s, mu_g] = jointfPCAd(qn, vec, C, m, mu_psi)
+function [qhat, gamhat, a, U, s, mu_g] = jointfPCAd(qn, vec, C, m, mu_psi, srvf)
 [M, N] = size(qn);
 g = [qn; C*vec];
 mu_q = mean(qn,2);
@@ -214,11 +302,20 @@ end
 
 qhat = repmat(mu_q,1,N) + U(1:M,1:m) * a.';
 vechat = U((M+1):end,1:m) * (a.'/C);
-psihat = zeros(M-1,N);
-gamhat = zeros(M-1,N);
+if srvf
+    psihat = zeros(M-1,N);
+    gamhat = zeros(M-1,N);
+else
+    psihat = zeros(M,N);
+    gamhat = zeros(M,N);
+end
 for ii = 1:N
     psihat(:,ii) = exp_map(mu_psi,vechat(:,ii));
-    gam_tmp = cumtrapz(linspace(0,1,M-1), psihat(:,ii).*psihat(:,ii));
+    if srvf
+        gam_tmp = cumtrapz(linspace(0,1,M-1), psihat(:,ii).*psihat(:,ii));
+    else
+        gam_tmp = cumtrapz(linspace(0,1,M), psihat(:,ii).*psihat(:,ii));
+    end
     gamhat(:,ii) = (gam_tmp - min(gam_tmp))/(max(gam_tmp)-min(gam_tmp));
 end
 
@@ -227,14 +324,19 @@ s = s(1:m);
 
 end
 
-function [out] = find_C(C, qn, vec, q0, m, mu_psi)
-[qhat, gamhat, ~, ~, ~, ~] = jointfPCAd(qn, vec, C, m, mu_psi);
+function [out] = find_C(C, qn, vec, q0, m, mu_psi, srvf)
+[qhat, gamhat, ~, ~, ~, ~] = jointfPCAd(qn, vec, C, m, mu_psi, srvf);
 [M, N] = size(qn);
-time = linspace(0,1,M-1);
 
 d = zeros(1,N);
 for i = 1:N
-    tmp = warp_q_gamma(qhat(1:(M-1),i), invertGamma(gamhat(:,i)), time);
+    if srvf
+        time = linspace(0,1,M-1);
+        tmp = warp_q_gamma(qhat(1:(M-1),i), invertGamma(gamhat(:,i)), time);
+    else
+        time = linspace(0,1,M);
+        tmp = warp_q_gamma(qhat(:,i), invertGamma(gamhat(:,i)), time);
+    end
     d(i) = sum(trapz(time,(tmp-q0(:,i)).^2));
 end
 

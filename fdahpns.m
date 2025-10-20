@@ -16,7 +16,8 @@ classdef fdahpns
     %   psi_pns - srvf principal directions
     %   latent - latent values
     %   coef - coeficients
-    %   tau - principal directions
+    %   stds - principal directions
+    %   new_coef - principal coefficients of new data
     %
     %
     % fdahpns Methods:
@@ -39,6 +40,7 @@ classdef fdahpns
         no        % no of principal spheres
         PNS       % PNS structure
         stds       % principal directions
+        new_coef  % principal coefficients of new data 
     end
 
     methods
@@ -109,6 +111,45 @@ classdef fdahpns
             obj.no = no;
             obj.PNS = PNS;
             obj.coef = resmat;
+        end
+
+        function project(obj, f)
+            % PROJECT Project new data onto fPCA basis
+            % -------------------------------------------------------------------------
+            % This function project new data onto fPCA basis
+            %
+            % Usage: obj.project(f)
+            %        obj.calc_fpca(no,id)
+            %
+            % Inputs:
+            % f:  array (MxN) of N functions on M time points
+            %
+
+            q1 = f_to_srvf(f, obj.warp_data.time);
+            M = length(obj.warp_data.time);
+            n = size(q1,2);
+            mq = obj.warp_data.mqn;
+            gam = zeros(M, n);
+            for ii = 1:n
+                gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
+            end
+
+            no = size(U,2);
+
+            psi = zeros(M, n);
+            time = linspace(0,1,M);
+            binsize = mean(diff(time));
+            for i = 1:n
+                psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
+            end
+
+            pnsdat = psi./repmat(sqrt(sum(psi.^2)),d,1);
+
+            dat = obj.PNS.basisu' * pnsdat;
+            
+            resmat = fastPNSe2s(dat, obj.PNS)
+
+            obj.new_coef = resmat;
         end
 
         function plot(obj)
