@@ -1302,19 +1302,19 @@ classdef fdawarp
                     title(['Warped data, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
 
                     figure(4); clf;
-                    plot(obj.time, mean_f0, 'b-', 'linewidth', 1); hold on;
-                    plot(obj.time, mean_f0+std_f0, 'r-', 'linewidth', 1);
-                    plot(obj.time, mean_f0-std_f0, 'g-', 'linewidth', 1);
+                    plot(obj.time, mean_f0, 'k-', 'linewidth', 1); hold on;
+                    plot(obj.time, mean_f0+std_f0, '-', 'linewidth', 1, 'Color', '#66C2A5');
+                    plot(obj.time, mean_f0-std_f0, '-', 'linewidth', 1, 'Color', '#66C2A5');
                     title('Original data: Mean \pm STD', 'fontsize', 16);
 
                     figure(5); clf;
-                    plot(obj.time, mean_fn, 'b-', 'linewidth', 1); hold on;
-                    plot(obj.time, mean_fn+std_fn, 'r-', 'linewidth', 1);
-                    plot(obj.time, mean_fn-std_fn, 'g-', 'linewidth', 1);
+                    plot(obj.time, mean_fn, 'k-', 'linewidth', 1); hold on;
+                    plot(obj.time, mean_fn+std_fn, '-', 'linewidth', 1, 'Color', '#66C2A5');
+                    plot(obj.time, mean_fn-std_fn, '-', 'linewidth', 1, 'Color', '#66C2A5');
                     title(['Warped data, \lambda = ' num2str(obj.lambda) ': Mean \pm STD'], 'fontsize', 16);
 
                     figure(6); clf;
-                    plot(obj.time, obj.fmean, 'g','LineWidth',1);
+                    plot(obj.time, obj.fmean,'LineWidth', 1, 'Color', '#66C2A5');
                     title(['f_{mean}, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
                 end
             end

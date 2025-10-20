@@ -54,7 +54,7 @@ classdef fdavpca
             obj.warp_data = fdawarp;
         end
         
-        function obj = calc_fpca(obj,no,id)
+        function obj = calc_fpca(obj,no,id,stds)
             % CALC_FPCA Vertical Functional Principal Component Analysis
             % -------------------------------------------------------------------------
             % This function calculates vertical functional principal component analysis
@@ -67,6 +67,8 @@ classdef fdavpca
             % warp_data: struct from time_warping of aligned data
             % no: number of principal components to extract
             % id: point to use for f(0) (default = midpoint)
+            % stds: number of standard deviations along geodesic to compute
+            %       (default = -2:2)
             %
             % Output:
             % fdavpca object
@@ -75,7 +77,7 @@ classdef fdavpca
                 obj
                 no = 3;
                 id = round(length(obj.warp_data.time)/2);
-                
+                stds = -2:2;
             end
             obj.id = id;
             fn = obj.warp_data.fn;
@@ -83,9 +85,8 @@ classdef fdavpca
             qn = obj.warp_data.qn;
             
             % Parameters
-            coefs = -2:2;
             NP = 1:no;  % number of principal components
-            Nstd = length(coefs);
+            Nstd = length(stds);
             
             % FPCA
             mq_new = mean(qn,2);
@@ -103,7 +104,7 @@ classdef fdavpca
             obj.q_pca = zeros(length(mq_new)+1,Nstd,no);
             for k = NP
                 for i = 1:Nstd
-                    obj.q_pca(:,i,k) = [mq_new; mean(m_new)] + coefs(i)*stdS(k)*obj.U(:,k);
+                    obj.q_pca(:,i,k) = [mq_new; mean(m_new)] + stds(i)*stdS(k)*obj.U(:,k);
                 end
             end
             
@@ -129,14 +130,24 @@ classdef fdavpca
             
             obj.latent = s;
             obj.coef = c;
-            obj.stds = coefs;
+            obj.stds = stds;
         end
         
         function plot(obj)
             % plot plot elastic vertical fPCA results
             % -------------------------------------------------------------
             % Usage: obj.plot()
-            cl = 'rbgmc';
+            cl = [
+                "#66C2A5";
+                "#FC8D62";
+                "#8DA0CB";
+                "#E78AC3";
+                "#A6D854";
+                "#FFD92F";
+                "#E5C494";
+                "#B3B3B3"
+              ];
+            idx = find(obj.stds == 0);
             [~, ~, p1] = size(obj.q_pca);
             num_plot = ceil(p1/3);
             k = 1;
@@ -152,19 +163,29 @@ classdef fdavpca
                         break
                     end
                     for i = 1:length(obj.stds)
-                        plot(obj.warp_data.time, obj.q_pca(1:end-1,i,k), cl(i), 'linewidth', 2); hold on;
+                        if i == idx
+                            color = [0, 0, 0];
+                        else
+                            color = cl(i);
+                        end
+                        plot(obj.warp_data.time, obj.q_pca(1:end-1,i,k), 'Color', color, 'linewidth', 2); hold on;
                     end
                     title(['q domain: PD ' num2str(k)], 'fontsize', 14);
                     subplot(2,3,k1+3);
                     for i = 1:length(obj.stds)
-                        plot(obj.warp_data.time, obj.f_pca(:,i,k), cl(i), 'linewidth', 2); hold on;
+                        if i == idx
+                            color = [0, 0, 0];
+                        else
+                            color = cl(i);
+                        end
+                        plot(obj.warp_data.time, obj.f_pca(:,i,k), 'Color', color, 'linewidth', 2); hold on;
                     end
                     title(['f domain: PD ' num2str(k)], 'fontsize', 14);
                 end
             end
             cumm_coef = 100*cumsum(obj.latent)./sum(obj.latent);
             figure
-            plot(cumm_coef);title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
+            plot(cumm_coef, 'Color', cl(1));title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
         end
     end
 end

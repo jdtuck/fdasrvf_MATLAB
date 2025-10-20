@@ -29,7 +29,8 @@ For release note, see [CHANGES.md](CHANGES.md)
 2. Run setup.m to setup paths and compile MEX functions
   NOTE: Armadillo c++ library required for bayesian code.
 3. NOTE: After `buildtool`, you can use setup_paths.m to set paths as needed or just open the project file.
-4. Simple example for alignmment in example.m
+4. There are also precompiled matlab packaged toolboxes for linux, windows, and mac under the github release. 
+5. Simple example for alignmment in example.m
 
 ------------------------------------------------------------------------------
 

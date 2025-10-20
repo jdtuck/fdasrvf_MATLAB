@@ -40,7 +40,7 @@ classdef fdahpca
         coef      % coeficients
         vec       % shooting vectors
         mu        % Karcher Mean
-        tau       % principal directions
+        stds       % principal directions
     end
     
     methods
@@ -54,7 +54,7 @@ classdef fdahpca
             obj.warp_data = fdawarp;
         end
         
-        function obj = calc_fpca(obj,no)
+        function obj = calc_fpca(obj,no, stds)
             % calc_fpca Horizontal Functional Principal Component Analysis
             % -------------------------------------------------------------------------
             % This function calculates vertical functional principal component analysis
@@ -64,13 +64,18 @@ classdef fdahpca
             %
             % Inputs:
             % no: number of principal components to extract
+            % stds: number of standard deviations along geodesic to compute
+            %       (default = -2:2)
             %
             % Outputs:
             % fdahpca object
-            gam = obj.warp_data.gam;
-            if (~exist('no'))
+            
+            arguments
+                obj
                 no = 3;
+                stds = -2:2;
             end
+            gam = obj.warp_data.gam;
             
             [obj.mu,~,obj.vec] = SqrtMean(gam);
             
@@ -83,15 +88,15 @@ classdef fdahpca
             Sig = Sig(1:no);
             
             % Parameters
-            obj.tau = 1:5;
+            obj.stds = stds;
             
             % TFPCA
-            obj.psi_pca = zeros(length(obj.tau),length(obj.mu),no);
-            obj.gam_pca = zeros(length(obj.tau),length(obj.mu),no);
+            obj.psi_pca = zeros(length(obj.stds),length(obj.mu),no);
+            obj.gam_pca = zeros(length(obj.stds),length(obj.mu),no);
             v = zeros(5,length(obj.mu),3);
             for j=1:no      % three components
-                for k=obj.tau   % -2, -1, 0, 1, 2 std from the mean
-                    v(k,:,j) = (k-3)*sqrt(Sig(j))*obj.U(:,j)';
+                for k=1:length(obj.stds)   % -2, -1, 0, 1, 2 std from the mean
+                    v(k,:,j) = obj.stds(k)*sqrt(Sig(j))*obj.U(:,j)';
                     vn = norm(v(k,:,j))/sqrt(T);
                     if vn < 0.0001
                         obj.psi_pca(k,:,j) = obj.mu;
@@ -120,8 +125,18 @@ classdef fdahpca
             % plot plot elastic horizontal fPCA results
             % -------------------------------------------------------------------------
             % Usage: obj.plot()
-            cl = 'rbgmc';
+            cl = [
+                "#66C2A5";
+                "#FC8D62";
+                "#8DA0CB";
+                "#E78AC3";
+                "#A6D854";
+                "#FFD92F";
+                "#E5C494";
+                "#B3B3B3"
+              ];
             [~, T, p1] = size(obj.gam_pca);
+            idx = find(obj.stds == 0);
             num_plot = ceil(p1/3);
             j = 1;
             for ii = 1:num_plot
@@ -135,9 +150,11 @@ classdef fdahpca
                         break
                     end
                     subplot(1,3,j1);
-                    for k = 1:length(obj.tau)
-                        plot(linspace(0,1,T), obj.gam_pca(k,:,j), cl(k), 'linewidth', 2); hold on;
+                    for k = 1:length(obj.stds)
+                        plot(linspace(0,1,T), obj.gam_pca(k,:,j), 'Color', cl(k), 'linewidth', 2); hold on;
                     end
+                    plot(linspace(0,1,T), obj.gam_pca(idx,:,j), 'k', 'linewidth', 2)
+
                     axis([0 1 0 1]);
                     title(['PD ' num2str(j)], 'fontsize', 14);
                 end

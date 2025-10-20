@@ -60,7 +60,7 @@ classdef fdajpca
             obj.warp_data = fdawarp;
         end
         
-        function obj = calc_fpca(obj,no,id)
+        function obj = calc_fpca(obj,no,id,stds)
             % CALC_FPCA Joint Functional Principal Component Analysis
             % -------------------------------------------------------------------------
             % This function calculates joint functional principal component analysis
@@ -73,6 +73,8 @@ classdef fdajpca
             % warp_data: struct from time_warping of aligned data
             % no: number of principal components to extract
             % id: point to use for f(0) (default = midpoint)
+            % stds: number of standard deviations along geodesic to compute
+            %       (default = -2:2)
             %
             % Output:
             % fdajpca object
@@ -80,6 +82,7 @@ classdef fdajpca
                 obj
                 no = 3;
                 id = round(length(obj.warp_data.time)/2);
+                stds = -2:2;
             end
             obj.id = id;
             fn = obj.warp_data.fn;
@@ -107,15 +110,14 @@ classdef fdajpca
             [~, ~, a, obj.U, s, obj.mu_g] = jointfPCAd(qn1, vec, obj.C, no, obj.mu_psi);
             
             % geodesic paths
-            ci = [-1,0,1];
-            obj.stds = ci;
-            obj.q_pca = zeros(M, length(ci), no);
-            obj.f_pca = zeros(M, length(ci), no);
+            obj.stds = stds;
+            obj.q_pca = zeros(M, length(stds), no);
+            obj.f_pca = zeros(M, length(stds), no);
             
             for j = 1:no
-                for i = 1:length(ci)
-                    qhat = obj.mqn + obj.U(1:(M+1),j) * ci(i)*sqrt(s(j));
-                    vechat = obj.U((M+2):end,j) * (ci(i)*sqrt(s(j)))/obj.C;
+                for i = 1:length(stds)
+                    qhat = obj.mqn + obj.U(1:(M+1),j) * stds(i)*sqrt(s(j));
+                    vechat = obj.U((M+2):end,j) * (stds(i)*sqrt(s(j)))/obj.C;
                     psihat = exp_map(obj.mu_psi,vechat);
                     gamhat = cumtrapz(linspace(0,1,M), psihat.*psihat);
                     gamhat = (gamhat - min(gamhat))/(max(gamhat)-min(gamhat));
@@ -137,7 +139,17 @@ classdef fdajpca
             % plot plot elastic vertical fPCA results
             % -------------------------------------------------------------
             % Usage: obj.plot()
-            cl = 'rbgmc';
+            cl = [
+                "#66C2A5";
+                "#FC8D62";
+                "#8DA0CB";
+                "#E78AC3";
+                "#A6D854";
+                "#FFD92F";
+                "#E5C494";
+                "#B3B3B3"
+              ];
+            idx = find(obj.stds == 0);
             [~, ~, p1] = size(obj.q_pca);
             time = obj.warp_data.time;
             ci = obj.stds;
@@ -155,19 +167,29 @@ classdef fdajpca
                         break
                     end
                     for i = 1:length(ci)
-                        plot(time, obj.q_pca(:,i,k), cl(i), 'linewidth', 2); hold on;
+                        if i == idx
+                            color = [0, 0, 0];
+                        else
+                            color = cl(i);
+                        end
+                        plot(time, obj.q_pca(:,i,k), 'Color', color, 'linewidth', 2); hold on;
                     end
                     title(['q domain: PD ' num2str(k)], 'fontsize', 14);
                     subplot(2,3,k1+3);
                     for i = 1:length(ci)
-                        plot(time, obj.f_pca(:,i,k), cl(i), 'linewidth', 2); hold on;
+                        if i == idx
+                            color = [0, 0, 0];
+                        else
+                            color = cl(i);
+                        end
+                        plot(time, obj.f_pca(:,i,k), 'Color', color, 'linewidth', 2); hold on;
                     end
                     title(['f domain: PD ' num2str(k)], 'fontsize', 14);
                 end
             end
             cumm_coef = 100*cumsum(obj.latent)./sum(obj.latent);
             figure
-            plot(cumm_coef);title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
+            plot(cumm_coef, 'Color', cl(1));title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
         end
     end
 end
