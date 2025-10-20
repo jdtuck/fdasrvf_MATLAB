@@ -117,7 +117,7 @@ classdef fdahpca
             Sig = diag(S);
             if ~isnan(var_exp)
                 cumm_coef = cumsum(Sig) / sum(Sig);
-                no = find(cumm_coef >= var_exp, 'first');
+                no = find(cumm_coef >= var_exp, 1, 'first');
             end
             T = size(obj.vec,1);
             obj.U = obj.U(:,1:no);

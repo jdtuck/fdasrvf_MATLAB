@@ -117,7 +117,7 @@ classdef fdavpca
 
             if ~isnan(var_exp)
                 cumm_coef = cumsum(s) / sum(s);
-                no = find(cumm_coef >= var_exp, 'first');
+                no = find(cumm_coef >= var_exp, 1, 'first');
             end
             NP = 1:no;  % number of principal components
 

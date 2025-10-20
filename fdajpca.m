@@ -55,6 +55,7 @@ classdef fdajpca
         U         % eigenvectors
         U_q       % eigenvectors of function 
         U_h       % eigenvectors of warping
+        mu_psi    % mean of warping in sphere or vector space
         vec       % vector space rep of warping
         no        % number of principal coefficients
         qn1       % representation of functions in srvf or not 
@@ -116,6 +117,7 @@ classdef fdajpca
             if var_exp > 1
                 error('var_exp is greater than 1')
             end
+          
             obj.id = id;
             fn = obj.warp_data.fn;
             time = obj.warp_data.time;
@@ -131,36 +133,36 @@ classdef fdajpca
             if srvf
                 m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  % scaled version
                 obj.mqn = [mq_new; mean(m_new)];
-                qn1 = [qn; m_new];
+                obj.qn1 = [qn; m_new];
             else
                 obj.mqn = mean(fn, 2);
-                qn1 = fn;
+                obj.qn1 = fn;
             end
             
             % calculate vector space of warping functions
             if obj.log_der
-                vec = gam_to_h(gam);
-                obj.mu_psi = mean(vec, 2);
+                obj.vec = gam_to_h(gam);
+                obj.mu_psi = mean(obj.vec, 2);
             else
-                [obj.mu_psi,~,~,vec] = SqrtMean(gam);
+                [obj.mu_psi,~,~,obj.vec] = SqrtMean(gam);
             end
             
             % joint fPCA
-            f1 = @(x)find_C(x, qn1, vec, q0, no, obj.mu_psi, srvf, obj.log_der, 0.99);
+            f1 = @(x)find_C(x, obj.qn1, obj.vec, q0, obj.mu_psi, srvf, obj.log_der, 0.99);
             obj.C = fminbnd(f1, 0, 1e4);
             
-            [qhat, gamhat, cz, Psi_q, Psi_h, sz, U, Uh, Uz] = jointfPCAd(qn1, vec, obj.C, no, obj.mu_psi, srvf, obj.log_der, var_exp);
+            [~, ~, cz, Psi_q, Psi_h, sz, obj.U, Uh, obj.Uz] = jointfPCAd(obj.qn1, obj.vec, obj.C, obj.mu_psi, srvf, obj.log_der, var_exp);
             
-            vc = C*vec;
-            mv = mean(vc, 2);
+            vc = obj.C*obj.vec;
+            obj.mv = mean(vc, 2);
 
-            no = size(cz,2);
+            obj.no = size(cz,2);
             % geodesic paths
             obj.stds = stds;
-            obj.q_pca = zeros(M, length(stds), no);
-            obj.f_pca = zeros(M, length(stds), no);
+            obj.q_pca = zeros(M, length(stds), obj.no);
+            obj.f_pca = zeros(M, length(stds), obj.no);
             
-            for j = 1:no
+            for j = 1:obj.no
                 for i = 1:length(stds)
                     qhat = obj.mqn + Psi_q(:,j) * stds(i)*sqrt(sz(j));
                     vechat = Psi_h(:,j) * (stds(i)*sqrt(sz(j)))/obj.C;
@@ -197,19 +199,12 @@ classdef fdajpca
                 end
             end
             
-            obj.coef = cz(:, 1:no);
-            obj.latent = s;
+            obj.coef = cz(:, 1:obj.no);
             obj.srvf = srvf;
-            obj.latent = sz(1:no);
+            obj.latent = sz(1:obj.no);
             obj.U_q = Psi_q;
             obj.U_h = Psi_h;
-            obj.vec = vec;
-            obj.no = no;
-            obj.qn1 = qn1;
-            obj.U = U;
             obj.U1 = Uh;
-            obj.Uz = Uz;
-            obj.mv = mv;
             
         end
 
@@ -238,16 +233,15 @@ classdef fdajpca
                 qn(:, ii) = f_to_srvf(fn(:, ii), obj.warp_data.time);
             end
 
-            no = size(obj.U,2);
 
             if obj.srvf
                 m_new = sign(fn(obj.id, :)) .* sqrt(abs(fn(obj.id, :)));
-                qn1 = [qn; m_new];
+                qn1a = [qn; m_new];
             else
-                qn1 = fn;
+                qn1a = fn;
             end
 
-            vec = zeros(M, n);
+            veca = zeros(M, n);
             psi = zeros(M, n);
             time = linspace(0,1,M);
             binsize = mean(diff(time));
@@ -258,19 +252,19 @@ classdef fdajpca
                     psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
                     [out, ~] = inv_exp_map(obj.mu_psi, psi(:,i));
                 end
-                vec(:, i) = out;
+                veca(:, i) = out;
             end
 
-            c = (qn1 - obj.mqn)' * obj.U;
-            cv = (C*vec - obj.mv)' * obj.U1;
+            c = (qn1a - obj.mqn)' * obj.U;
+            cv = (obj.C*veca - obj.mv)' * obj.U1;
 
             Xi = [c cv];
 
             cz = Xi * obj.Uz;
 
             obj.new_coef = cz;
-            obj.new_qn1 = qn1;
-            obj.new_h = vec;
+            obj.new_qn1 = qn1a;
+            obj.new_h = veca;
         end
         
         function plot(obj)
@@ -332,19 +326,19 @@ classdef fdajpca
     end
 end
 
-function [qhat, gamhat, cz, Psi_q, Psi_h, sz, U, Uh, Uz] = jointfPCAd(qn, vec, C, m, mu_psi, srvf, log_der, var_exp)
+function [qhat, gamhat, cz, Psi_q, Psi_h, sz, U, Uv, Uz] = jointfPCAd(qn, vec, C, mu_psi, srvf, log_der, var_exp)
 [M, N] = size(qn);
 
 % run univariate fpca
 % q space
-K = cov(q.');
+K = cov(qn.');
 
 mqn = mean(qn, 2);
 
 [U,S,~] = svd(K);
 
 cumm_coef = cumsum(diag(S))/sum(diag(S));
-no_q = find(cumm_coef >= var_exp, 'first');
+no_q = find(cumm_coef >= var_exp, 1, 'first');
 if isempty(no_q)
     no_q = 1;
 end
@@ -361,8 +355,8 @@ Kv = cov(cvec');
 [Uv, Sv, ~] = svd(Kv);
 
 cumm_coef = cumsum(diag(Sv)) / sum(diag(Sv));
-no_v = find(cumm_coef >= var_exp, 'first');
-if isemptyu(no_v)
+no_v = find(cumm_coef >= var_exp, 1, 'first');
+if isempty(no_v)
     no_v = 1;
 end
 
@@ -372,13 +366,14 @@ Uv = Uv(:, 1:no_v);
 
 % run multivariate fPCA
 Xi = [c cv];
-Z = 1./(size(Xi,1)-1) * Xi' * Xi;
+Z = 1./(size(Xi,1)-1) * (Xi' * Xi);
 
-Uz, Sz, Vz = svd(Z);
+[Uz, Sz, ~] = svd(Z);
+sz = diag(Sz);
 cz = Xi * Uz;
 
 Psi_q = U * Uz(1:no_q,:);
-Psi_v = Uv * Uz((no_q+1):end, :);
+Psi_h = Uv * Uz((no_q+1):end, :);
 
 vhat = Psi_h * cz';
 if srvf
@@ -403,8 +398,8 @@ qhat = Psi_q * cz' + mqn;
 
 end
 
-function [out] = find_C(C, qn, vec, q0, m, mu_psi, srvf, log_der, var_exp)
-[qhat, gamhat, ~, ~, ~, ~, ~, ~, ~] = jointfPCAd(qn, vec, C, m, mu_psi, srvf, log_der, var_exp);
+function [out] = find_C(C, qn, vec, q0, mu_psi, srvf, log_der, var_exp)
+[qhat, gamhat, ~, ~, ~, ~, ~, ~, ~] = jointfPCAd(qn, vec, C, mu_psi, srvf, log_der, var_exp);
 [M, N] = size(qn);
 
 d = zeros(1,N);
