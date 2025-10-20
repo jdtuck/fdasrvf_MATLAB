@@ -86,6 +86,7 @@ classdef fdahpca
             arguments
                 obj
                 no = 3;
+                var_exp = NaN;
                 stds = -2:2;
             end
             gam = obj.warp_data.gam;
