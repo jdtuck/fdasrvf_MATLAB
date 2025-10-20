@@ -2,6 +2,8 @@
 * update armadillo
 * update plotting colors to match other packages
 * add project to fpca functions
+* add h transform to fpca functions for warping functions
+* change jfpca to approach of Wu
 
 # fdasrvf 3.6.8
 * move to buildfile, no longer run `setup.m`, now run buildtool to create mex files and test

@@ -22,6 +22,7 @@ classdef fdahpca
     %   vm - mean of shooting vectors
     %   stds - principal directions
     %   new_coef - principal coefficients of new data  
+    %   log_der - log-derivative transform used
     %
     %
     % fdahpca Methods:
@@ -45,20 +46,26 @@ classdef fdahpca
         vm        % mean of shooting vectors
         stds      % principal directions
         new_coef  % principal coefficients of new data 
+        log_der   % log-derivative transform used
     end
     
     methods
-        function obj = fdahpca(fdawarp)
+        function obj = fdahpca(fdawarp, log_der)
             %fdahpca Construct an instance of this class
             % Input:
             %   fdawarp: fdawarp class
+            arguments
+                fdawarp
+                log_der = false
+            end
             if (isempty(fdawarp.fn))
                 error('Please align fdawarp class using time_warping!');
             end
             obj.warp_data = fdawarp;
+            obj.log_der = log_der;
         end
         
-        function obj = calc_fpca(obj,no, stds)
+        function obj = calc_fpca(obj, no, stds)
             % calc_fpca Horizontal Functional Principal Component Analysis
             % -------------------------------------------------------------------------
             % This function calculates vertical functional principal component analysis
@@ -80,9 +87,14 @@ classdef fdahpca
                 stds = -2:2;
             end
             gam = obj.warp_data.gam;
-            
-            [obj.mu,~,obj.vec] = SqrtMean(gam);
-            
+
+            if obj.log_der
+                obj.vec = gam_to_h(gam);
+                obj.mu = mean(obj.vec, 2);
+            else
+                [obj.mu,~,obj.vec] = SqrtMean(gam);
+            end
+
             K = cov(obj.vec');
             
             [obj.U,S,~] = svd(K);
@@ -101,13 +113,19 @@ classdef fdahpca
             for j=1:no      % three components
                 for k=1:length(obj.stds)   % -2, -1, 0, 1, 2 std from the mean
                     v(k,:,j) = obj.stds(k)*sqrt(Sig(j))*obj.U(:,j)';
-                    vn = norm(v(k,:,j))/sqrt(T);
-                    if vn < 0.0001
-                        obj.psi_pca(k,:,j) = obj.mu;
+                    if obj.log_der
+                        obj.psi_pca(k,:,j) = v(k,:,j);
+                        gam0 = h_to_gam(obj.psi_pca(k,:,j));
                     else
-                        obj.psi_pca(k,:,j) = cos(vn)*obj.mu.' + sin(vn)*v(k,:,j)/vn;
+                        vn = norm(v(k,:,j))/sqrt(T);
+                        if vn < 0.0001
+                            obj.psi_pca(k,:,j) = obj.mu;
+                        else
+                            obj.psi_pca(k,:,j) = cos(vn)*obj.mu.' + sin(vn)*v(k,:,j)/vn;
+                        end
+                        gam0 = cumtrapz(linspace(0,1,size(gam,1)),obj.psi_pca(k,:,j).*obj.psi_pca(k,:,j));
                     end
-                    gam0 = cumtrapz(linspace(0,1,size(gam,1)),obj.psi_pca(k,:,j).*obj.psi_pca(k,:,j));
+                    
                     obj.gam_pca(k,:,j) = (gam0-gam0(1))/(gam0(end)-gam0(1));
                 end
             end
@@ -154,8 +172,12 @@ classdef fdahpca
             time = linspace(0,1,M);
             binsize = mean(diff(time));
             for i = 1:n
-                psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
-                [out, ~] = inv_exp_map(mu_psi, psi(:,i));
+                if obj.log_der
+                    out = gam_to_h(gam(:,i));
+                else
+                    psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
+                    [out, ~] = inv_exp_map(mu_psi, psi(:,i));
+                end
                 vec1(:, i) = out;
             end
 

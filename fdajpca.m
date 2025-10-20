@@ -24,8 +24,9 @@ classdef fdajpca
     %   C - scaling value
     %   stds - geodesic directions
     %   new_coef - principal coefficients of new data
-    %  new_g - g of new data
+    %   new_g - g of new data
     %   srvf - srvf space used
+    %   log_der - log-derivative transform used
     %
     %
     % fdajpca Methods:
@@ -53,17 +54,23 @@ classdef fdajpca
         new_coef  % principal coefficients of new data 
         new_g     % g of new data
         srvf      % srvf space used
+        log_der   % log-derivative transform used
     end
     
     methods
-        function obj = fdajpca(fdawarp)
+        function obj = fdajpca(fdawarp, log_der)
             %fdajpca Construct an instance of this class
             % Input:
             %   fdawarp: fdawarp class
+            arguments
+                fdawarp
+                log_der = false
+            end
             if (isempty(fdawarp.fn))
                 error('Please align fdawarp class using time_warping!');
             end
             obj.warp_data = fdawarp;
+            obj.log_der = log_der;
         end
         
         function obj = calc_fpca(obj,no,id,stds,srvf)
@@ -114,13 +121,18 @@ classdef fdajpca
             end
             
             % calculate vector space of warping functions
-            [obj.mu_psi,~,~,vec] = SqrtMean(gam);
+            if obj.log_der
+                vec = gam_to_h(gam);
+                obj.mu_psi = mean(vec, 2);
+            else
+                [obj.mu_psi,~,~,vec] = SqrtMean(gam);
+            end
             
             % joint fPCA
-            f1 = @(x)find_C(x, qn1, vec, q0, no, obj.mu_psi, srvf);
+            f1 = @(x)find_C(x, qn1, vec, q0, no, obj.mu_psi, srvf, obj.log_der);
             obj.C = fminbnd(f1, 0, 1e4);
             
-            [~, ~, a, obj.U, s, obj.mu_g] = jointfPCAd(qn1, vec, obj.C, no, obj.mu_psi, srvf);
+            [~, ~, a, obj.U, s, obj.mu_g] = jointfPCAd(qn1, vec, obj.C, no, obj.mu_psi, srvf, obj.log_der);
             
             % geodesic paths
             obj.stds = stds;
@@ -132,8 +144,12 @@ classdef fdajpca
                     if srvf
                         qhat = obj.mqn + obj.U(1:(M+1),j) * stds(i)*sqrt(s(j));
                         vechat = obj.U((M+2):end,j) * (stds(i)*sqrt(s(j)))/obj.C;
-                        psihat = exp_map(obj.mu_psi,vechat);
-                        gamhat = cumtrapz(linspace(0,1,M), psihat.*psihat);
+                        if obj.log_der
+                            gamhat = h_to_gam(vechat);
+                        else
+                            psihat = exp_map(obj.mu_psi,vechat);
+                            gamhat = cumtrapz(linspace(0,1,M), psihat.*psihat);
+                        end
                         gamhat = (gamhat - min(gamhat))/(max(gamhat)-min(gamhat));
                         if (sum(vechat)==0)
                             gamhat = linspace(0,1,M);
@@ -145,8 +161,12 @@ classdef fdajpca
                     else
                         qhat = obj.mqn + obj.U(1:(M+1),j) * stds(i)*sqrt(s(j));
                         vechat = obj.U((M+2):end,j) * (stds(i)*sqrt(s(j)))/obj.C;
-                        psihat = exp_map(obj.mu_psi,vechat);
-                        gamhat = cumtrapz(linspace(0,1,M), psihat.*psihat);
+                        if obj.log_der
+                            gamhat = h_to_gam(vechat);
+                        else
+                            psihat = exp_map(obj.mu_psi,vechat);
+                            gamhat = cumtrapz(linspace(0,1,M), psihat.*psihat);
+                        end
                         gamhat = (gamhat - min(gamhat))/(max(gamhat)-min(gamhat));
                         if (sum(vechat)==0)
                             gamhat = linspace(0,1,M);
@@ -202,8 +222,12 @@ classdef fdajpca
             time = linspace(0,1,M);
             binsize = mean(diff(time));
             for i = 1:n
-                psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
-                [out, ~] = inv_exp_map(obj.mu_psi, psi(:,i));
+                if obj.log_der
+                    out = gam_to_h(gam(:,i));
+                else
+                    psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
+                    [out, ~] = inv_exp_map(obj.mu_psi, psi(:,i));
+                end
                 vec(:, i) = out;
             end
 
@@ -279,8 +303,9 @@ classdef fdajpca
     end
 end
 
-function [qhat, gamhat, a, U, s, mu_g] = jointfPCAd(qn, vec, C, m, mu_psi, srvf)
+function [qhat, gamhat, a, U, s, mu_g] = jointfPCAd(qn, vec, C, m, mu_psi, srvf, log_der)
 [M, N] = size(qn);
+
 g = [qn; C*vec];
 mu_q = mean(qn,2);
 mu_g = mean(g,2);
@@ -307,11 +332,15 @@ else
     gamhat = zeros(M,N);
 end
 for ii = 1:N
-    psihat(:,ii) = exp_map(mu_psi,vechat(:,ii));
-    if srvf
-        gam_tmp = cumtrapz(linspace(0,1,M-1), psihat(:,ii).*psihat(:,ii));
+    if log_der
+        gam_tmp = h_to_gam(vechat(:,ii));
     else
-        gam_tmp = cumtrapz(linspace(0,1,M), psihat(:,ii).*psihat(:,ii));
+        psihat(:,ii) = exp_map(mu_psi,vechat(:,ii));
+        if srvf
+            gam_tmp = cumtrapz(linspace(0,1,M-1), psihat(:,ii).*psihat(:,ii));
+        else
+            gam_tmp = cumtrapz(linspace(0,1,M), psihat(:,ii).*psihat(:,ii));
+        end
     end
     gamhat(:,ii) = (gam_tmp - min(gam_tmp))/(max(gam_tmp)-min(gam_tmp));
 end
@@ -321,8 +350,8 @@ s = s(1:m);
 
 end
 
-function [out] = find_C(C, qn, vec, q0, m, mu_psi, srvf)
-[qhat, gamhat, ~, ~, ~, ~] = jointfPCAd(qn, vec, C, m, mu_psi, srvf);
+function [out] = find_C(C, qn, vec, q0, m, mu_psi, srvf, log_der)
+[qhat, gamhat, ~, ~, ~, ~] = jointfPCAd(qn, vec, C, m, mu_psi, srvf, log_der);
 [M, N] = size(qn);
 
 d = zeros(1,N);
