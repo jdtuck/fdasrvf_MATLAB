@@ -38,7 +38,7 @@ classdef fdahpns
         cumvar    % cummulative variance
         no        % no of principal spheres
         PNS       % PNS structure
-        tau       % principal directions
+        stds       % principal directions
     end
 
     methods
@@ -52,7 +52,7 @@ classdef fdahpns
             obj.warp_data = fdawarp;
         end
 
-        function obj = calc_fpns(obj,no)
+        function obj = calc_fpns(obj,no,stds)
             % calc_fpns Horizontal Functional Principal Component Analysis
             % -------------------------------------------------------------------------
             % This function calculates vertical functional principal component analysis
@@ -64,15 +64,19 @@ classdef fdahpns
             % Inputs:
             % no: number of principal components to extract
             % showplot: show plots of principal directions (e.g, true)
+            % stds: number of standard deviations along geodesic to compute
+            %       (default = -2:2)
             %
             % Outputs:
             % fdahpca object
+            arguments
+                obj
+                no = 3;
+                stds = -2:2;
+            end
             gam = obj.warp_data.gam;
             n = size(gam, 2);
             M = size(gam, 1);
-            if (~exist('no'))
-                no = 3;
-            end
 
             [resmat, PNS] = PNS_warping(gam);
 
@@ -82,20 +86,20 @@ classdef fdahpns
             propcumPNS = cumvarPNS / cumvarPNS(end);
 
             % Parameters
-            obj.tau = 1:5;
+            obj.stds = stds;
 
             % TFPCA
-            obj.psi_pns = zeros(length(obj.tau),M,no);
-            obj.gam_pns = zeros(length(obj.tau),M,no);
+            obj.psi_pns = zeros(length(obj.stds),M,no);
+            obj.gam_pns = zeros(length(obj.stds),M,no);
             for j=1:no      % three components
                 std1 = std(resmat(j, :));
                 mean1 = mean(resmat(j, :));
-                dirtmp = obj.tau * std1 + mean1;
-                restmp = zeros(size(resmat,1), length(obj.tau));
+                dirtmp = obj.stds * std1 + mean1;
+                restmp = zeros(size(resmat,1), length(obj.stds));
                 restmp(j, :) = dirtmp;
-                PCvec = fastPNSe2s(restmp, PNS);
-                obj.psi_pns(:, :, j) = (PCvec * PNS.radius);
-                for k=1:length(obj.tau)
+                PCvec = fastPNSe2s(restmp, stds);
+                obj.psi_pns(:, :, j) = (PCvec * stds.radius);
+                for k=1:length(obj.stds)
                     gam0 = cumtrapz(linspace(0,1,size(gam,1)),obj.psi_pns(k,:,j).*obj.psi_pns(k,:,j));
                     obj.gam_pns(k,:,j) = (gam0-gam0(1))/(gam0(end)-gam0(1));
                 end
@@ -111,7 +115,16 @@ classdef fdahpns
             % plot plot elastic horizontal fPCA results
             % -------------------------------------------------------------------------
             % Usage: obj.plot()
-            cl = 'rbgmc';
+            cl = [
+                "#66C2A5";
+                "#FC8D62";
+                "#8DA0CB";
+                "#E78AC3";
+                "#A6D854";
+                "#FFD92F";
+                "#E5C494";
+                "#B3B3B3"
+              ];
             [~, T, p1] = size(obj.gam_pns);
             num_plot = ceil(p1/3);
             j = 1;
@@ -126,16 +139,17 @@ classdef fdahpns
                         break
                     end
                     subplot(1,3,j1);
-                    for k = 1:length(obj.tau)
+                    for k = 1:length(obj.stds)
                         plot(linspace(0,1,T), obj.gam_pns(k,:,j), cl(k), 'linewidth', 2); hold on;
                     end
+                    plot(linspace(0,1,T), obj.gam_pca(idx,:,j), 'k', 'linewidth', 2)
                     axis([0 1 0 1]);
                     title(['PD ' num2str(j)], 'fontsize', 14);
                 end
             end
 
             figure
-            plot(obj.cumvar);title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
+            plot(obj.cumvar, 'Color', cl(1));title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
         end
     end
 end

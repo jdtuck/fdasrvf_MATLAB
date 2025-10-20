@@ -161,7 +161,7 @@ classdef fdahpca
             end
             cumm_coef = 100*cumsum(obj.latent)./sum(obj.latent);
             figure
-            plot(cumm_coef);title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
+            plot(cumm_coef, 'Color', cl(1));title('Coefficient Cumulative Percentage');ylabel('Percentage');xlabel('Index')
         end
     end
 end
