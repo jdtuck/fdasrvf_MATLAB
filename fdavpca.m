@@ -135,7 +135,7 @@ classdef fdavpca
             obj.stds = stds;
         end
 
-        function project(obj, f)
+        function obj = project(obj, f)
             % PROJECT Project new data onto fPCA basis
             % -------------------------------------------------------------------------
             % This function project new data onto fPCA basis
@@ -160,10 +160,9 @@ classdef fdavpca
                 qn(:, ii) = f_to_srvf(fn(:, ii), obj.warp_data.time);
             end
 
-            no = size(U,2);
+            no = size(obj.U,2);
 
             m_new = sign(fn(obj.id, :)) .* sqrt(abs(fn(obj.id, :)));
-            qn1 = [qn; m_new];
 
             c = zeros(n,no);
             for jj = 1:no

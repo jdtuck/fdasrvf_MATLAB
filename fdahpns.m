@@ -80,7 +80,7 @@ classdef fdahpns
             n = size(gam, 2);
             M = size(gam, 1);
 
-            [resmat, PNS] = PNS_warping(gam);
+            [resmat, obj.PNS] = PNS_warping(gam);
 
             % proportion of variance explained
             varPNS = sum(abs(resmat.^2), 2) / n;
@@ -109,11 +109,10 @@ classdef fdahpns
 
             obj.cumvar = propcumPNS;
             obj.no = no;
-            obj.PNS = PNS;
             obj.coef = resmat;
         end
 
-        function project(obj, f)
+        function obj = project(obj, f)
             % PROJECT Project new data onto fPCA basis
             % -------------------------------------------------------------------------
             % This function project new data onto fPCA basis
@@ -134,8 +133,6 @@ classdef fdahpns
                 gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
             end
 
-            no = size(U,2);
-
             psi = zeros(M, n);
             time = linspace(0,1,M);
             binsize = mean(diff(time));
@@ -147,7 +144,7 @@ classdef fdahpns
 
             dat = obj.PNS.basisu' * pnsdat;
             
-            resmat = fastPNSe2s(dat, obj.PNS)
+            resmat = fastPNSe2s(dat, obj.PNS);
 
             obj.new_coef = resmat;
         end
@@ -183,7 +180,7 @@ classdef fdahpns
                     for k = 1:length(obj.stds)
                         plot(linspace(0,1,T), obj.gam_pns(k,:,j), cl(k), 'linewidth', 2); hold on;
                     end
-                    plot(linspace(0,1,T), obj.gam_pca(idx,:,j), 'k', 'linewidth', 2)
+                    plot(linspace(0,1,T), obj.gam_pns(idx,:,j), 'k', 'linewidth', 2)
                     axis([0 1 0 1]);
                     title(['PD ' num2str(j)], 'fontsize', 14);
                 end

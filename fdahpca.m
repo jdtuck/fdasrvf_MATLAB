@@ -19,6 +19,7 @@ classdef fdahpca
     %   coef - coeficients
     %   vec - shooting vectors
     %   mu - Karcher Mean
+    %   vm - mean of shooting vectors
     %   stds - principal directions
     %   new_coef - principal coefficients of new data  
     %
@@ -41,7 +42,8 @@ classdef fdahpca
         coef      % coeficients
         vec       % shooting vectors
         mu        % Karcher Mean
-        stds       % principal directions
+        vm        % mean of shooting vectors
+        stds      % principal directions
         new_coef  % principal coefficients of new data 
     end
     
@@ -112,10 +114,10 @@ classdef fdahpca
             
             % coefficients
             c = zeros(size(gam,1),no);
-            vm = mean(obj.vec,2);
+            obj.vm = mean(obj.vec,2);
             for jj = 1:no
                 for ii = 1:size(gam,2)
-                    c(ii,jj) = (obj.vec(:,ii)-vm).'*obj.U(:,jj);
+                    c(ii,jj) = (obj.vec(:,ii)-obj.vm).'*obj.U(:,jj);
                 end
             end
             
@@ -123,7 +125,7 @@ classdef fdahpca
             obj.coef = c;
         end
 
-        function project(obj, f)
+        function obj = project(obj, f)
             % PROJECT Project new data onto fPCA basis
             % -------------------------------------------------------------------------
             % This function project new data onto fPCA basis
@@ -144,23 +146,23 @@ classdef fdahpca
                 gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
             end
 
-            no = size(U,2);
+            no = size(obj.U,2);
 
-            mu_psi = obj.mu_psi;
-            vec = zeros(M, n);
+            mu_psi = obj.mu;
+            vec1 = zeros(M, n);
             psi = zeros(M, n);
             time = linspace(0,1,M);
             binsize = mean(diff(time));
             for i = 1:n
                 psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
                 [out, ~] = inv_exp_map(mu_psi, psi(:,i));
-                vec(:, i) = out;
+                vec1(:, i) = out;
             end
 
             c = zeros(size(gam,1),no);
             for jj = 1:no
                 for ii = 1:size(gam,2)
-                    c(ii,jj) = (vec(:,ii)-obj.vm).'*obj.U(:,jj);
+                    c(ii,jj) = (vec1(:,ii)-obj.vm).'*obj.U(:,jj);
                 end
             end
 

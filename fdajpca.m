@@ -111,6 +111,7 @@ classdef fdajpca
             else
                 obj.mqn = mean(fn, 2);
                 qn1 = fn;
+            end
             
             % calculate vector space of warping functions
             [obj.mu_psi,~,~,vec] = SqrtMean(gam);
@@ -162,7 +163,7 @@ classdef fdajpca
             obj.srvf = srvf;
         end
 
-        function project(obj, f)
+        function obj = project(obj, f)
             % PROJECT Project new data onto fPCA basis
             % -------------------------------------------------------------------------
             % This function project new data onto fPCA basis
@@ -187,7 +188,7 @@ classdef fdajpca
                 qn(:, ii) = f_to_srvf(fn(:, ii), obj.warp_data.time);
             end
 
-            no = size(U,2);
+            no = size(obj.U,2);
 
             if obj.srvf
                 m_new = sign(fn(obj.id, :)) .* sqrt(abs(fn(obj.id, :)));
@@ -196,31 +197,27 @@ classdef fdajpca
                 qn1 = fn;
             end
 
-            C = obj.C;
-            TT = length(obj.warp_data.time);
-            mu_g = obj.mu_g
-            mu_psi = obj.mu_psi;
             vec = zeros(M, n);
             psi = zeros(M, n);
             time = linspace(0,1,M);
             binsize = mean(diff(time));
             for i = 1:n
                 psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
-                [out, ~] = inv_exp_map(mu_psi, psi(:,i));
+                [out, ~] = inv_exp_map(obj.mu_psi, psi(:,i));
                 vec(:, i) = out;
             end
 
-            g = [qn1; C*vec];
+            g = [qn1; obj.C*vec];
             c = zeros(n,no);
             for jj = 1:no
                 for ii = 1:n
-                    tmp = g(:, i) - mu_g;
+                    tmp = g(:, i) - obj.mu_g;
                     c(ii,jj) = dot(tmp,obj.U(:,jj));
                 end
             end
 
             obj.new_coef = c;
-            obj.new_g = g
+            obj.new_g = g;
         end
         
         function plot(obj)
