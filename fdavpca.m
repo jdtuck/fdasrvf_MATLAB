@@ -56,7 +56,7 @@ classdef fdavpca
             obj.warp_data = fdawarp;
         end
         
-        function obj = calc_fpca(obj,no,id,stds)
+        function obj = calc_fpca(obj,no,var_exp,id,stds)
             % CALC_FPCA Vertical Functional Principal Component Analysis
             % -------------------------------------------------------------------------
             % This function calculates vertical functional principal component analysis
@@ -68,6 +68,8 @@ classdef fdavpca
             % Inputs:
             % warp_data: struct from time_warping of aligned data
             % no: number of principal components to extract
+            % var_exp: compute no based on value percent variance explained
+            %          (example: 0.95)
             % id: point to use for f(0) (default = midpoint)
             % stds: number of standard deviations along geodesic to compute
             %       (default = -2:2)
@@ -78,6 +80,7 @@ classdef fdavpca
             arguments
                 obj
                 no = 3;
+                var_exp = NaN;
                 id = round(length(obj.warp_data.time)/2);
                 stds = -2:2;
             end
@@ -85,9 +88,21 @@ classdef fdavpca
             fn = obj.warp_data.fn;
             t = obj.warp_data.time;
             qn = obj.warp_data.qn;
+
+            idx = find(stds == 0);
+            if isempty(idx)
+                error("stds needs to contain 0")
+            end
+
+            M = length(t);
+            if ~isnan(var_exp)
+                if var_exp > 1
+                    error("var_exp is greater than 1")
+                end
+                no = M;
+            end
             
             % Parameters
-            NP = 1:no;  % number of principal components
             Nstd = length(stds);
             
             % FPCA
@@ -99,6 +114,13 @@ classdef fdavpca
             [obj.U,S,~] = svd(K);
             s = diag(S);
             stdS = sqrt(s);
+
+            if ~isnan(var_exp)
+                cumm_coef = cumsum(s) / sum(s);
+                no = find(cumm_coef >= var_exp, 'first');
+            end
+            NP = 1:no;  % number of principal components
+
             s = s(1:no);
             obj.U = obj.U(:,1:no);
             
