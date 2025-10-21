@@ -7,7 +7,7 @@ if size(h,2) > 1
     time = linspace(0,1,T);
 
     gam = zeros(T, n);
-    for i=1:n
+    parfor i=1:n
         gam_tmp = cumtrapz(time,exp(h(:,i)));
         gam(:,i) = (gam_tmp-min(gam_tmp))/(max(gam_tmp)-min(gam_tmp));
     end

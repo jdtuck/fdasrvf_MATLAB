@@ -14,7 +14,7 @@ psi = zeros(T,n);
 binsize = mean(diff(time));
 
 if smooth
-    for i = 1:n
+    parfor i = 1:n
         y = fit(time', gam(:,i),'smoothingspline','SmoothingParam',.9999);
         fy = differentiate(y, time);
         idx = fy <= 0;
@@ -22,7 +22,7 @@ if smooth
         psi(:,i) = sqrt(fy);
     end
 else
-    for i=1:n
+    parfor i=1:n
         psi(:,i) = sqrt(gradient(gam(:,i),binsize));
     end
 end

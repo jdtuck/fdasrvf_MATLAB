@@ -14,7 +14,7 @@ h = zeros(T,n);
 binsize = mean(diff(time));
 
 if smooth
-    for i = 1:n
+    parfor i = 1:n
         y = fit(time', gam(:,i),'smoothingspline','SmoothingParam',.99999);
         fy = differentiate(y, time);
         idx = fy <= 0;
@@ -22,7 +22,7 @@ if smooth
         h(:,i) = log(fy) - trapz(time, log(fy));
     end
 else
-    for i=1:n
+    parfor i=1:n
         psi = log(gradient(gam(:,i),binsize));
         h(:,i) = psi - trapz(time, psi);
     end

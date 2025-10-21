@@ -8,7 +8,7 @@ if size(vec,2) > 1
 
     gam = zeros(T,n);
     mu = ones(1, T);
-    for i=1:n
+    parfor i=1:n
         psi = exp_map(mu,vec(:,i));
         gam_tmp = cumtrapz(time,psi.^2);
         gam(:,i) = (gam_tmp-min(gam_tmp))/(max(gam_tmp)-min(gam_tmp));
