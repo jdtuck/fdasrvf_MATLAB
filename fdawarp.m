@@ -1119,7 +1119,7 @@ classdef fdawarp
                 end
             end
 
-            obj.gamI = SqrtMeanInverse(gam1);
+            obj.gamI = SqrtMeanInverse(gam1');
 
             %% Aligned data & stats
             obj.q0 = q;
