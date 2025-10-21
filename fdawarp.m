@@ -292,7 +292,7 @@ classdef fdawarp
             end
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(f1,obj.time,option.spl,option.parallel);
+            q = f_to_srvf(f1,obj.time,true,option.spl,option.parallel);
 
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
@@ -345,7 +345,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,true,option.spl);
                     end
                 else
                     for k = 1:N
@@ -354,7 +354,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,true,option.spl);
                     end
                 end
                 q(:,:,r+1) = q_temp;
@@ -842,7 +842,7 @@ classdef fdawarp
             end
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(obj.f,t,option.spl);
+            q = f_to_srvf(obj.f,t,true,option.spl);
 
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
@@ -869,7 +869,7 @@ classdef fdawarp
 
             gamI_o = SqrtMeanInverse(gam_o');
             mf = warp_f_gamma(mf,gamI_o,t);
-            mq = f_to_srvf(mf,t,option.spl);
+            mq = f_to_srvf(mf,t,true,option.spl);
 
             %% Compute Mean
             fprintf('Computing Karcher median of %d functions in SRVF space...\n',N);
@@ -898,7 +898,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,true,option.spl);
                         v = q_temp(:,k) - mq_c
                         d = sqrt(trapz(t, v.*v));
                         vtil(:,k) = v/d;
@@ -911,7 +911,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,true,option.spl);
                         v = q_temp(:,k) - mq_c;
                         d = sqrt(trapz(t, v.*v));
                         vtil(:,k) = v/d;
@@ -1074,10 +1074,10 @@ classdef fdawarp
 
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(obj.f,obj.time,option.spl,false,option.parallel);
+            q = f_to_srvf(obj.f,obj.time,true,option.spl,false,option.parallel);
 
             %% Compute the q-function of the plot
-            mq = f_to_srvf(mu,obj.time,option.spl);
+            mq = f_to_srvf(mu,obj.time,true,option.spl);
 
             fn1 = zeros(M,N);
             qn1 = zeros(M,N);
@@ -1103,7 +1103,7 @@ classdef fdawarp
                             mu(1), obj.f(1,k));
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
-                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,option.spl);
+                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,true,option.spl);
                 end
             else
                 for k = 1:N
@@ -1115,7 +1115,7 @@ classdef fdawarp
                             mu(1), obj.f(1,k));
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
-                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,option.spl);
+                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,true,option.spl);
                 end
             end
 
