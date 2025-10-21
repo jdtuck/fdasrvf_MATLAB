@@ -1074,7 +1074,7 @@ classdef fdawarp
 
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(obj.f,obj.time,option.spl,option.parallel);
+            q = f_to_srvf(obj.f,obj.time,option.spl,false,option.parallel);
 
             %% Compute the q-function of the plot
             mq = f_to_srvf(mu,obj.time,option.spl);
