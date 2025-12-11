@@ -454,45 +454,26 @@ classdef fdacurve
             
             % express shapes as coefficients
             K = size(obj.beta,3);
-            if obj.scale
-                VM = mean(obj.v,3);
-                VM = [VM(:); obj.mean_scale];
-            else
-                VM = mean(obj.v,3);
-                VM = VM(:);
-            end
+            VM = mean(obj.v,3);
+            VM = VM(:);
             x = zeros(no,K);
             for ii = 1:K
-                if obj.scale
-                    tmpv = obj.v(:,:,ii);
-                    tmpv = [tmpv(:); obj.len(ii)];
-                else
-                    tmpv = obj.v(:,:,ii);
+                tmpv = obj.v(:,:,ii);
                     tmpv = tmpv(:);
-                end
                 x(:,ii) = obj.U'*(tmpv - VM);
             end
             obj.coef = x;
             
             % principal modes of variability
             VM = mean(obj.v,3);
-            if obj.scale
-                VM = [VM(:); obj.mean_scale];
-            else
-                VM = VM(:);
-            end
+            VM = VM(:);
             [n,T,~] = size(obj.beta);
             p = zeros(n,T,no,10);
             for j = 1:no
                 for i=1:10
                     tmp = VM + 0.5*(i-5)*sqrt(obj.s(j))*obj.U(:,j);
                     [m,n] = size(obj.q_mean);
-                    if obj.scale
-                        tmp_scale = tmp(end);
-                        tmp = tmp(1:end-1);
-                    else
-                        tmp_scale = 1;
-                    end
+                    tmp_scale = 1;
                     v1 = reshape(tmp,m,n);
                     q2n = ElasticShooting(obj.q_mean,v1);
                     
