@@ -394,7 +394,7 @@ classdef fdacurve
             obj.lambda = option.lambda;
             obj.v = v1;
             obj.qun = sumd(1:iter);
-            obj.E = normvbar(1:iter-1);
+            obj.E = normvbar(1:iter);
             obj.R = R1;
             
         end
