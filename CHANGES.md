@@ -1,4 +1,11 @@
-# fdasrvf 3.6.X
+# 3.6.X
+* update scale in curve code
+* bugfixes
+
+# 3.6.10
+* bugfixes
+
+# fdasrvf 3.6.9
 * update armadillo
 * update plotting colors to match other packages
 * add project to fpca functions
