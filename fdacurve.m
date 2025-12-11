@@ -691,21 +691,12 @@ classdef fdacurve
                 for i=1:10
                     tmp = VM + 0.5*(i-5)*sqrt(obj.s(j))*obj.U(:,j);
                     [m,n] = size(obj.q_mean);
-                    if obj.scale
-                        tmp_scale = tmp(end);
-                        tmp = tmp(1:end-1);
-                    else
-                        tmp_scale = 1;
-                    end
+                    tmp_scale = 1;
                     v1 = reshape(tmp,m,n);
                     q2n = ElasticShooting(obj.q_mean,v1);
                     
                     p = q_to_curve(q2n,tmp_scale);
-                    if obj.scale
-                        mv = 0.2*obj.mean_scale;
-                    else
-                        mv = 0.2;
-                    end
+                    mv = 0.2;
                     if i == 5
                         plot(mv*i + p(1,:),p(2,:), 'k','LineWidth',3);
                     else
