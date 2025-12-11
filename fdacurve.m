@@ -413,28 +413,13 @@ classdef fdacurve
             % fdacurve object
             
             [M,N,K] = size(obj.v);
-            if obj.scale
-                tmpv = zeros(M*N+1,K);
-            else
-                tmpv = zeros(M*N,K);
-            end
+            tmpv = zeros(M*N,K);
             for i = 1:K
                 tmp = obj.v(:,:,i);
-                if obj.scale
-                    tmpv(:,i) = [tmp(:); obj.len(i)];
-                else
-                    tmpv(:,i) = tmp(:);
-                end
+                tmpv(:,i) = tmp(:);
             end
             
-            if obj.scale
-                VM = mean(obj.v,3);
-                VM = [VM(:); obj.mean_scale];
-                tmpv = tmpv - repmat(VM,1,size(tmpv,2));
-                obj.C = cov(tmpv');
-            else
-                obj.C = cov(tmpv');
-            end
+            obj.C = cov(tmpv');
             
         end
         
