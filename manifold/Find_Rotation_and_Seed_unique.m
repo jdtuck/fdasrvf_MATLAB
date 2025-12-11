@@ -37,7 +37,7 @@ end
 [n,T] = size(q1);
 
 scl = 4;
-minE = 1000;
+minE = 10000;
 if closed
     end_idx = floor((T)/scl);
 else
@@ -74,6 +74,7 @@ for ctr = 0:end_idx
         
     else
         q2new  = q2n;
+        gamI = linspace(0,1,T);
     end
 
     if scale
