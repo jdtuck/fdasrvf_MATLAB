@@ -268,9 +268,9 @@ classdef fdawarp
                     nThreads = input('Enter number of threads to use: ');
                     if nThreads > 1
                         parpool(nThreads);
-                    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > 12) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
+                    elseif nThreads > maxNumCompThreads % check if the maximum allowable number of threads is exceeded
+                        while (nThreads > maxNumCompThreads) % wait until user figures it out
+                            fprintf('Maximum number of threads allowed is %d\n Enter a number between 1 and %d\n',maxNumCompThreads,maxNumCompThreads);
                             nThreads = input('Enter number of threads to use: ');
                         end
                         if nThreads > 1

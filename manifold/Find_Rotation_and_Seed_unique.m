@@ -1,4 +1,4 @@
-function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFlag,rotFlag,closed,lam,method)
+function [q2best,Rbest,gamIbest,minE] = Find_Rotation_and_Seed_unique(q1,q2,reparamFlag,rotFlag,closed,scale,lam,method)
 % FIND_ROTATION_AND_SEED_UNIQUE find roation and seed of two curves
 % -------------------------------------------------------------------------
 % find roation and seed of closed curve
@@ -11,6 +11,7 @@ function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFl
 % q2: matrix (n,T) defining T points on n dimensional SRVF
 % reparamFlag: flag to calculate reparametrization (default F)
 % closed: flag if closed curve (default F)
+% scale: scale curves to unit length
 % lam: penalty (default 0.0)
 % method: controls which optimization method (default="DP") options are
 % Dynamic Programming ("DP") and Riemannian BFGS
@@ -20,6 +21,7 @@ function [q2best,Rbest,gamIbest] = Find_Rotation_and_Seed_unique(q1,q2,reparamFl
 % q2best: best aligned and rotated and seeded SRVF
 % Rbest: best rotation matrix
 % gamI: best reparameterization
+% minE: minimum Energy
 
 arguments
     q1
@@ -27,6 +29,7 @@ arguments
     reparamFlag = true;
     rotFlag = true;
     closed = false;
+    scale = true;
     lam = 0.0;
     method = 'DP';
 end
@@ -60,9 +63,7 @@ for ctr = 0:end_idx
             gam = optimum_reparam_curve(q2,q1,lam,method);
             gamI = invertGamma(gam);
             gamI = (gamI-gamI(1))/(gamI(end)-gamI(1));
-            p2n = q_to_curve(q2n);
-            p2new = warp_curve_gamma(p2n,gamI);
-            q2new = curve_to_q(p2new);
+            q2new = warp_srvf_gamma(q2n,gamI,scale);
             if closed
                 q2new = ProjectC(q2new);
             end
@@ -75,12 +76,19 @@ for ctr = 0:end_idx
         q2new  = q2n;
     end
 
-    tmp = InnerProd_Q(q1,q2new);
-    if tmp > 1
-        tmp = 1;
+    if scale
+        tmp = InnerProd_Q(q1,q2new);
+        if tmp > 1
+            tmp = 1;
+        elseif tmp < -1
+            tmp = -1;
+        end
+        Ec = acos(tmp);
+    else
+        v = q1 - q2new;
+        Ec = sqrt(InnerProd_Q(v,v));
     end
-
-    Ec = acos(tmp);
+    
     if Ec < minE
         Rbest = R;
         q2best = q2new;

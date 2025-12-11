@@ -20,6 +20,8 @@ arguments
 end
 [n,T] = size(q);
 
+q = scale * q;
+
 qnorm = zeros(1,T);
 for i = 1:T
     qnorm(i) = norm(q(:,i),'fro');
@@ -29,5 +31,3 @@ p = zeros(n,T);
 for i = 1:n
     p(i,:) = cumtrapz(q(i,:).*qnorm)/(T);
 end
-
-p = scale*p;

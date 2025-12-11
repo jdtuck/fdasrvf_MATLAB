@@ -84,6 +84,7 @@ classdef fdacurve
         mean_scale      % mean length
         mean_scale_q    % mean length SRVF
         center          % centering of curves done
+        R               % rotation matrices
     end
     
     methods
@@ -93,16 +94,21 @@ classdef fdacurve
             %   beta: (n,T,K) matrix defining n dimensional curve on T samples with K curves
             %   closed: true or false if closed curve
             %   N: resample curve to N points (default to size(beta,2))
-            %   scale: include scale (true/false (default))
+            %   scale: scale to unit length (true (default)/false)
             %   center: center curve (true (default)/false)
             
             arguments
                 beta
                 closed
                 N = size(beta,2);
-                scale = false;
+                scale = true;
                 center = true;
             end
+
+            if closed && ~scale
+                error('Closed curves are currently handled only on the Hilbert sphere.')
+            end
+
             obj.scale = scale;
             obj.closed = closed;
             
@@ -125,7 +131,7 @@ classdef fdacurve
                     a=zeros(n,1);
                 end
                 beta1(:,:,ii) = beta1(:,:,ii) + repmat(a,1,N) ;
-                [q(:,:,ii), len1(ii), lenq1(ii)] = curve_to_q(beta1(:,:,ii),closed);
+                [q(:,:,ii), len1(ii), lenq1(ii)] = curve_to_q(beta1(:,:,ii),closed,scale);
                 cent1(:,ii) = -a;
             end
             obj.q = q;
@@ -181,9 +187,9 @@ classdef fdacurve
                     nThreads = input('Enter number of threads to use: ');
                     if nThreads > 1
                         parpool(nThreads);
-                    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > 12) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
+                    elseif nThreads > maxNumCompThreads % check if the maximum allowable number of threads is exceeded
+                        while (nThreads > maxNumCompThreads) % wait until user figures it out
+                            fprintf('Maximum number of threads allowed is %d\n Enter a number between 1 and %d\n',maxNumCompThreads,maxNumCompThreads);
                             nThreads = input('Enter number of threads to use: ');
                         end
                         if nThreads > 1
@@ -204,6 +210,8 @@ classdef fdacurve
             sumd = zeros(1,option.MaxItr+1);
             normvbar = zeros(1,option.MaxItr+1);
             v1 = zeros(size(obj.q));
+            qn1 = zeros(size(obj.q));
+            R1 = zeros(size(obj.q,1), size(obj.q,1), size(obj.q,3));
             tolv=10^-4;
             told=5*10^-3;
             delta=0.5;
@@ -215,7 +223,7 @@ classdef fdacurve
                 if iter == option.MaxItr
                     fprintf('maximal number of iterations is reached. \n');
                 end
-                mu=mu/sqrt(InnerProd_Q(mu,mu));
+
                 if obj.closed
                     obj.basis=findBasisNormal(mu);
                 end
@@ -229,26 +237,34 @@ classdef fdacurve
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.lambda,option.method);
+                        [qn_t,R_t,gamI,minE] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,obj.scale,option.lambda,option.method);
                         qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         
                         gamma(:,i) = gamI;
+                        R1(:,:,i) = R_t;
+                        qn1(:,:,i) = qn_t;
                         
-                        q1dotq2=InnerProd_Q(mu,qn_t);
+                        if obj.scale
+                            q1dotq2=InnerProd_Q(mu,qn_t);
                         
-                        % Compute shooting vector
-                        if q1dotq2>1
-                            q1dotq2=1;
-                        end
-                        
-                        d = acos(q1dotq2);
-                        
-                        u=qn_t-q1dotq2*mu;
-                        normu=sqrt(InnerProd_Q(u,u));
-                        if normu>10^-4
-                            w=u*acos(q1dotq2)/normu;
+                            % Compute shooting vector
+                            if q1dotq2>1
+                                q1dotq2=1;
+                            elseif q1dotq2<-1
+                                q1dotq2=-1;
+                            end
+                            
+                            d = acos(q1dotq2);
+
+                            u=qn_t-q1dotq2*mu;
+                            normu=sqrt(InnerProd_Q(u,u));
+                            if normu>10^-4
+                                w=u*d/normu;
+                            else
+                                w=zeros(size(qn_t));
+                            end
                         else
-                            w=zeros(size(qn_t));
+                            w = qn_t - mu;
                         end
                         
                         % Project to tangent space of manifold to obtain v_i
@@ -259,33 +275,41 @@ classdef fdacurve
                         end
                         
                         sumv=sumv+v1(:,:,i);
-                        sumnd_t=sumnd_t+d^2;
+                        sumnd_t=sumnd_t+minE^2;
                     end
                 else
                     for i=1:K
                         q1=obj.q(:,:,i);
                         
                         % Compute shooting vector from mu to q_i
-                        [qn_t,~,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.lambda,option.method);
+                        [qn_t,R_t,gamI,minE] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,obj.scale,option.lambda,option.method);
                         qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         
                         gamma(:,i) = gamI;
+                        R1(:,:,i) = R_t;
+                        qn1(:,:,i) = qn_t;
                         
-                        q1dotq2=InnerProd_Q(mu,qn_t);
+                        if obj.scale
+                            q1dotq2=InnerProd_Q(mu,qn_t);
                         
-                        % Compute shooting vector
-                        if q1dotq2>1
-                            q1dotq2=1;
-                        end
-                        
-                        d = acos(q1dotq2);
-                        
-                        u=qn_t-q1dotq2*mu;
-                        normu=sqrt(InnerProd_Q(u,u));
-                        if normu>10^-4
-                            w=u*acos(q1dotq2)/normu;
+                            % Compute shooting vector
+                            if q1dotq2>1
+                                q1dotq2=1;
+                            elseif q1dotq2<-1
+                                q1dotq2=-1;
+                            end
+                            
+                            d = acos(q1dotq2);
+
+                            u=qn_t-q1dotq2*mu;
+                            normu=sqrt(InnerProd_Q(u,u));
+                            if normu>10^-4
+                                w=u*d/normu;
+                            else
+                                w=zeros(size(qn_t));
+                            end
                         else
-                            w=zeros(size(qn_t));
+                            w = qn_t - mu;
                         end
                         
                         % Project to tangent space of manifold to obtain v_i
@@ -296,7 +320,7 @@ classdef fdacurve
                         end
                         
                         sumv=sumv+v1(:,:,i);
-                        sumnd_t=sumnd_t+d^2;
+                        sumnd_t=sumnd_t+minE^2;
                     end
                 end
                 sumd(iter+1) = sumnd_t;
@@ -309,20 +333,17 @@ classdef fdacurve
                 if (sumd(iter)-sumd(iter+1)) < 0
                     break
                 elseif (normv>tolv) && abs(sumd(iter+1)-sumd(iter))>told
-                    % Update mu in direction of vbar
-                    mu=cos(delta*normvbar(iter))*mu+sin(delta*normvbar(iter))*vbar/normvbar(iter);
-                    
-                    % Project the updated mean to the affine (or closed) shape manifold
-                    if obj.closed
-                        mu = ProjectC(mu);
-                    end
-                    
-                    x=q_to_curve(mu);
-                    if (obj.center)
-                        a=-calculateCentroid(x);
-                        betamean=x+repmat(a,1,T);
+                    if obj.scale
+                        % Update mu in direction of vbar
+                        mu=cos(delta*normvbar(iter))*mu+sin(delta*normvbar(iter))*vbar/normvbar(iter);
+                        
+                        % Project the updated mean to the affine (or closed) shape manifold
+                        if obj.closed
+                            mu = ProjectC(mu);
+                        end
+
                     else
-                        betamean = x;
+                        mu = mu+delta*vbar;
                     end
                 
                 else
@@ -333,52 +354,33 @@ classdef fdacurve
                 
             end
 
-            % compute average length
-            if obj.scale
-                % compute geometric mean
-                obj.mean_scale = (prod(obj.len))^(1/length(obj.len));
-                obj.mean_scale_q = (prod(obj.len_q))^(1/length(obj.len_q));
-                betamean = obj.mean_scale.*betamean; 
-            end
+            qmean_norm = prod(obj.len_q).^(1./length(obj.len_q));
+            betamean = q_to_curve(mu);
+            betamean = betamean - calculateCentroid(betamean);
 
             % align to mean
             betan1 = obj.beta;
-            qn1 = obj.q;
             if option.parallel
                 parfor i=1:K
-                    q1=obj.q(:,:,i);
-                    beta1 = betan1(:,:,i);
-                    
-                    % Compute shooting vector from mu to q_i
-                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.lambda,option.method);
-                    beta1 = R*beta1;
-                    beta1n = warp_curve_gamma(beta1,gamI);
-                    q1n = curve_to_q(beta1n);
-                    
-                    % Find optimal rotation
-                    [qn1(:,:,i),R] = Find_Best_Rotation(mu,q1n);
-                    betan1(:,:,i) = R*beta1n;
+                    scl = 1;
+                    if obj.scale
+                        scl = qmean_norm / obj.len_q(i);
+                    end
+                    betan1(:,:,i) = q_to_curve(qn1(:,:,i), scl);
+                    betan1(:,:,i) = betan1(:,:,i) - calculateCentroid(betan1(:,:,i));
                 end
-                obj.betan = betan1;
-                obj.qn = qn1;
             else
-                obj.betan = obj.beta;
-                obj.qn = obj.q;
                 for i=1:K
-                    q1=obj.q(:,:,i);
-                    beta1 = obj.beta(:,:,i);
-                    
-                    % Compute shooting vector from mu to q_i
-                    [~,R,gamI] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,option.lambda,option.method);
-                    beta1 = R*beta1;
-                    beta1n = warp_curve_gamma(beta1,gamI);
-                    q1n = curve_to_q(beta1n);
-                    
-                    % Find optimal rotation
-                    [obj.qn(:,:,i),R] = Find_Best_Rotation(mu,q1n);
-                    obj.betan(:,:,i) = R*beta1n;
+                    scl = 1;
+                    if obj.scale
+                        scl = qmean_norm / obj.len_q(i);
+                    end
+                    betan1(:,:,i) = q_to_curve(qn1(:,:,i), scl);
+                    betan1(:,:,i) = betan1(:,:,i) - calculateCentroid(betan1(:,:,i));
                 end
             end
+            obj.betan = betan1;
+            obj.qn = qn1;
             
             if option.parallel == 1 && option.closepool == 1
                 if isempty(gcp('nocreate'))
@@ -393,6 +395,7 @@ classdef fdacurve
             obj.v = v1;
             obj.qun = sumd(1:iter);
             obj.E = normvbar(1:iter-1);
+            obj.R = R1;
             
         end
         
@@ -636,9 +639,26 @@ classdef fdacurve
                 title('Curves')
             end
             axis equal ij off;
+
+            figure(2);clf;hold on;
+            for ii = 1:K
+                if n == 2
+                    plot(obj.betan(1,:,ii),obj.betan(2,:,ii))
+                elseif n == 3
+                    if color
+                        plot3var(obj.betan(1,:,ii),obj.betan(2,:,ii),obj.betan(3,:,ii),linspace(0,1,T),1)
+                    else
+                        plot3(obj.betan(1,:,ii),obj.betan(2,:,ii),obj.betan(3,:,ii))
+                    end
+                else
+                    error('Can''t plot dimension > 3')
+                end
+                title('Aligned Curves')
+            end
+            axis equal ij off;
             
             if (~isempty(obj.gams))
-                figure(2); clf
+                figure(3); clf
                 if n == 2
                     plot(obj.beta_mean(1,:),obj.beta_mean(2,:))
                 elseif n == 3
@@ -649,7 +669,7 @@ classdef fdacurve
                 title('Karcher Mean')
                 axis equal ij off;
                 
-                figure(3); clf;
+                figure(4); clf;
                 M = size(obj.beta,2);
                 plot((0:M-1)/(M-1), obj.gams, 'linewidth', 1);
                 axis square;
@@ -658,7 +678,7 @@ classdef fdacurve
             end
             
             if (~isempty(obj.samples))
-                figure(4);clf;hold on;
+                figure(5);clf;hold on;
                 K = size(obj.samples,3);
                 n = size(obj.samples,1);
                 for ii = 1:K

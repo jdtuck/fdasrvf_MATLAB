@@ -1,4 +1,4 @@
-function [q,len,lenq] = curve_to_q(p,closed)
+function [q,len,lenq] = curve_to_q(p,closed,scale)
 % CURVE_TO_Q Convert curve to Square-Root Velocity Function
 % -------------------------------------------------------------------------
 % Convert to SRVF
@@ -19,6 +19,7 @@ function [q,len,lenq] = curve_to_q(p,closed)
 arguments
     p
     closed = false;
+    scale = true
 end
 
 [n,T] = size(p);
@@ -37,7 +38,10 @@ for i = 1:T
 end
 
 lenq = sqrt(InnerProd_Q(q,q));
-q = q/lenq;
+
+if scale
+    q = q/lenq;
+end
 
 if closed
     q = ProjectC(q);
