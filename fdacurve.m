@@ -47,6 +47,7 @@ classdef fdacurve
     % fdacurve Methods:
     %   fdacurve - class constructor
     %   karcher_mean - find karcher mean
+    %   multiple_align_curves - align curves to a specified mean
     %   karcher_cov - find karcher covariance
     %   shape_pca - compute shape pca
     %   sample_shapes - sample shapes from generative model
@@ -238,13 +239,13 @@ classdef fdacurve
                         
                         % Compute shooting vector from mu to q_i
                         [qn_t,R_t,gamI,minE] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,obj.scale,option.lambda,option.method);
-                        qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         
                         gamma(:,i) = gamI;
                         R1(:,:,i) = R_t;
                         qn1(:,:,i) = qn_t;
                         
                         if obj.scale
+                            qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                             q1dotq2=InnerProd_Q(mu,qn_t);
                         
                             % Compute shooting vector
@@ -283,13 +284,13 @@ classdef fdacurve
                         
                         % Compute shooting vector from mu to q_i
                         [qn_t,R_t,gamI,minE] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,obj.scale,option.lambda,option.method);
-                        qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                         
                         gamma(:,i) = gamI;
                         R1(:,:,i) = R_t;
                         qn1(:,:,i) = qn_t;
                         
                         if obj.scale
+                            qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
                             q1dotq2=InnerProd_Q(mu,qn_t);
                         
                             % Compute shooting vector
@@ -395,6 +396,209 @@ classdef fdacurve
             obj.v = v1;
             obj.qun = sumd(1:iter);
             obj.E = normvbar(1:iter);
+            obj.R = R1;
+            
+        end
+
+        function obj = multiple_align_curves(obj, betamean, option)
+            % MULTIPLE_ALIGN_CURVES Calculate karcher mean of group of curves
+            % -------------------------------------------------------------
+            % This function aligns a collection of functions using the
+            % square-root velocity framework
+            %
+            % Usage:  obj.multiple_align_curves(mu)
+            %         obj.multiple_align_curves(mu, option)
+            %
+            % Input:
+            %
+            % default options
+            % option.reparam = true; % computes optimal reparamertization
+            % option.rotation = true; % computes optimal rotation
+            % option.lambda = 0.0;  % penalty
+            % option.parallel = 0; % turns on MATLAB parallel processing (need
+            % parallel processing toolbox)
+            % option.closepool = 0; % determines wether to close matlabpool
+            % option.MaxItr = 20;  % maximum iterations
+            % option.method = 'DP'; % reparam method
+            % controls which optimization method (default="DP") options are
+            % Dynamic Programming ("DP") and Riemannian BFGS
+            % ("RBFGSM")
+            %
+            % Output:
+            % fdacurve object
+            
+            arguments
+                obj
+                betamean
+                option.reparam = true;
+                option.rotation = true;
+                option.lambda = 0.0;
+                option.parallel = 0;
+                option.closepool = 0;
+                option.MaxItr = 20;
+                option.method = 'DP';
+            end
+            
+            % time warping on a set of functions
+            if option.parallel == 1
+                if isempty(gcp('nocreate'))
+                    % prompt user for number threads to use
+                    nThreads = input('Enter number of threads to use: ');
+                    if nThreads > 1
+                        parpool(nThreads);
+                    elseif nThreads > maxNumCompThreads % check if the maximum allowable number of threads is exceeded
+                        while (nThreads > maxNumCompThreads) % wait until user figures it out
+                            fprintf('Maximum number of threads allowed is %d\n Enter a number between 1 and %d\n',maxNumCompThreads,maxNumCompThreads);
+                            nThreads = input('Enter number of threads to use: ');
+                        end
+                        if nThreads > 1
+                            parpool(nThreads);
+                        end
+                    end
+                end
+            end
+            
+            % Initialize mu as one of the shapes
+            betamean = betamean - calculateCentroid(betamean);
+            [mu, lenmu, lenqmu] = curve_to_q(betamean,obj.closed,obj.scale);
+            T = size(mu,2);
+            n = size(mu,1);
+            K = size(obj.q,3);
+            gamma = zeros(T,K);
+            v1 = zeros(size(obj.q));
+            qn1 = zeros(size(obj.q));
+            R1 = zeros(size(obj.q,1), size(obj.q,1), size(obj.q,3));
+            
+            % Compute the Karcher mean
+            fprintf('Computing Karcher mean of %d curves in SRVF space...\n',K);
+
+            if obj.closed
+                obj.basis=findBasisNormal(mu);
+            end
+                
+            sumv=zeros(n,T);
+            sumnd_t = 0;
+            if option.parallel
+                parfor i=1:K
+                    q1=obj.q(:,:,i);
+                    
+                    % Compute shooting vector from mu to q_i
+                    [qn_t,R_t,gamI,minE] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,obj.scale,option.lambda,option.method);
+                    
+                    gamma(:,i) = gamI;
+                    R1(:,:,i) = R_t;
+                    qn1(:,:,i) = qn_t;
+                    
+                    if obj.scale
+                        qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
+                        q1dotq2=InnerProd_Q(mu,qn_t);
+                    
+                        % Compute shooting vector
+                        if q1dotq2>1
+                            q1dotq2=1;
+                        elseif q1dotq2<-1
+                            q1dotq2=-1;
+                        end
+                        
+                        d = acos(q1dotq2);
+
+                        u=qn_t-q1dotq2*mu;
+                        normu=sqrt(InnerProd_Q(u,u));
+                        if normu>10^-4
+                            w=u*d/normu;
+                        else
+                            w=zeros(size(qn_t));
+                        end
+                    else
+                        w = qn_t - mu;
+                    end
+                    
+                    % Project to tangent space of manifold to obtain v_i
+                    if obj.closed
+                        v1(:,:,i)=projectTangent(w,q1,obj.basis);
+                    else
+                        v1(:,:,i)=w;
+                    end
+                end
+            else
+                for i=1:K
+                    q1=obj.q(:,:,i);
+                    
+                    % Compute shooting vector from mu to q_i
+                    [qn_t,R_t,gamI,minE] = Find_Rotation_and_Seed_unique(mu,q1,option.reparam,option.rotation,obj.closed,obj.scale,option.lambda,option.method);
+                    qn_t = qn_t/sqrt(InnerProd_Q(qn_t,qn_t));
+                    
+                    gamma(:,i) = gamI;
+                    R1(:,:,i) = R_t;
+                    qn1(:,:,i) = qn_t;
+                    
+                    if obj.scale
+                        q1dotq2=InnerProd_Q(mu,qn_t);
+                    
+                        % Compute shooting vector
+                        if q1dotq2>1
+                            q1dotq2=1;
+                        elseif q1dotq2<-1
+                            q1dotq2=-1;
+                        end
+                        
+                        d = acos(q1dotq2);
+
+                        u=qn_t-q1dotq2*mu;
+                        normu=sqrt(InnerProd_Q(u,u));
+                        if normu>10^-4
+                            w=u*d/normu;
+                        else
+                            w=zeros(size(qn_t));
+                        end
+                    else
+                        w = qn_t - mu;
+                    end
+                    
+                    % Project to tangent space of manifold to obtain v_i
+                    if obj.closed
+                        v1(:,:,i)=projectTangent(w,q1,obj.basis);
+                    else
+                        v1(:,:,i)=w;
+                    end
+                end
+            end
+
+            % align to mean
+            betan1 = obj.beta;
+            if option.parallel
+                parfor i=1:K
+                    scl = 1;
+                    if obj.scale
+                        scl = lenqmu / obj.len_q(i);
+                    end
+                    betan1(:,:,i) = q_to_curve(qn1(:,:,i), scl);
+                    betan1(:,:,i) = betan1(:,:,i) - calculateCentroid(betan1(:,:,i));
+                end
+            else
+                for i=1:K
+                    scl = 1;
+                    if obj.scale
+                        scl = lenqmu / obj.len_q(i);
+                    end
+                    betan1(:,:,i) = q_to_curve(qn1(:,:,i), scl);
+                    betan1(:,:,i) = betan1(:,:,i) - calculateCentroid(betan1(:,:,i));
+                end
+            end
+            obj.betan = betan1;
+            obj.qn = qn1;
+            
+            if option.parallel == 1 && option.closepool == 1
+                if isempty(gcp('nocreate'))
+                    delete(gcp('nocreate'))
+                end
+            end
+            
+            obj.beta_mean = betamean;
+            obj.q_mean = mu;
+            obj.gams = gamma;
+            obj.lambda = option.lambda;
+            obj.v = v1;
             obj.R = R1;
             
         end
