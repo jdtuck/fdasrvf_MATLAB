@@ -364,7 +364,7 @@ classdef fdacurve
             if option.parallel
                 parfor i=1:K
                     scl = 1;
-                    if obj.scale
+                    if ~obj.scale
                         scl = qmean_norm / obj.len_q(i);
                     end
                     betan1(:,:,i) = q_to_curve(qn1(:,:,i), scl);
@@ -373,7 +373,7 @@ classdef fdacurve
             else
                 for i=1:K
                     scl = 1;
-                    if obj.scale
+                    if ~obj.scale
                         scl = qmean_norm / obj.len_q(i);
                     end
                     betan1(:,:,i) = q_to_curve(qn1(:,:,i), scl);
@@ -569,7 +569,7 @@ classdef fdacurve
             if option.parallel
                 parfor i=1:K
                     scl = 1;
-                    if obj.scale
+                    if ~obj.scale
                         scl = lenqmu / obj.len_q(i);
                     end
                     betan1(:,:,i) = q_to_curve(qn1(:,:,i), scl);
@@ -578,7 +578,7 @@ classdef fdacurve
             else
                 for i=1:K
                     scl = 1;
-                    if obj.scale
+                    if ~obj.scale
                         scl = lenqmu / obj.len_q(i);
                     end
                     betan1(:,:,i) = q_to_curve(qn1(:,:,i), scl);
