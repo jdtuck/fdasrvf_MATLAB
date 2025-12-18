@@ -95,7 +95,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release/fdasrvf-ubuntu-latest/fdasrvf.mltbx
-          asset_name: fdasrvf-ubuntu-latest
+          asset_name: fdasrvf-ubuntu-latest.mltbx
           asset_content_type: application/mltbx
       - name: Upload Windows Release Asset
         uses: actions/upload-release-asset@v1
@@ -104,7 +104,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release/fdasrvf-windows-latest/fdasrvf.mltbx
-          asset_name: fdasrvf-windows-latest
+          asset_name: fdasrvf-windows-latest.mltbx
           asset_content_type: application/mltbx
       - name: Upload MacOS Release Asset
         uses: actions/upload-release-asset@v1
@@ -113,5 +113,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release/fdasrvf-macos-latest/fdasrvf.mltbx
-          asset_name: fdasrvf-macos-latest
+          asset_name: fdasrvf-macos-latest.mltbx
           asset_content_type: application/mltbx
