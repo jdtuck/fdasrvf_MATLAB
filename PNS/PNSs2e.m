@@ -20,12 +20,12 @@ if isempty(PNS.basisu) == 0
     spheredata = PNS.basisu'*spheredata;
 end
 
-[kk n] = size(spheredata);
+[kk, n] = size(spheredata);
 
 Res = zeros(kk-1,n); % kk-1 dimensional residual matrix
 currentSphere = spheredata;
 
-for i = 1:(kk-2);
+for i = 1:(kk-2)
     v = PNS.orthaxis{i};
     r = PNS.dist(i);
     res = acos(v'*currentSphere)-r;
