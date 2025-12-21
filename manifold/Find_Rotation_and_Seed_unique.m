@@ -37,7 +37,7 @@ end
 [n,T] = size(q1);
 
 scl = 4;
-minE = 10000;
+minE = Inf;
 if closed
     end_idx = floor((T)/scl);
 else

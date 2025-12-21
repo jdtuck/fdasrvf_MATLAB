@@ -23,11 +23,10 @@ arguments
 end
 
 [n,T] = size(p);
-v=gradient(p,1/(T-1));
+v=gradient(p,1/T);
 
 
 q=zeros(n,T);
-len = sqrt(InnerProd_Q(sqrt(abs(v)),sqrt(abs(v))));
 for i = 1:T
     L = sqrt(norm(v(:,i),'fro'));
     if L > 0.0001
@@ -37,7 +36,8 @@ for i = 1:T
     end
 end
 
-lenq = sqrt(InnerProd_Q(q,q));
+len = InnerProd_Q(q,q);
+lenq = sqrt(len);
 
 if scale
     q = q/lenq;
