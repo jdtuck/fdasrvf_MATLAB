@@ -23,7 +23,7 @@ end
 
 [n,T] = size(q);
 qn = q;
-gam_dev = gradient(gamma, 1/(T-1));
+gam_dev = gradient(gamma, 1/T);
 
 if spline
     for j=1:n
