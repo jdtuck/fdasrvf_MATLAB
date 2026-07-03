@@ -25,6 +25,6 @@ end
 q1 = f_to_srvf(f1,time);
 q2 = f_to_srvf(f2,time);
 
-gam = optimum_reparam(q1,q2,time,lambda,method,0.0,0.0,0.0);
+gam = optimum_reparam(q1,q2,time,lambda,method,0.0,0.0);
 
 f2_align = warp_f_gamma(f2,gam,time);
