@@ -14,8 +14,8 @@ function [dy, dx] = elastic_distance(f1, f2, time, lambda, method)
 % time: vector of size \eqn{N} describing the sample points
 % lambda controls amount of warping (default = 0)
 % method: controls which optimization method (default="DP") options are
-% Dynamic Programming ("DP"), Coordinate Descent ("DP2"), and Riemannian BFGS
-% ("RBFGSM")
+% Dynamic Programming ("DP1"), and Riemannian BFGS
+% ("RBFGS")
 %
 % Output
 % dy: amplitude distance
@@ -25,7 +25,7 @@ arguments
     f2 double
     time double
     lambda = 0;
-    method = 'DP';
+    method = 'DP1';
 end
 
 q1 = f_to_srvf(f1,time);
