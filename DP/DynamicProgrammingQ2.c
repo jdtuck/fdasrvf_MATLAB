@@ -1,4 +1,5 @@
 #include "mex.h"
+#include <stdlib.h>
 #include <math.h>
 #include "dp_grid.h"
 #include "dp_nbhd.h"
@@ -34,7 +35,8 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   int Galloc_size;
   double *pres;
   size_t nbhd_dim;
-  size_t nbhd_count; /* Number of indexes */
+  size_t nbhd_count = 0; /* Number of indexes */
+  Pair *dp_nbhd = 0;
 
   /* [G T dist] = dp_mex( Q1, T1, Q2, T2, tv1, tv2 ); */
   Q1 = mxGetPr( prhs[0] );
@@ -95,7 +97,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   T = mxGetPr( plhs[1] );
   pres = mxGetPr( plhs[2] );
 
-  Pair * dp_nbhd = dp_generate_nbhd(nbhd_dim, &nbhd_count);
+  dp_nbhd = dp_generate_nbhd(nbhd_dim, &nbhd_count);
 
   /* dp_costs() needs indexes for gridpoints precomputed */
   dp_all_indexes( T1, nsamps1, tv1, ntv1, idxv1 );
@@ -108,14 +110,11 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
 
   /* Reconstruct best path from (0,0) to (1,1) */
   Gsize = dp_build_gamma( P, tv1, ntv1, tv2, ntv2, G, T );
-
-  /* Reconstruct best path from (0,0) to (1,1) */
-  Gsize = dp_build_gamma( P, tv1, ntv1, tv2, ntv2, G, T );
   mxSetN( plhs[0], Gsize );
   mxSetN( plhs[1], Gsize );
 
 cleanup:
-  if ( dp_nbhd ) mxFree( dp_nbhd );
+  if ( dp_nbhd ) free( dp_nbhd );
   if ( idxv1 ) mxFree( idxv1 );
   if ( idxv2 ) mxFree( idxv2 );
   if ( E ) mxFree( E );

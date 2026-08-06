@@ -15,6 +15,14 @@ gam = optimum_reparam(q1', q1', timet', 0, 'DP1');
 q1a = warp_f_gamma(q1, gam, timet); 
 assert(sum(q1(:)-q1a(:))==0,'Warping Not Identity')
 
+%% Test f warping
+M = 101;
+q1 = sin(linspace(0,2*pi,M));
+timet = linspace(0,1,M);
+gam = optimum_reparam(q1', q1', timet', 0, 'DP'); 
+q1a = warp_f_gamma(q1, gam, timet); 
+assert(sum(q1(:)-q1a(:))==0,'Warping Not Identity')
+
 %% Test q warping
 M = 101;
 q1 = sin(linspace(0,2*pi,M));
