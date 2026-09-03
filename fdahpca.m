@@ -43,6 +43,7 @@ classdef fdahpca
         coef      % coeficients
         vec       % shooting vectors
         mu        % Karcher Mean
+        gam_mu    % Karcher Mean
         vm        % mean of shooting vectors
         stds      % principal directions
         new_coef  % principal coefficients of new data 
@@ -108,7 +109,7 @@ classdef fdahpca
                 obj.vec = gam_to_h(gam);
                 obj.mu = mean(obj.vec, 2);
             else
-                [obj.mu,~,obj.vec] = SqrtMean(gam);
+                [obj.mu,obj.gam_mu,~,obj.vec] = SqrtMean(gam);
             end
 
             K = cov(obj.vec');
