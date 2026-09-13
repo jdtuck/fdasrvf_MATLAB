@@ -25,10 +25,6 @@ plan("mex:bcalcY") = MexTask("armadillo_cpp/bcalcY.cpp","mex",Options=options);
 plan("mex:bcuL2norm2") = MexTask("armadillo_cpp/bcuL2norm2.cpp","mex",Options=options);
 plan("mex:trapzCpp") = MexTask("armadillo_cpp/trapzCpp.cpp","mex",Options=options);
 plan("mex:border_l2norm") = MexTask("armadillo_cpp/border_l2norm.cpp","mex",Options=options);
-plan("mex:mcholC") = MexTask("minFunc/mex/mcholC.c", "mex");
-plan("mex:lbfgsC") = MexTask("minFunc/mex/lbfgsC.c", "mex");
-plan("mex:lbfgsAddC") = MexTask("minFunc/mex/lbfgsAddC.c", "mex");
-plan("mex:lbfgsProdC") = MexTask("minFunc/mex/lbfgsProdC.c", "mex");
 plan("mex:mlogit_warp") = MexTask(["mlogit_warp/mlogit_warp.c","mlogit_warp/mlogit_warp_grad.c", "mlogit_warp/misc_funcs.c"],"mex");
 if ismac
     options = ["-ld_classic" "-llapack" "-lblas"];

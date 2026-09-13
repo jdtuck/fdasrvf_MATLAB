@@ -142,10 +142,10 @@ classdef elastic_mlpcr_regression
             Phi = ones(N1,no+1);
             Phi(:,2:(no+1)) = out_pca.coef;
             % find alpha and beta using bfgs
-            options.Method = 'lbfgs';
-            options.Display = 'off';
+            options = optimoptions("fminunc",Algorithm="quasi-newton", ...
+                SpecifyObjectiveGradient=true,Display="off");
             b0 = zeros(m*(no+1), 1);
-            obj.b = minFunc(@mlogit_optim,b0,options,Phi,obj.Y);
+            obj.b = fminunc(@(b) mlogit_optim(b,Phi,obj.Y),b0,options);
             
             % Compute the loss
             obj.LL = mlogit_loss(obj.b,Phi,obj.Y);

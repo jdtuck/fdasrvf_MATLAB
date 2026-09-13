@@ -37,6 +37,7 @@ jobs:
           release: ${{ matrix.release }}
           products: >
             Curve_Fitting_Toolbox
+            Optimization_Toolbox
             Statistics_and_Machine_Learning_Toolbox
             MATLAB_Support_for_MinGW-w64_C/C++/Fortran_Compiler
       - if: runner.os == 'Windows'
@@ -51,6 +52,7 @@ jobs:
           release: ${{ matrix.release }}
           products: >
             Curve_Fitting_Toolbox
+            Optimization_Toolbox
             Statistics_and_Machine_Learning_Toolbox
       - if: runner.os == 'macOS'
         uses: matlab-actions/setup-matlab@v3
@@ -58,6 +60,7 @@ jobs:
           release: ${{ matrix.release }}
           products: >
             Curve_Fitting_Toolbox
+            Optimization_Toolbox
             Statistics_and_Machine_Learning_Toolbox
       - name: Run build
         uses: matlab-actions/run-build@v3

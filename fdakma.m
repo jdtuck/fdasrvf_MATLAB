@@ -471,7 +471,7 @@ classdef fdakma
             title('Original data', 'fontsize', 16);
             
             K = length(obj.fn);
-            colors = varycolor(K);
+            colors = turbo(K);
             figure(2); clf; hold on
             for k=1:K
                 plot(obj.time, obj.templates(:,k), 'Color', colors(k,:));

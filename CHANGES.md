@@ -1,4 +1,11 @@
 # 3.6.X
+* replace vendored minFunc with Optimization Toolbox `fminunc`
+* replace vendored `LMFnlsq` sphere fitting with Optimization Toolbox `lsqnonlin`
+* replace vendored fdaM `basis` package with Curve Fitting Toolbox `spcol`/`augknt`
+* replace vendored `bspline_tools` with Curve Fitting Toolbox `csapi`/`fnder`
+* replace `varycolor` with the built-in `turbo` colormap
+* remove dead code and strip cached outputs from `example.m`
+* `buildtool` no longer builds the minFunc MEX files
 
 # 3.6.11
 * bug fixes to TB code from refactor

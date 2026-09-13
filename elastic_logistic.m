@@ -166,10 +166,10 @@ classdef elastic_logistic
                 end
                 
                 % find alpha and beta using bfgs
-                options.Method = 'lbfgs';
-                options.Display = 'off';
+                options = optimoptions("fminunc",Algorithm="quasi-newton", ...
+                    SpecifyObjectiveGradient=true,Display="off");
                 b0 = zeros(Nb+1, 1);
-                obj.b = minFunc(@logit_optim,b0,options,Phi,y);
+                obj.b = fminunc(@(b) logit_optim(b,Phi,y),b0,options);
                 
                 obj.alpha = obj.b(1);
                 obj.beta = obj.B * obj.b(2:Nb+1);

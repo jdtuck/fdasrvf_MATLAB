@@ -130,10 +130,10 @@ classdef elastic_lpcr_regression
             Phi = ones(N1,no+1);
             Phi(:,2:(no+1)) = out_pca.coef;
             % find alpha and beta using bfgs
-            options.Method = 'lbfgs';
-            options.Display = 'off';
+            options = optimoptions("fminunc",Algorithm="quasi-newton", ...
+                SpecifyObjectiveGradient=true,Display="off");
             b0 = zeros(no+1, 1);
-            obj.b = minFunc(@logit_optim,b0,options,Phi,obj.y);
+            obj.b = fminunc(@(b) logit_optim(b,Phi,obj.y),b0,options);
             
             % Compute the loss
             obj.LL = logit_loss(obj.b,Phi,obj.y);
