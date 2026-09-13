@@ -173,10 +173,10 @@ classdef elastic_mlogistic
                 end
                 
                 % find alpha and beta using bfgs
-                options.Method = 'lbfgs';
-                options.Display = 'off';
+                options = optimoptions("fminunc",Algorithm="quasi-newton", ...
+                    SpecifyObjectiveGradient=true,Display="off");
                 b0 = zeros(m*(Nb+1), 1);
-                obj.b = minFunc(@mlogit_optim,b0,options,Phi,Y);
+                obj.b = fminunc(@(b) mlogit_optim(b,Phi,Y),b0,options);
                 
                 B0 = reshape(obj.b, Nb+1, m);
                 obj.alpha = B0(1,:);

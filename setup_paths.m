@@ -1,7 +1,5 @@
 % setup paths
-addpath(genpath('minFunc'))
 addpath(genpath('mex'))
-addpath(genpath('bspline_tools'))
 addpath(genpath('basis'))
 addpath(genpath('data'))
 addpath(genpath('util'))

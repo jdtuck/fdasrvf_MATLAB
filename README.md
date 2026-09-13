@@ -22,11 +22,21 @@ For instructions on contributing, see [CONTRIBUTION_GUIDE.md](CONTRIBUTION_GUIDE
 
 For release note, see [CHANGES.md](CHANGES.md)
 
+### Requirements
+------------------------------------------------------------------------------
+
+* MATLAB R2023b or newer
+* Curve Fitting Toolbox
+* Optimization Toolbox
+* Statistics and Machine Learning Toolbox
+* Parallel Computing Toolbox (optional, only for the `parallel` options)
+
 ### Installation
 ------------------------------------------------------------------------------
 
 1. Download zip or tar.gz of package or clone repository
-2. Run setup.m to setup paths and compile MEX functions
+2. Run `buildtool mex` to compile the MEX functions, or `buildtool` to also run
+   the checks and tests and package the toolbox.
   NOTE: Armadillo c++ library required for bayesian code.
 3. NOTE: After `buildtool`, you can use setup_paths.m to set paths as needed or just open the project file.
 4. There are also precompiled matlab packaged toolboxes for linux, windows, and mac under the github release. 
