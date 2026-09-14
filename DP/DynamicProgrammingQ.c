@@ -57,7 +57,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double *q1L, *q2L, *yy, *D1, *D2, *tmp1, *tmp2, *E, Etmp, Emin, t, a, b, lam = 0;
 
 	if (nrhs != 4)
-		mexErrMsgTxt("usage: [gam] = DynamicProgrammingQ(q1,q2,lam,Disp)");
+		mexErrMsgTxt("usage: [gam] = DynamicProgrammingQ(q1,q2,lam,pen)");
 
 	if (!mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]) || !mxIsDouble(prhs[2]))
 		mexErrMsgTxt("Expected double precision arguments.");
