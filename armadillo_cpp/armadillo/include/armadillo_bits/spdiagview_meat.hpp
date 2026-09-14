@@ -283,7 +283,7 @@ spdiagview<eT>::operator+=(const Base<eT,T1>& o)
   
   if( (is_Mat<typename Proxy<T1>::stored_type>::value) || (Proxy<T1>::use_at) )
     {
-    const unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
+    const plain_unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
     const Mat<eT>& x = tmp.M;
     
     const eT* x_mem = x.memptr();
@@ -332,7 +332,7 @@ spdiagview<eT>::operator-=(const Base<eT,T1>& o)
   
   if( (is_Mat<typename Proxy<T1>::stored_type>::value) || (Proxy<T1>::use_at) )
     {
-    const unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
+    const plain_unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
     const Mat<eT>& x = tmp.M;
     
     const eT* x_mem = x.memptr();
@@ -381,7 +381,7 @@ spdiagview<eT>::operator%=(const Base<eT,T1>& o)
   
   if( (is_Mat<typename Proxy<T1>::stored_type>::value) || (Proxy<T1>::use_at) )
     {
-    const unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
+    const plain_unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
     const Mat<eT>& x = tmp.M;
     
     const eT* x_mem = x.memptr();
@@ -430,7 +430,7 @@ spdiagview<eT>::operator/=(const Base<eT,T1>& o)
   
   if( (is_Mat<typename Proxy<T1>::stored_type>::value) || (Proxy<T1>::use_at) )
     {
-    const unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
+    const plain_unwrap<typename Proxy<T1>::stored_type> tmp(P.Q);
     const Mat<eT>& x = tmp.M;
     
     const eT* x_mem = x.memptr();
@@ -923,7 +923,7 @@ spdiagview<eT>::clamp(const eT min_val, const eT max_val)
   {
   arma_debug_sigprint();
   
-  SpMat<eT> tmp(*this);
+  Mat<eT> tmp(*this);
   
   tmp.clamp(min_val, max_val);
   
@@ -1072,6 +1072,17 @@ spdiagview<eT>::randn()
     {
     x.at(i+row_offset, i+col_offset) = tmp[i];
     }
+  }
+
+
+
+template<typename eT>
+template<typename eT2>
+arma_inline
+bool
+spdiagview<eT>::is_alias(const SpMat<eT2>& X) const
+  {
+  return m.is_alias(X);
   }
 
 

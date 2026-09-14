@@ -32,16 +32,6 @@ SpBase<elem_type,derived>::get_ref() const
 
 
 template<typename elem_type, typename derived>
-arma_inline
-bool
-SpBase<elem_type,derived>::is_alias(const SpMat<elem_type>& X) const
-  {
-  return (*this).get_ref().is_alias(X);
-  }
-
-
-
-template<typename elem_type, typename derived>
 inline
 const SpOp<derived, spop_htrans>
 SpBase<elem_type,derived>::t() const
@@ -527,7 +517,7 @@ SpBase<elem_type,derived>::is_zero(const typename get_pod_type<elem_type>::resul
   
   typedef typename get_pod_type<elem_type>::result T;
   
-  arma_conform_check( (tol < T(0)), "is_zero(): parameter 'tol' must be >= 0" );
+  arma_conform_check( ((tol >= T(0)) == false), "is_zero(): parameter 'tol' must be >= 0" );
   
   const SpProxy<derived> P( (*this).get_ref() );
   
@@ -554,8 +544,8 @@ SpBase<elem_type,derived>::is_zero(const typename get_pod_type<elem_type>::resul
       const T val_real = access::tmp_real(val);
       const T val_imag = access::tmp_imag(val);
       
-      if(eop_aux::arma_abs(val_real) > tol)  { return false; }
-      if(eop_aux::arma_abs(val_imag) > tol)  { return false; }
+      if( (eop_aux::arma_abs(val_real) <= tol) == false )  { return false; }
+      if( (eop_aux::arma_abs(val_imag) <= tol) == false )  { return false; }
       
       ++it;
       }
@@ -564,7 +554,7 @@ SpBase<elem_type,derived>::is_zero(const typename get_pod_type<elem_type>::resul
     {
     while(it != it_end)
       {
-      if(eop_aux::arma_abs(*it) > tol)  { return false; }
+      if( (eop_aux::arma_abs(*it) <= tol) == false )  { return false; }
       
       ++it;
       }

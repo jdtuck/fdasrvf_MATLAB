@@ -94,7 +94,9 @@ field<oT>::field(const subview_field<oT>& X)
   {
   arma_debug_sigprint_this(this);
   
-  this->operator=(X);
+  init(X.n_rows, X.n_cols, X.n_slices);
+  
+  subview_field<oT>::extract(*this, X);
   }
 
 
@@ -107,7 +109,20 @@ field<oT>::operator=(const subview_field<oT>& X)
   {
   arma_debug_sigprint();
   
-  subview_field<oT>::extract(*this, X);
+  const bool alias = (this == &(X.f));
+  
+  if(alias == false)
+    {
+    (*this).init(X.n_rows, X.n_cols, X.n_slices);
+    
+    subview_field<oT>::extract(*this, X);
+    }
+  else
+    {
+    field<oT> tmp(X);
+    
+    (*this).operator=(std::move(tmp));
+    }
   
   return *this;
   }
@@ -2060,54 +2075,6 @@ field<oT>::load(std::istream& is, const file_type type)
   if(load_okay == false)  { (*this).reset(); }
   
   return load_okay;
-  }
-
-
-
-template<typename oT>
-inline
-bool
-field<oT>::quiet_save(const std::string name, const file_type type) const
-  {
-  arma_debug_sigprint();
-  
-  return (*this).save(name, type);
-  }
-
-
-
-template<typename oT>
-inline
-bool
-field<oT>::quiet_save(std::ostream& os, const file_type type) const
-  {
-  arma_debug_sigprint();
-  
-  return (*this).save(os, type);
-  }
-
-
-
-template<typename oT>
-inline
-bool
-field<oT>::quiet_load(const std::string name, const file_type type)
-  {
-  arma_debug_sigprint();
-  
-  return (*this).load(name, type);
-  }
-
-
-
-template<typename oT>
-inline
-bool
-field<oT>::quiet_load(std::istream& is, const file_type type)
-  {
-  arma_debug_sigprint();
-  
-  return (*this).load(is, type);
   }
 
 

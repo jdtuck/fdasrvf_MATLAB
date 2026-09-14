@@ -33,6 +33,8 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   static constexpr bool is_col  = false;
   static constexpr bool is_xvec = false;
   
+  static constexpr bool has_subview = false;
+  
   const uword n_rows;    //!< number of rows             (read-only)
   const uword n_cols;    //!< number of columns          (read-only)
   const uword n_elem;    //!< number of elements         (read-only)
@@ -399,12 +401,6 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   arma_cold inline bool load(const csv_name&     spec, const file_type type =   csv_ascii);
   arma_cold inline bool load(      std::istream& is,   const file_type type = arma_binary);
   
-  [[deprecated("use save() instead")]] inline bool quiet_save(const std::string   name, const file_type type = arma_binary) const;
-  [[deprecated("use save() instead")]] inline bool quiet_save(      std::ostream& os,   const file_type type = arma_binary) const;
-  
-  [[deprecated("use load() instead")]] inline bool quiet_load(const std::string   name, const file_type type = arma_binary);
-  [[deprecated("use load() instead")]] inline bool quiet_load(      std::istream& is,   const file_type type = arma_binary);
-  
   
   
   // necessary forward declarations
@@ -647,7 +643,8 @@ class SpMat : public SpBase< eT, SpMat<eT> >
   template<typename eT2, typename T1, typename Functor> inline void init_xform_mt(const SpBase<eT2,T1>& x, const Functor& func);
   
   //! don't use this unless you're writing internal Armadillo code
-  arma_inline bool is_alias(const SpMat<eT>& X) const;
+  template<typename eT2>
+  arma_inline bool is_alias(const SpMat<eT2>& X) const;
   
   
   protected:
@@ -738,6 +735,10 @@ class SpMat_aux
   template<typename eT, typename T1> inline static void set_imag(SpMat<eT>&                out, const SpBase<eT,T1>& X);
   template<typename T,  typename T1> inline static void set_imag(SpMat< std::complex<T> >& out, const SpBase< T,T1>& X);
   };
+
+
+
+template<typename eT> class SpMat_noalias : public SpMat<eT> {};
 
 
 

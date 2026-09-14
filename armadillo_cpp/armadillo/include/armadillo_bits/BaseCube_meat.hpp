@@ -33,6 +33,36 @@ BaseCube<elem_type,derived>::get_ref() const
 
 template<typename elem_type, typename derived>
 inline
+const OpCube<derived,op_htrans>
+BaseCube<elem_type,derived>::t() const
+  {
+  return OpCube<derived,op_htrans>( static_cast<const derived&>(*this) );
+  }
+
+
+
+template<typename elem_type, typename derived>
+inline
+const OpCube<derived,op_htrans>
+BaseCube<elem_type,derived>::ht() const
+  {
+  return OpCube<derived,op_htrans>( static_cast<const derived&>(*this) );
+  }
+
+
+
+template<typename elem_type, typename derived>
+inline
+const OpCube<derived,op_strans>
+BaseCube<elem_type,derived>::st() const
+  {
+  return OpCube<derived,op_strans>( static_cast<const derived&>(*this) );
+  }
+
+
+
+template<typename elem_type, typename derived>
+inline
 void
 BaseCube<elem_type,derived>::print(const std::string extra_text) const
   {
@@ -244,9 +274,9 @@ BaseCube<elem_type,derived>::is_zero(const typename get_pod_type<elem_type>::res
   
   typedef typename get_pod_type<elem_type>::result T;
   
-  arma_conform_check( (tol < T(0)), "is_zero(): parameter 'tol' must be >= 0" );
+  arma_conform_check( ((tol >= T(0)) == false), "is_zero(): parameter 'tol' must be >= 0" );
   
-  if(ProxyCube<derived>::use_at || is_Cube<typename ProxyCube<derived>::stored_type>::value)
+  if(is_Cube<typename ProxyCube<derived>::stored_type>::value || ProxyCube<derived>::use_at)
     {
     const unwrap_cube<derived> U( (*this).get_ref() );
     
@@ -263,22 +293,52 @@ BaseCube<elem_type,derived>::is_zero(const typename get_pod_type<elem_type>::res
   
   if(is_cx<elem_type>::yes)
     {
-    for(uword i=0; i<n_elem; ++i)
+    if(tol == T(0))
       {
-      const elem_type val = Pea[i];
-      
-      const T val_real = access::tmp_real(val);
-      const T val_imag = access::tmp_imag(val);
-      
-      if(eop_aux::arma_abs(val_real) > tol)  { return false; }
-      if(eop_aux::arma_abs(val_imag) > tol)  { return false; }
+      for(uword i=0; i < n_elem; ++i)
+        {
+        const elem_type val = Pea[i];
+        
+        const T val_real = access::tmp_real(val);
+        const T val_imag = access::tmp_imag(val);
+        
+        if(eop_aux::arma_abs(val_real) != T(0))  { return false; }
+        if(eop_aux::arma_abs(val_imag) != T(0))  { return false; }
+        }
+      }
+    else
+      {
+      for(uword i=0; i < n_elem; ++i)
+        {
+        const elem_type val = Pea[i];
+        
+        const T val_real = access::tmp_real(val);
+        const T val_imag = access::tmp_imag(val);
+        
+        if( (eop_aux::arma_abs(val_real) <= tol) == false )  { return false; }
+        if( (eop_aux::arma_abs(val_imag) <= tol) == false )  { return false; }
+        }
       }
     }
   else  // not complex
     {
-    for(uword i=0; i < n_elem; ++i)
+    if(tol == T(0))
       {
-      if(eop_aux::arma_abs(Pea[i]) > tol)  { return false; }
+      for(uword i=0; i < n_elem; ++i)
+        {
+        const elem_type val = Pea[i];
+        
+        if(val != elem_type(0))  { return false; }
+        }
+      }
+    else
+      {
+      for(uword i=0; i < n_elem; ++i)
+        {
+        const elem_type val = Pea[i];
+        
+        if( (eop_aux::arma_abs(val) <= tol) == false )  { return false; }
+        }
       }
     }
   

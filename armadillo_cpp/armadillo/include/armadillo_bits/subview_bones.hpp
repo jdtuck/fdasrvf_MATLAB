@@ -36,6 +36,8 @@ class subview : public Base< eT, subview<eT> >
   static constexpr bool is_col  = false;
   static constexpr bool is_xvec = false;
   
+  static constexpr bool has_subview = true;
+  
   const uword aux_row1;
   const uword aux_col1;
   
@@ -85,7 +87,7 @@ class subview : public Base< eT, subview<eT> >
   template<typename T1> inline void operator-= (const SpBase<eT,T1>& x);
   template<typename T1> inline void operator%= (const SpBase<eT,T1>& x);
   template<typename T1> inline void operator/= (const SpBase<eT,T1>& x);
-
+  
   template<typename T1, typename gen_type>
   inline typename enable_if2< is_same_type<typename T1::elem_type, eT>::value, void>::result operator=(const Gen<T1,gen_type>& x);
   
@@ -142,6 +144,9 @@ class subview : public Base< eT, subview<eT> >
   arma_inline       eT* colptr(const uword in_col);
   arma_inline const eT* colptr(const uword in_col) const;
   
+  arma_inline       eT* startptr();
+  arma_inline const eT* startptr() const;
+  
   template<typename eT2>
   inline bool check_overlap(const subview<eT2>& x) const;
   
@@ -171,8 +176,8 @@ class subview : public Base< eT, subview<eT> >
   inline       subview<eT> rows(const uword in_row1, const uword in_row2);
   inline const subview<eT> rows(const uword in_row1, const uword in_row2) const;
   
-  inline       subview<eT> cols(const uword in_col1, const uword in_col2);
-  inline const subview<eT> cols(const uword in_col1, const uword in_col2) const;
+  inline       subview<eT> cols(const uword in_col1, const uword in_col2);        // deliberately not returning subview_cols
+  inline const subview<eT> cols(const uword in_col1, const uword in_col2) const;  // deliberately not returning subview_cols
   
   inline       subview<eT> submat(const uword in_row1, const uword in_col1, const uword in_row2, const uword in_col2);
   inline const subview<eT> submat(const uword in_row1, const uword in_col1, const uword in_row2, const uword in_col2) const;
@@ -373,6 +378,8 @@ class subview_col : public subview<eT>
   static constexpr bool is_col  = true;
   static constexpr bool is_xvec = false;
   
+  static constexpr bool has_subview = true;
+  
   const eT* colmem;
   
   inline void operator= (const subview<eT>& x);
@@ -392,9 +399,19 @@ class subview_col : public subview<eT>
   
   arma_warn_unused arma_inline const Op<subview_col<eT>,op_strans> as_row() const;
   
+  inline void replace(const eT old_val, const eT new_val);
+  
   inline void fill(const eT val);
   inline void zeros();
   inline void ones();
+  inline void randu();
+  inline void randn();
+  
+  arma_warn_unused inline bool is_finite() const;
+  arma_warn_unused inline bool is_zero(const pod_type tol = 0) const;
+  
+  arma_warn_unused inline bool has_inf() const;
+  arma_warn_unused inline bool has_nan() const;
   
   arma_inline eT  at_alt    (const uword i) const;
   
@@ -467,6 +484,8 @@ class subview_cols : public subview<eT>
   static constexpr bool is_col  = false;
   static constexpr bool is_xvec = false;
   
+  static constexpr bool has_subview = true;
+  
   inline  subview_cols(const subview_cols&  in);
   inline  subview_cols(      subview_cols&& in);
   
@@ -528,6 +547,10 @@ class subview_row : public subview<eT>
   static constexpr bool is_col  = false;
   static constexpr bool is_xvec = false;
   
+  static constexpr bool has_subview = true;
+  
+  const eT* rowmem;
+  
   inline void operator= (const subview<eT>& x);
   inline void operator= (const subview_row& x);
   inline void operator= (const eT val);
@@ -544,6 +567,20 @@ class subview_row : public subview<eT>
   arma_warn_unused arma_inline const Op<subview_row<eT>,op_strans> st() const;
   
   arma_warn_unused arma_inline const Op<subview_row<eT>,op_strans> as_col() const;
+  
+  inline void replace(const eT old_val, const eT new_val);
+  
+  inline void fill(const eT val);
+  inline void zeros();
+  inline void ones();
+  inline void randu();
+  inline void randn();
+  
+  arma_warn_unused inline bool is_finite() const;
+  arma_warn_unused inline bool is_zero(const pod_type tol = 0) const;
+  
+  arma_warn_unused inline bool has_inf() const;
+  arma_warn_unused inline bool has_nan() const;
   
   inline eT  at_alt    (const uword i) const;
   
@@ -615,6 +652,8 @@ class subview_row_strans : public Base< eT, subview_row_strans<eT> >
   static constexpr bool is_col  = true;
   static constexpr bool is_xvec = false;
   
+  static constexpr bool has_subview = true;
+  
   arma_aligned const subview_row<eT>& sv_row;
   
   const uword n_rows;     // equal to n_elem
@@ -649,6 +688,8 @@ class subview_row_htrans : public Base< eT, subview_row_htrans<eT> >
   static constexpr bool is_row  = false;
   static constexpr bool is_col  = true;
   static constexpr bool is_xvec = false;
+  
+  static constexpr bool has_subview = true;
   
   arma_aligned const subview_row<eT>& sv_row;
   

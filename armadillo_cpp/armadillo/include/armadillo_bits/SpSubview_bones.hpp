@@ -34,6 +34,8 @@ class SpSubview : public SpBase< eT, SpSubview<eT> >
   static constexpr bool is_col  = false;
   static constexpr bool is_xvec = false;
   
+  static constexpr bool has_subview = true;
+  
   const uword aux_row1;
   const uword aux_col1;
   const uword n_rows;
@@ -321,7 +323,8 @@ class SpSubview : public SpBase< eT, SpSubview<eT> >
   inline const_row_iterator end_row(const uword row_num) const;
   
   //! don't use this unless you're writing internal Armadillo code
-  arma_inline bool is_alias(const SpMat<eT>& X) const;
+  template<typename eT2>
+  arma_inline bool is_alias(const SpMat<eT2>& X) const;
   
   
   private:
@@ -350,6 +353,8 @@ class SpSubview_col : public SpSubview<eT>
   static constexpr bool is_row  = false;
   static constexpr bool is_col  = true;
   static constexpr bool is_xvec = false;
+  
+  static constexpr bool has_subview = true;
   
   inline void operator= (const SpSubview<eT>& x);
   inline void operator= (const SpSubview_col& x);
@@ -390,6 +395,8 @@ class SpSubview_row : public SpSubview<eT>
   static constexpr bool is_row  = true;
   static constexpr bool is_col  = false;
   static constexpr bool is_xvec = false;
+  
+  static constexpr bool has_subview = true;
   
   inline void operator= (const SpSubview<eT>& x);
   inline void operator= (const SpSubview_row& x);

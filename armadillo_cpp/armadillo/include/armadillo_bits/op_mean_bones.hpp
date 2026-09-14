@@ -29,6 +29,9 @@ struct op_mean
   template<typename T1>
   inline static void apply(Mat<typename T1::elem_type>& out, const Op<T1,op_mean>& in);
   
+  template<typename T1>
+  inline static void apply(Mat_noalias<typename T1::elem_type>& out, const Op<T1,op_mean>& in);
+  
   template<typename eT>
   inline static void apply_noalias(Mat<eT>& out, const Mat<eT>& X, const uword dim);
   
@@ -63,10 +66,16 @@ struct op_mean
   inline static typename T1::elem_type mean_all(const T1& X);
   
   template<typename T1>
+  inline static typename T1::elem_type mean_all_proxy(const Proxy<T1>& P);
+  
+  template<typename T1>
   inline static typename T1::elem_type mean_all(const Op<T1, op_omit>& X);
   
   template<typename eT, typename functor>
   inline static eT mean_all_omit(const eT* X_mem, const uword N, functor is_omitted);
+  
+  template<typename T1, typename functor>
+  inline static typename T1::elem_type mean_all_omit(const Proxy<T1>& P, functor is_omitted);
   
   //
   

@@ -33,6 +33,8 @@ class Col : public Mat<eT>
   static constexpr bool is_row  = false;
   static constexpr bool is_xvec = false;
   
+  static constexpr bool has_subview = false;
+  
   inline Col();
   inline Col(const Col<eT>& X);
   
@@ -66,9 +68,6 @@ class Col : public Mat<eT>
   
   inline            Col(Col&& m);
   inline Col& operator=(Col&& m);
-  
-  // inline            Col(Mat<eT>&& m);
-  // inline Col& operator=(Mat<eT>&& m);
   
   inline Col& operator=(const eT val);
   inline Col& operator=(const Col& m);
@@ -142,7 +141,7 @@ class Col : public Mat<eT>
   template<typename T1> inline void shed_rows(const Base<uword, T1>& indices);
   
   [[deprecated]] inline void insert_rows(const uword row_num, const uword N, const bool set_to_zero);
-                  inline void insert_rows(const uword row_num, const uword N);
+                 inline void insert_rows(const uword row_num, const uword N);
   
   template<typename T1> inline void insert_rows(const uword row_num, const Base<eT,T1>& X);
   
@@ -152,6 +151,12 @@ class Col : public Mat<eT>
   
   arma_warn_unused arma_inline       eT& at(const uword in_row, const uword in_col);
   arma_warn_unused arma_inline const eT& at(const uword in_row, const uword in_col) const;
+  
+  inline void push_back(const eT val);
+  
+  inline constexpr bool is_vec()    const { return true;  }
+  inline constexpr bool is_rowvec() const { return false; }
+  inline constexpr bool is_colvec() const { return true;  }
   
   
   typedef       eT*       row_iterator;
@@ -204,6 +209,8 @@ class Col<eT>::fixed : public Col<eT>
   static constexpr bool is_col  = true;
   static constexpr bool is_row  = false;
   static constexpr bool is_xvec = false;
+  
+  static constexpr bool has_subview = false;
   
   static const uword n_rows;  // value provided below the class definition
   static const uword n_cols;  // value provided below the class definition
@@ -259,6 +266,8 @@ class Col<eT>::fixed : public Col<eT>
   arma_warn_unused arma_inline const eT& at         (const uword in_row, const uword in_col) const;
   arma_warn_unused arma_inline       eT& operator() (const uword in_row, const uword in_col);
   arma_warn_unused arma_inline const eT& operator() (const uword in_row, const uword in_col) const;
+  
+  inline void push_back(const eT) = delete;
   
   arma_warn_unused arma_inline       eT* memptr();
   arma_warn_unused arma_inline const eT* memptr() const;

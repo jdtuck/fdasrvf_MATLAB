@@ -34,8 +34,8 @@ op_diagmat::apply(Mat<typename T1::elem_type>& out, const Op<T1, op_diagmat>& X)
     {
     // allow detection of in-place operation
     
-    const unwrap<T1>   U(X.m);
-    const Mat<eT>& A = U.M;
+    const plain_unwrap<T1> U(X.m);
+    const Mat<eT>& A     = U.M;
     
     if(&out != &A)  // no aliasing
       {
@@ -107,6 +107,20 @@ op_diagmat::apply(Mat<typename T1::elem_type>& out, const Op<T1, op_diagmat>& X)
 template<typename T1>
 inline
 void
+op_diagmat::apply(Mat_noalias<typename T1::elem_type>& out, const Op<T1, op_diagmat>& X)
+  {
+  arma_debug_sigprint();
+  
+  const Proxy<T1> P(X.m);
+  
+  op_diagmat::apply(out, P);
+  }
+
+
+
+template<typename T1>
+inline
+void
 op_diagmat::apply(Mat<typename T1::elem_type>& out, const Proxy<T1>& P)
   {
   arma_debug_sigprint();
@@ -160,6 +174,31 @@ op_diagmat::apply(Mat<typename T1::elem_type>& out, const Op< Glue<T1,T2,glue_ti
   {
   arma_debug_sigprint();
   
+  typedef typename T1::elem_type eT;
+  
+  if(X.m.is_alias(out))
+    {
+    Mat<eT> tmp;
+    
+    op_diagmat::apply_times(tmp, X.m.A, X.m.B);
+    
+    out.steal_mem(tmp);
+    }
+  else
+    {
+    op_diagmat::apply_times(out, X.m.A, X.m.B);
+    }
+  }
+
+
+
+template<typename T1, typename T2>
+inline
+void
+op_diagmat::apply(Mat_noalias<typename T1::elem_type>& out, const Op< Glue<T1,T2,glue_times>, op_diagmat>& X)
+  {
+  arma_debug_sigprint();
+  
   op_diagmat::apply_times(out, X.m.A, X.m.B);
   }
 
@@ -168,7 +207,7 @@ op_diagmat::apply(Mat<typename T1::elem_type>& out, const Op< Glue<T1,T2,glue_ti
 template<typename T1, typename T2>
 inline
 void
-op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, const T2& Y, const typename arma_not_cx<typename T1::elem_type>::result* junk)
+op_diagmat::apply_times(Mat<typename T1::elem_type>& out, const T1& X, const T2& Y, const typename arma_not_cx<typename T1::elem_type>::result* junk)
   {
   arma_debug_sigprint();
   arma_ignore(junk);
@@ -204,9 +243,9 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       const eT*     C_mem = C.memptr();
       const uword   N     = C.n_elem;
       
-      actual_out.zeros(N,N);
+      out.zeros(N,N);
       
-      for(uword i=0; i<N; ++i)  { actual_out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
+      for(uword i=0; i<N; ++i)  { out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
       
       return;
       }
@@ -222,9 +261,9 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       const eT*     C_mem = C.memptr();
       const uword   N     = C.n_elem;
       
-      actual_out.zeros(N,N);
+      out.zeros(N,N);
       
-      for(uword i=0; i<N; ++i)  { actual_out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
+      for(uword i=0; i<N; ++i)  { out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
       
       return;
       }
@@ -240,9 +279,9 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       const eT*     C_mem = C.memptr();
       const uword   N     = C.n_elem;
       
-      actual_out.zeros(N,N);
+      out.zeros(N,N);
       
-      for(uword i=0; i<N; ++i)  { actual_out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
+      for(uword i=0; i<N; ++i)  { out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
       
       return;
       }
@@ -258,20 +297,15 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       const eT*     C_mem = C.memptr();
       const uword   N     = C.n_elem;
       
-      actual_out.zeros(N,N);
+      out.zeros(N,N);
       
-      for(uword i=0; i<N; ++i)  { actual_out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
+      for(uword i=0; i<N; ++i)  { out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
       
       return;
       }
     }
   
   // if we got to this point, the multiplication results in a matrix
-
-  const bool is_alias = (UA.is_alias(actual_out) || UB.is_alias(actual_out));
-  
-  Mat<eT>  tmp;
-  Mat<eT>& out = (is_alias) ? tmp : actual_out;
   
   if( (partial_unwrap<T1>::do_trans == false) && (partial_unwrap<T2>::do_trans == false) )
     {
@@ -384,8 +418,6 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       out.at(k,k) = (use_alpha) ? eT(alpha * acc) : eT(acc);
       }
     }
-  
-  if(is_alias)  { actual_out.steal_mem(tmp); }
   }
 
 
@@ -393,7 +425,7 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
 template<typename T1, typename T2>
 inline
 void
-op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, const T2& Y, const typename arma_cx_only<typename T1::elem_type>::result* junk)
+op_diagmat::apply_times(Mat<typename T1::elem_type>& out, const T1& X, const T2& Y, const typename arma_cx_only<typename T1::elem_type>::result* junk)
   {
   arma_debug_sigprint();
   arma_ignore(junk);
@@ -430,9 +462,9 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       const eT*     C_mem = C.memptr();
       const uword   N     = C.n_elem;
       
-      actual_out.zeros(N,N);
+      out.zeros(N,N);
       
-      for(uword i=0; i<N; ++i)  { actual_out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
+      for(uword i=0; i<N; ++i)  { out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
       
       return;
       }
@@ -448,9 +480,9 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       const eT*     C_mem = C.memptr();
       const uword   N     = C.n_elem;
       
-      actual_out.zeros(N,N);
+      out.zeros(N,N);
       
-      for(uword i=0; i<N; ++i)  { actual_out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
+      for(uword i=0; i<N; ++i)  { out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
       
       return;
       }
@@ -466,9 +498,9 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       const eT*     C_mem = C.memptr();
       const uword   N     = C.n_elem;
       
-      actual_out.zeros(N,N);
+      out.zeros(N,N);
       
-      for(uword i=0; i<N; ++i)  { actual_out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
+      for(uword i=0; i<N; ++i)  { out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
       
       return;
       }
@@ -484,20 +516,15 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       const eT*     C_mem = C.memptr();
       const uword   N     = C.n_elem;
       
-      actual_out.zeros(N,N);
+      out.zeros(N,N);
       
-      for(uword i=0; i<N; ++i)  { actual_out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
+      for(uword i=0; i<N; ++i)  { out.at(i,i) = (use_alpha) ? eT(alpha * C_mem[i]) : eT(C_mem[i]); }
       
       return;
       }
     }
   
   // if we got to this point, the multiplication results in a matrix
-
-  const bool is_alias = (UA.is_alias(actual_out) || UB.is_alias(actual_out));
-  
-  Mat<eT>  tmp;
-  Mat<eT>& out = (is_alias) ? tmp : actual_out;
   
   if( (partial_unwrap<T1>::do_trans == false) && (partial_unwrap<T2>::do_trans == false) )
     {
@@ -659,8 +686,6 @@ op_diagmat::apply_times(Mat<typename T1::elem_type>& actual_out, const T1& X, co
       out.at(k,k) = (use_alpha) ? eT(alpha * acc) : eT(acc);
       }
     }
-  
-  if(is_alias)  { actual_out.steal_mem(tmp); }
   }
 
 
@@ -697,6 +722,23 @@ op_diagmat2::apply(Mat<typename T1::elem_type>& out, const Op<T1, op_diagmat2>& 
     {
     op_diagmat2::apply(out, P, row_offset, col_offset);
     }
+  }
+
+
+
+template<typename T1>
+inline
+void
+op_diagmat2::apply(Mat_noalias<typename T1::elem_type>& out, const Op<T1, op_diagmat2>& X)
+  {
+  arma_debug_sigprint();
+  
+  const uword row_offset = X.aux_uword_a;
+  const uword col_offset = X.aux_uword_b;
+  
+  const Proxy<T1> P(X.m);
+  
+  op_diagmat2::apply(out, P, row_offset, col_offset);
   }
 
 
