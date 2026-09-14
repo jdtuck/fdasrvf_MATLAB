@@ -19,11 +19,11 @@
  * \param tv2 the Q2 (row) parameter values for the DP grid
  * \param idxv2 Q2 indexes for tv2, as computed by \c dp_all_indexes()
  * \param ntv2 the length of tv2
- * \param E [output] on return, E[ntv2*i+j] holds the cost of the best 
+ * \param E [output] on return, E[ntv1*j+i] holds the cost of the best 
  *        path from (0,0) to (tv1[i],tv2[j]) in the grid.
- * \param P [output] on return, P[ntv2*i+j] holds the predecessor of 
+ * \param P [output] on return, P[ntv1*j+i] holds the predecessor of 
  *        (tv1[i],tv2[j]).  If predecessor is (tv1[k],tv2[l]), then 
- *        P[ntv2*i+j] = k*ntv2+l.
+ *        P[ntv1*j+i] = l*ntv1+k.
  * \param dp_nbhd_count Number of pairs in the grid.
  * \param dp_nbhd Grid.
  * \return E[ntv1*ntv2-1], the cost of the best path from (tv1[0],tv2[0]) 
@@ -71,8 +71,8 @@ double dp_costs(
  * G and T must already be allocated with size max(ntv1,ntv2).  The actual 
  * number of points on gamma will be the return value.
  *
- * \param P P[ntv2*i+j] holds the predecessor of (tv1[i],tv2[j]).  If 
- *        predecessor is (tv1[k],tv2[l]), then P[ntv2*i+j] = k*ntv2+l.
+ * \param P P[ntv1*j+i] holds the predecessor of (tv1[i],tv2[j]).  If 
+ *        predecessor is (tv1[k],tv2[l]), then P[ntv1*j+i] = l*ntv1+k.
  * \param tv1 the Q1 (column) parameter values for the DP grid
  * \param ntv1 the length of tv1
  * \param tv2 the Q2 (row) parameter values for the DP grid
