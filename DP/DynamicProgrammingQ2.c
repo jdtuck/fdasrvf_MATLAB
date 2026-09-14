@@ -1,4 +1,5 @@
 #include "mex.h"
+#include <math.h>
 #include <stdlib.h>
 #include <limits.h>
 #include "dp_grid.h"
@@ -7,14 +8,18 @@
 
 /* Signature:
  * function [G, T, dist] = DynamicProgrammingQ2( Q1, T1, Q2, T2, tv1, tv2, lam, nbhd_dim )
+ * function [G, T, dist] = DynamicProgrammingQ2( Q1, T1, Q2, T2, tv1, tv2, lam, nbhd_dim, pen )
  *
  * Q1, Q2    dim x n arrays of SRVF samples (column-major).  Only the first
  *           nsamps-1 columns are read; Q is piecewise constant between
  *           changepoints.
  * T1, T2    1 x nsamps changepoint parameters.
  * tv1, tv2  1 x ntv parameter values defining the DP grid.
- * lam       scalar warping penalty.
+ * lam       scalar warping penalty weight.
  * nbhd_dim  scalar >= 1, size of the DP search neighborhood.
+ * pen       optional scalar penalty type: 0 = none, 1 = roughness,
+ *           2 = l2gam, 3 = l2psi, 4 = geodesic.  Defaults to 1 (roughness),
+ *           which is the penalty this function used before pen existed.
  *
  * G and T are the warping function and its parameterization; dist is the
  * cost of the optimal path and is only computed into an output when asked
@@ -25,6 +30,8 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   double *Q2 = 0;
   double *T2 = 0;
   double lam;
+  double pen_arg;
+  int pen;
   double nbhd_arg;
   size_t nbhd_dim;
   int nsamps1;
@@ -51,17 +58,17 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
 
   /* Inputs are validated here: this MEX file is called directly from
    * optimum_reparam.m, so there is no m-file wrapper doing it for us. */
-  if ( nrhs != 8 )
+  if ( nrhs != 8 && nrhs != 9 )
   {
-    mexErrMsgIdAndTxt( "dp:InvalidInput", "Eight inputs required: "
-      "Q1, T1, Q2, T2, tv1, tv2, lam, nbhd_dim." );
+    mexErrMsgIdAndTxt( "dp:InvalidInput", "Eight or nine inputs required: "
+      "Q1, T1, Q2, T2, tv1, tv2, lam, nbhd_dim and optionally pen." );
   }
   if ( nlhs > 3 )
   {
     mexErrMsgIdAndTxt( "dp:InvalidOutput", "Too many output arguments." );
   }
 
-  for ( i=0; i<8; ++i )
+  for ( i=0; i<nrhs; ++i )
   {
     if ( !mxIsDouble(prhs[i]) || mxIsComplex(prhs[i]) || mxIsSparse(prhs[i]) )
     {
@@ -82,9 +89,11 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
   }
 
   if ( mxGetNumberOfElements(prhs[6]) != 1 ||
-       mxGetNumberOfElements(prhs[7]) != 1 )
+       mxGetNumberOfElements(prhs[7]) != 1 ||
+       ( nrhs > 8 && mxGetNumberOfElements(prhs[8]) != 1 ) )
   {
-    mexErrMsgIdAndTxt( "dp:InvalidInput", "lam and nbhd_dim must be scalars." );
+    mexErrMsgIdAndTxt( "dp:InvalidInput",
+      "lam, nbhd_dim and pen must be scalars." );
   }
 
   /* Guard the mwSize -> int narrowing below. */
@@ -112,6 +121,16 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
       "nbhd_dim must be a scalar between 1 and 65535." );
   }
   nbhd_dim = (size_t)nbhd_arg;
+
+  /* 0 = no penalty, 1 = roughness, 2 = l2gam, 3 = l2psi, 4 = geodesic */
+  pen_arg = ( nrhs > 8 ) ? mxGetScalar( prhs[8] ) : (double)DP_PEN_ROUGHNESS;
+  /* Written so that NaN is rejected too. */
+  if ( !(pen_arg >= 0.0) || pen_arg > 4.0 || pen_arg != floor(pen_arg) )
+  {
+    mexErrMsgIdAndTxt( "dp:InvalidInput",
+      "pen must be one of 0, 1, 2, 3 or 4." );
+  }
+  pen = (int)pen_arg;
 
   dim = (int)mxGetM( prhs[0] );
   nsamps1 = (int)mxGetN( prhs[1] ); /* = columns(T1) */
@@ -180,7 +199,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]){
 
   /* Compute cost of best path from (0,0) to every other grid point */
   res = dp_costs( Q1, T1, nsamps1, Q2, T2, nsamps2, 
-    dim, tv1, idxv1, ntv1, tv2, idxv2, ntv2, E, P, lam,
+    dim, tv1, idxv1, ntv1, tv2, idxv2, ntv2, E, P, lam, pen,
 	nbhd_count, dp_nbhd );
 
   /* Reconstruct best path from (0,0) to (1,1) */

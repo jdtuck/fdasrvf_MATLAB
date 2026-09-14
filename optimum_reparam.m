@@ -1,4 +1,4 @@
-function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim)
+function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty)
 % OPTIMUM_REPARAM Calculates Warping for two SRVFs
 % -------------------------------------------------------------------------%
 % This function aligns two SRSF functions using Dynamic Programming
@@ -7,6 +7,7 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim)
 %         gam = optimum_reparam(q1,q2,t,lambda)
 %         gam = optimum_reparam(q1,q2,t,lambda,method)
 %         gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim)
+%         gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty)
 %
 % Input:
 % q1: srsf of function 1
@@ -19,6 +20,11 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim)
 % f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
 % nbhd_dim: size of the grid (default = 7)
+% penalty: penalty term the amount of warping is measured with
+% (default = "roughness") options are "none", "roughness", "l2gam", "l2psi"
+% and "geodesic".  The penalty is weighted by lambda, so it has no effect
+% when lambda is 0.  It is honored by the "DP", "DP1" and "RBFGS" methods;
+% "SIMUL" and "RBFGSM" do not apply a penalty and ignore both it and lambda.
 %
 % Output:
 % gam: warping function
@@ -31,6 +37,17 @@ arguments
     f1o = 0.0;
     f2o = 0.0;
     nbhd_dim = 7;
+    penalty {mustBeTextScalar} = 'roughness';
+end
+
+% The two solver families number the penalties differently, so translate the
+% name once here: pen_dp is what the DP MEX files expect and pen_rbfgs is
+% what c_rlbfgs expects.
+[pen_dp, pen_rbfgs] = penalty_codes(penalty);
+lambda_rbfgs = lambda;
+if pen_dp == 0
+    % c_rlbfgs has no "no penalty" code, but a zero weight is the same thing.
+    lambda_rbfgs = 0.0;
 end
 
 q1 = q1/norm(q1);
@@ -52,7 +69,7 @@ switch upper(method)
         if size(t,2) == 1
             t = t';
         end 
-        [G,T] = DynamicProgrammingQ2(q1,t,q2,t,t,t,lambda,nbhd_dim);
+        [G,T] = DynamicProgrammingQ2(q1,t,q2,t,t,t,lambda,nbhd_dim,pen_dp);
         gam0 = interp1(T,G,t);
     case 'DP1'
         if size(q1,2) == 1
@@ -61,7 +78,7 @@ switch upper(method)
         if size(q2,2) == 1
             q2 = q2';
         end 
-        [gam0] = DynamicProgrammingQ(q2,q1,lambda,0);
+        [gam0] = DynamicProgrammingQ(q2,q1,lambda,pen_dp);
     case 'SIMUL'
         [s1,s2, g1,g2,~,~,~]  = simul_align(c1,c2);
         u = linspace(0,1,length(g1));
@@ -72,7 +89,7 @@ switch upper(method)
         gam0 = simul_gam(u,g1,g2,t2,s1,s2,t2);
     case 'RBFGS'
         t1 = linspace(0,1,length(t))';
-        gam0 = c_rlbfgs(q1, q2, t1, 30, lambda, 0);
+        gam0 = c_rlbfgs(q1, q2, t1, 30, lambda_rbfgs, pen_rbfgs);
         gam0 = gam0';
     case 'RBFGSM'
         t1 = linspace(0,1,length(t));
@@ -95,6 +112,18 @@ end
 
 
 % helper functions
+
+% Translate a penalty name into the code each solver family uses.  The DP MEX
+% files (DynamicProgrammingQ and DynamicProgrammingQ2) take
+% 0 = none, 1 = roughness, 2 = l2gam, 3 = l2psi, 4 = geodesic, while c_rlbfgs
+% has no "none" and takes 0 = roughness, 1 = l2gam, 2 = l2psi, 3 = geodesic.
+function [pen_dp, pen_rbfgs] = penalty_codes(penalty)
+names = {'none','roughness','l2gam','l2psi','geodesic'};
+penalty = validatestring(penalty, names, 'optimum_reparam', 'penalty');
+pen_dp = find(strcmp(penalty, names)) - 1;
+pen_rbfgs = max(pen_dp - 1, 0);
+end
+
 function [q20,gam0] = initialize(q1,q2,M,options)
 
     t=M.t;

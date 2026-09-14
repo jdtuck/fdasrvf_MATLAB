@@ -47,6 +47,35 @@ gam = optimum_reparam(q1', q1', timet', 0, 'RBFGSM');
 q1a = warp_f_gamma(q1, gam, timet); 
 assert(sum(q1(:)-q1a(:))<=1e-15,'Warping Not Identity')
 
+%% Test warping penalties
+% Aligning a function to itself is the identity warp whichever penalty is
+% used to measure the amount of warping, and whatever it is weighted by.
+M = 101;
+q1 = sin(linspace(0,2*pi,M));
+timet = linspace(0,1,M);
+penalties = {'none','roughness','l2gam','l2psi','geodesic'};
+for i = 1:numel(penalties)
+    for method = {'DP','DP1','RBFGS'}
+        gam = optimum_reparam(q1', q1', timet', 1.0, method{1}, 0.0, 0.0, 7, ...
+            penalties{i});
+        assert(max(abs(gam(:).'-timet)) <= 1e-6, ...
+            sprintf('Warping Not Identity for %s with %s penalty', ...
+            method{1}, penalties{i}))
+    end
+end
+
+%% Test invalid warping penalty
+M = 101;
+q1 = sin(linspace(0,2*pi,M));
+timet = linspace(0,1,M);
+try
+    optimum_reparam(q1', q1', timet', 0, 'DP1', 0.0, 0.0, 7, 'not_a_penalty');
+    error('Invalid penalty was accepted')
+catch ME
+    assert(contains(ME.identifier,'unrecognizedStringChoice'), ...
+        'Unexpected error for invalid penalty')
+end
+
 %% Test Smooth
 M = 101;
 q1 = zeros(M,1);
