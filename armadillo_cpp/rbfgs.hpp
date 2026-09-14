@@ -12,8 +12,6 @@ class rlbfgs {
         vec q1;        // srvf1
         vec q2;        // srvf2
         uword T;         // size of time
-        double hCurCost;
-        vec hCurGradient;
         struct options{
             double tolgradnorm;
             double maxtime;
@@ -170,7 +168,7 @@ class rlbfgs {
 
                 // cautious step
                 cap = strict_inc_func(hCurGradNorm);
-                if ((inner_sk_sk != 0) & ((inner_sk_yk/inner_sk_sk) >= cap)){
+                if ((inner_sk_sk != 0) && ((inner_sk_yk/inner_sk_sk) >= cap)){
                     accepted = true;
 
                     rhok = 1/inner_sk_yk;
@@ -187,8 +185,8 @@ class rlbfgs {
                             tmp(option.memory-1) = yHistory(0);
                             yHistory = tmp;
 
-                            tmp_vec(arma::span(0,option.memory-1)) = rhoHistory(arma::span(1,option.memory-2));
-                            tmp_vec(option.memory) = rhoHistory(0);
+                            tmp_vec(arma::span(0,option.memory-2)) = rhoHistory(arma::span(1,option.memory-1));
+                            tmp_vec(option.memory-1) = rhoHistory(0);
                             rhoHistory = tmp_vec;
                         }
                         if (option.memory > 0){
@@ -216,7 +214,7 @@ class rlbfgs {
                 stat.iter = k;
                 stat.cost = hCurCost;
                 stat.gradnorm = hCurGradNorm;
-                stat.stepsize = datum::nan;
+                stat.stepsize = stepsize;
                 stat.accepted = accepted;
             }
 
@@ -277,8 +275,8 @@ class rlbfgs {
                 vec time1 = arma::linspace<vec>(0,1,h.n_elem);
                 vec b = arma::diff(time1);
                 double binsize = mean(b);
-                vec g = gradient(arma::pow(h, 2), binsize); 
-                arma::mat pen1 = arma::trapz(time1, arma::pow(g, 2));
+                vec hdot = gradient(arma::pow(h, 2), binsize); 
+                arma::mat pen1 = arma::trapz(time1, arma::pow(hdot, 2));
                 pen = pen1(0);
             }
             // l2gam
@@ -366,7 +364,7 @@ class rlbfgs {
             int cost_evaluations = 1;
 
             uvec tst = newh <= 0;
-            while (ls_backtrack & (newf > (f0 + suff_decr*alpha*df0)) || arma::sum(tst) > 0){
+            while ((ls_backtrack && (newf > (f0 + suff_decr*alpha*df0))) || arma::sum(tst) > 0){
                 alpha *= contraction_factor;
 
                 newh = exp(hid, d, alpha);
@@ -379,7 +377,7 @@ class rlbfgs {
                 }
             }
 
-            if (ls_force_decrease & (newf > f0)){
+            if (ls_force_decrease && (newf > f0)){
                 alpha = 0;
                 newh = hid;
                 newf = f0;
@@ -445,7 +443,12 @@ class rlbfgs {
 
         double dist(vec f1, vec f2){
             double temp = inner(f1, f2);
-            double d = real(acos(temp));
+            if (temp > 1){
+                temp = 1;
+            } else if (temp < -1){
+                temp = -1;
+            }
+            double d = acos(temp);
             
             return d;
         }
@@ -511,7 +514,7 @@ class rlbfgs {
             if (dist_f1f2 > 0){
                 vec u = w / dist_f1f2;
                 double utv = inner(u, v);
-                Tv = v + (cos(dist_f1f2) - 1) * utv * u - sin(dist_f1f2);
+                Tv = v + (cos(dist_f1f2) - 1) * utv * u - sin(dist_f1f2) * utv * f1;
             } else{
                 Tv = v;
             }
