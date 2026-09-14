@@ -29,9 +29,11 @@ struct op_vectorise_col
   
   template<typename T1> inline static void apply_direct(Mat<typename T1::elem_type>& out, const T1& expr);
   
-  template<typename eT> inline static void apply_subview(Mat<eT>& out, const subview<eT>& sv);
+  template<typename T1> inline static void apply(Mat_noalias<typename T1::elem_type>& out, const Op<T1,op_vectorise_col>& in);
   
-  template<typename T1> inline static void apply_proxy(Mat<typename T1::elem_type>& out, const Proxy<T1>& P);
+  template<typename T1> inline static void apply_direct(Mat_noalias<typename T1::elem_type>& out, const T1& expr);
+  
+  template<typename eT> inline static void apply_subview(Mat<eT>& out, const subview<eT>& sv);
   };
 
 

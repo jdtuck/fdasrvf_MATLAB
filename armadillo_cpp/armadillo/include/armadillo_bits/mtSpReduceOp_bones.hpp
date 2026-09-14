@@ -46,9 +46,14 @@ struct mtSpReduceOp : public SpBase< out_eT, mtSpReduceOp<out_eT, T1, op_type> >
   static constexpr bool is_col  = op_type::template traits<T1>::is_col;
   static constexpr bool is_xvec = op_type::template traits<T1>::is_xvec;
   
+  static constexpr bool has_subview = T1::has_subview;
+  
   inline explicit mtSpReduceOp(const T1& in_m);
   inline          mtSpReduceOp(const T1& in_m, const uword in_aux_uword_a, const uword in_aux_uword_b);
   inline         ~mtSpReduceOp();
+  
+  template<typename eT2>
+  arma_inline bool is_alias(const SpMat<eT2>& X) const;
   
   const T1&   m;            //!< the operand; must be derived from SpBase
         uword aux_uword_a;  //!< auxiliary data, uword format

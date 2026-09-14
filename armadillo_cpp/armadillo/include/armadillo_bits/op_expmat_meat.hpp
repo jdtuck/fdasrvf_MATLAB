@@ -200,14 +200,14 @@ op_expmat_sym::apply_direct(Mat<typename T1::elem_type>& out, const Base<typenam
     typedef typename T1::elem_type eT;
     typedef typename T1::pod_type   T;
     
-    const unwrap<T1>   U(expr.get_ref());
-    const Mat<eT>& X = U.M;
+    const plain_unwrap<T1> U(expr.get_ref());
+    const Mat<eT>& X     = U.M;
     
     arma_conform_check( (X.is_square() == false), "expmat_sym(): given matrix must be square sized" );
     
     if((arma_config::check_conform) && (arma_config::warn_level > 0) && (is_cx<eT>::yes) && (sym_helper::check_diag_imag(X) == false))
       {
-      arma_warn(1, "inv_sympd(): imaginary components on diagonal are non-zero");
+      arma_warn(1, "expmat_sym(): imaginary components on diagonal are non-zero");
       }
     
     if(is_op_diagmat<T1>::value || X.is_diagmat())

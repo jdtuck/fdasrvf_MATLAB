@@ -36,8 +36,8 @@ op_resize::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_resize>& in)
   
   if(is_Mat<T1>::value)
     {
-    const unwrap<T1>   U(in.m);
-    const Mat<eT>& A = U.M;
+    const plain_unwrap<T1> U(in.m);
+    const Mat<eT>& A     = U.M;
     
     if(&out == &A)
       {
@@ -81,7 +81,7 @@ op_resize::apply_mat_inplace(Mat<eT>& A, const uword new_n_rows, const uword new
   arma_conform_check( (A.vec_state == 1) && (new_n_cols != 1), "resize(): requested size is not compatible with column vector layout" );
   arma_conform_check( (A.vec_state == 2) && (new_n_rows != 1), "resize(): requested size is not compatible with row vector layout"    );
   
-  if(A.is_empty())  { A.zeros(new_n_rows, new_n_cols); return; }
+  if( A.is_empty() || (new_n_rows == 0) || (new_n_cols == 0) )  { A.zeros(new_n_rows, new_n_cols); return; }
   
   Mat<eT> B(new_n_rows, new_n_cols, arma_nozeros_indicator());
   

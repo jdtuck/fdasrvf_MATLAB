@@ -70,7 +70,7 @@ op_trimat::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimat>& in)
   // allow detection of in-place operation
   if(is_Mat<T1>::value)
     {
-    const unwrap<T1> U(in.m);
+    const plain_unwrap<T1> U(in.m);
     
     if(&out == &(U.M))
       {
@@ -117,6 +117,31 @@ op_trimat::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimat>& in)
       {
       op_trimat::apply_proxy_noalias(out, P, upper);
       }
+    }
+  }
+
+
+
+template<typename T1>
+inline
+void
+op_trimat::apply(Mat_noalias<typename T1::elem_type>& out, const Op<T1,op_trimat>& in)
+  {
+  arma_debug_sigprint();
+  
+  const bool upper = (in.aux_uword_a == 0);
+  
+  if( (is_Mat<T1>::value) || (is_Mat<typename Proxy<T1>::stored_type>::value) || (arma_config::openmp && Proxy<T1>::use_mp) )
+    {
+    const quasi_unwrap<T1> U(in.m);
+    
+    op_trimat::apply_mat_noalias(out, U.M, upper);
+    }
+  else
+    {
+    const Proxy<T1> P(in.m);
+    
+    op_trimat::apply_proxy_noalias(out, P, upper);
     }
   }
 
@@ -211,8 +236,8 @@ op_trimatu_ext::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimatu_e
   
   typedef typename T1::elem_type eT;
   
-  const unwrap<T1>   tmp(in.m);
-  const Mat<eT>& A = tmp.M;
+  const plain_unwrap<T1> tmp(in.m);
+  const Mat<eT>& A     = tmp.M;
   
   arma_conform_check( (A.is_square() == false), "trimatu(): given matrix must be square sized" );
   
@@ -302,8 +327,8 @@ op_trimatl_ext::apply(Mat<typename T1::elem_type>& out, const Op<T1,op_trimatl_e
   
   typedef typename T1::elem_type eT;
   
-  const unwrap<T1>   tmp(in.m);
-  const Mat<eT>& A = tmp.M;
+  const plain_unwrap<T1> tmp(in.m);
+  const Mat<eT>& A     = tmp.M;
   
   arma_conform_check( (A.is_square() == false), "trimatl(): given matrix must be square sized" );
   

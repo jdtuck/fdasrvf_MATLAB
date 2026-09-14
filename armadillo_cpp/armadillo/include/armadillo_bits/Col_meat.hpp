@@ -431,64 +431,6 @@ Col<eT>::operator=(Col<eT>&& X)
 
 
 
-// template<typename eT>
-// inline
-// Col<eT>::Col(Mat<eT>&& X)
-//   : Mat<eT>(arma_vec_indicator(), 1)
-//   {
-//   arma_debug_sigprint(arma_str::format("this: %x; X: %x") % this % &X);
-//   
-//   if(X.n_cols != 1)  { const Mat<eT>& XX = X; Mat<eT>::operator=(XX); return; }
-//   
-//   access::rw(Mat<eT>::n_rows)  = X.n_rows;
-//   access::rw(Mat<eT>::n_cols)  = 1;
-//   access::rw(Mat<eT>::n_elem)  = X.n_elem;
-//   access::rw(Mat<eT>::n_alloc) = X.n_alloc;
-//   
-//   if( (X.n_alloc > arma_config::mat_prealloc) || (X.mem_state == 1) || (X.mem_state == 2) )
-//     {
-//     access::rw(Mat<eT>::mem_state) = X.mem_state;
-//     access::rw(Mat<eT>::mem)       = X.mem;
-//     
-//     access::rw(X.n_rows)    = 0;
-//     access::rw(X.n_elem)    = 0;
-//     access::rw(X.n_alloc)   = 0;
-//     access::rw(X.mem_state) = 0;
-//     access::rw(X.mem)       = nullptr;
-//     }
-//   else  // condition: (X.n_alloc <= arma_config::mat_prealloc) || (X.mem_state == 0) || (X.mem_state == 3)
-//     {
-//     (*this).init_cold();
-//     
-//     arrayops::copy( (*this).memptr(), X.mem, X.n_elem );
-//     
-//     if( (X.mem_state == 0) && (X.n_alloc <= arma_config::mat_prealloc) )
-//       {
-//       access::rw(X.n_rows)  = 0;
-//       access::rw(X.n_elem)  = 0;
-//       access::rw(X.mem)     = nullptr;
-//       }
-//     }
-//   }
-// 
-// 
-// 
-// template<typename eT>
-// inline
-// Col<eT>&
-// Col<eT>::operator=(Mat<eT>&& X)
-//   {
-//   arma_debug_sigprint(arma_str::format("this: %x; X: %x") % this % &X);
-//   
-//   if(X.n_cols != 1)  { const Mat<eT>& XX = X; Mat<eT>::operator=(XX); return *this; }
-//   
-//   (*this).steal_mem(X, true);
-//   
-//   return *this;
-//   }
-
-
-
 template<typename eT>
 inline
 Col<eT>&
@@ -521,11 +463,9 @@ template<typename eT>
 template<typename T1>
 inline
 Col<eT>::Col(const Base<eT,T1>& X)
-  : Mat<eT>(arma_vec_indicator(), 1)
+  : Mat<eT>(X.get_ref(), arma_vec_indicator(), 1)
   {
-  arma_debug_sigprint();
-  
-  Mat<eT>::operator=(X.get_ref());
+  arma_debug_sigprint_this(this);
   }
 
 
@@ -549,11 +489,9 @@ template<typename eT>
 template<typename T1>
 inline
 Col<eT>::Col(const SpBase<eT,T1>& X)
-  : Mat<eT>(arma_vec_indicator(), 1)
+  : Mat<eT>(X.get_ref(), arma_vec_indicator(), 1)
   {
   arma_debug_sigprint_this(this);
-  
-  Mat<eT>::operator=(X.get_ref());
   }
 
 
@@ -607,12 +545,9 @@ Col<eT>::Col
   const Base<typename Col<eT>::pod_type, T1>& A,
   const Base<typename Col<eT>::pod_type, T2>& B
   )
+  : Mat<eT>(A.get_ref(), B.get_ref(), arma_vec_indicator(), 1)
   {
-  arma_debug_sigprint();
-  
-  access::rw(Mat<eT>::vec_state) = 1;
-  
-  Mat<eT>::init(A,B);
+  arma_debug_sigprint_this(this);
   }
 
 
@@ -621,12 +556,9 @@ template<typename eT>
 template<typename T1>
 inline
 Col<eT>::Col(const BaseCube<eT,T1>& X)
+  : Mat<eT>(X.get_ref(), arma_vec_indicator(), 1)
   {
-  arma_debug_sigprint();
-  
-  access::rw(Mat<eT>::vec_state) = 1;
-  
-  Mat<eT>::operator=(X);
+  arma_debug_sigprint_this(this);
   }
 
 
@@ -649,12 +581,9 @@ Col<eT>::operator=(const BaseCube<eT,T1>& X)
 template<typename eT>
 inline
 Col<eT>::Col(const subview_cube<eT>& X)
+  : Mat<eT>(X, arma_vec_indicator(), 1)
   {
-  arma_debug_sigprint();
-  
-  access::rw(Mat<eT>::vec_state) = 1;
-  
-  Mat<eT>::operator=(X);
+  arma_debug_sigprint_this(this);
   }
 
 
@@ -1223,6 +1152,25 @@ Col<eT>::at(const uword in_row, const uword) const
 
 template<typename eT>
 inline
+void
+Col<eT>::push_back(const eT val)
+  {
+  arma_debug_sigprint();
+  
+  if(Mat<eT>::mem_state != 0)
+    {
+    arma_conform_check(true, "Col::push_back(): unsupported operation as auxiliary memory is in use");
+    
+    return;
+    }
+  
+  Mat<eT>::vec_push_back(val, arma_colvec_indicator());
+  }
+
+
+
+template<typename eT>
+inline
 typename Col<eT>::row_iterator
 Col<eT>::begin_row(const uword row_num)
   {
@@ -1274,6 +1222,13 @@ Col<eT>::end_row(const uword row_num) const
   
   return Mat<eT>::memptr() + row_num + 1;
   }
+
+
+
+
+
+
+//
 
 
 
@@ -1350,6 +1305,10 @@ Col<eT>::fixed<fixed_n_elem>::fixed(const fill::fill_class<fill_type>&)
   if(is_same_type<fill_type, fill::fill_eye  >::yes)  { Mat<eT>::eye();   }
   if(is_same_type<fill_type, fill::fill_randu>::yes)  { Mat<eT>::randu(); }
   if(is_same_type<fill_type, fill::fill_randn>::yes)  { Mat<eT>::randn(); }
+  
+  if(is_same_type<fill_type, fill::fill_nan    >::yes)  { (*this).fill( priv::Datum_helper::nan    <eT>() ); }
+  if(is_same_type<fill_type, fill::fill_pos_inf>::yes)  { (*this).fill( priv::Datum_helper::pos_inf<eT>() ); }
+  if(is_same_type<fill_type, fill::fill_neg_inf>::yes)  { (*this).fill( priv::Datum_helper::neg_inf<eT>() ); }
   }
 
 
@@ -1869,6 +1828,10 @@ Col<eT>::fixed<fixed_n_elem>::ones()
   
   return *this;
   }
+
+
+
+//
 
 
 
