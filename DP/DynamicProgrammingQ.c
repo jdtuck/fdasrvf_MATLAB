@@ -59,17 +59,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	if (nrhs != 4)
 		mexErrMsgTxt("usage: [gam] = DynamicProgrammingQ(q1,q2,lam,pen)");
 
-	if (!mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]) || !mxIsDouble(prhs[2]))
+	if (!mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]) || !mxIsDouble(prhs[2]) || !mxIsDouble(prhs[3]))
 		mexErrMsgTxt("Expected double precision arguments.");
 
 	if (mxGetNumberOfDimensions(prhs[0]) != 2 || mxGetNumberOfDimensions(prhs[1]) != 2)
 		mexErrMsgTxt("First two arguments expected to be two dimensional.");
 
-	n = mxGetM(prhs[0]);
-	N = mxGetN(prhs[0]);
-    
-	if (n != mxGetM(prhs[1]) || N != mxGetN(prhs[1]))
+	n = (int)mxGetM(prhs[0]);
+	N = (int)mxGetN(prhs[0]);
+
+	if (n != (int)mxGetM(prhs[1]) || N != (int)mxGetN(prhs[1]))
 		mexErrMsgTxt("Dimension mismatch between first and second argument.");
+
+	if (N < 2)
+		mexErrMsgTxt("Expected at least two columns in the first two arguments.");
 
 	if (nlhs > 1)
 		mexErrMsgTxt("Expected one return.");
@@ -80,13 +83,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	q1 = mxGetPr(prhs[0]);
 	q2 = mxGetPr(prhs[1]);
     lam = mxGetScalar(prhs[2]);
-	pen = mxGetScalar(prhs[3]);
+	pen = (int)mxGetScalar(prhs[3]);
+
+	// 0 = no penalty, 1 = roughness, 2 = l2gam, 3 = l2psi, 4 = geodesic
+	if (pen < 0 || pen > 4)
+		mexErrMsgTxt("Expected pen to be one of 0, 1, 2, 3 or 4.");
 
 	M = scl*(N-1)+1;
-	q1L = malloc(n*M*sizeof(double));
-	q2L = malloc(n*M*sizeof(double));
+	q1L = mxMalloc(n*M*sizeof(double));
+	q2L = mxMalloc(n*M*sizeof(double));
 
-	D1 = malloc(4*N*sizeof(double));
+	D1 = mxMalloc(4*N*sizeof(double));
+
+	if (!q1L || !q2L || !D1)
+		mexErrMsgTxt("Out of memory.");
+
 	tmp1 = D1 + N;
 	D2 = D1 + 2*N;
 	tmp2 = D2 + N;
@@ -111,10 +122,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		}
 	}
 
-	free(D1);
+	mxFree(D1);
 
-	E = calloc(N*N, sizeof(double));
-	Path = malloc(2*N*N*sizeof(int));
+	E = mxCalloc(N*N, sizeof(double));
+	Path = mxMalloc(2*N*N*sizeof(int));
+
+	if (!E || !Path)
+		mexErrMsgTxt("Out of memory.");
 
 	for (i = 0; i < N; ++i) {
 		E[N*i + 0] = 50000000000;
@@ -151,10 +165,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		}
 	}
 
-	free(E);
-	free(q2L);
+	mxFree(E);
+	mxFree(q2L);
 
-	xy = malloc(2*N*sizeof(int));
+	xy = mxMalloc(2*N*sizeof(int));
+
+	if (!xy)
+		mexErrMsgTxt("Out of memory.");
+
 	xy[2*0 + 0] = N-1;
 	xy[2*0 + 1] = N-1;
 
@@ -167,7 +185,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		++cnt;
 	}
 
-	free(Path);
+	mxFree(Path);
 
 	qsort(xy, cnt, 2*sizeof(int), xycompare);
 
@@ -207,8 +225,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		yy[i] = (yy[i]-yy[0])/(N-1);
 	}
 
-	free(xy);
-    free(q1L);
+	mxFree(xy);
+	mxFree(q1L);
 }
 
 int xycompare(const void *x1, const void *x2) {
@@ -216,8 +234,36 @@ int xycompare(const void *x1, const void *x2) {
 }
 
 double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl, double lam, int pen) {
-	double m = (j-l)/(double)(i-k), sqrtm = sqrt(m), E = 0, y, tmp, tmp_pen, ip, fp, q1dotq2;
+	double m = (j-l)/(double)(i-k), sqrtm = sqrt(m), E = 0, y, tmp, tmp_pen = 0, ip, fp, q1dotq2;
 	int x, idx, d, iL=i*scl, kL=k*scl, lL=l*scl;
+
+	// the penalty only depends on the slope m, so evaluate it once per call.
+	// pen == 0 leaves tmp_pen at 0, i.e. no penalty.
+	switch (pen) {
+		// roughness
+		case 1:
+			tmp_pen = (1-sqrtm)*(1-sqrtm);
+			break;
+		// l2gam
+		case 2:
+			tmp_pen = (m - 1)*(m - 1);
+			break;
+		// l2psi
+		case 3:
+			tmp_pen = (sqrtm - 1)*(sqrtm - 1);
+			break;
+		// geodesic
+		case 4:
+			q1dotq2 = sqrtm;
+			if (q1dotq2 > 1){
+				q1dotq2 = 1;
+			}
+			else if (q1dotq2 < -1){
+				q1dotq2 = -1;
+			}
+			tmp_pen = acos(q1dotq2)*acos(q1dotq2);
+			break;
+	}
 
 	for (x = kL; x <= iL; ++x) {
 		y = (x-kL)*m + lL;
@@ -225,30 +271,6 @@ double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j,
 		idx = (int)(ip + (fp >= 0.5));
 
 		for (d = 0; d < n; ++d) {
-			// roughness
-			if (pen == 1){
-				tmp_pen = (1-sqrtm)*(1-sqrtm);
-			}
-			// l2gam
-			if (pen == 2){
-				tmp_pen = (m - 1)*(m - 1);
-			}
-			// l2psi
-			if (pen == 3){
-				tmp_pen = (sqrtm - 1)*(sqrtm - 1);
-			}
-			// geodesic
-			if (pen == 4){
-				q1dotq2 = sqrtm;
-				if (q1dotq2 > 1){
-					q1dotq2 = 1;
-				}
-				else if (q1dotq2 < -1){
-					q1dotq2 = -1;
-				}
-				tmp_pen = acos(q1dotq2)*acos(q1dotq2);
-			}
-			
 			tmp = q1L[n*x + d] - sqrtm*q2L[n*idx + d];
 			E += (tmp*tmp + lam*tmp_pen);
 		}
@@ -281,7 +303,11 @@ void spline(double *D, const double *y, int n) {
 	int i;
 	double *a, *b, *c;
 
-	a = malloc(3*n*sizeof(double));
+	a = mxMalloc(3*n*sizeof(double));
+
+	if (!a)
+		mexErrMsgTxt("Out of memory.");
+
 	b = a + n;
 	c = b + n;
 
@@ -317,7 +343,7 @@ void spline(double *D, const double *y, int n) {
 
 	thomas(D, a, b, c, n);
 
-	free(a);
+	mxFree(a);
 }
 
 void lookupspline(double *t, int *k, double dist, double len, int n) {
