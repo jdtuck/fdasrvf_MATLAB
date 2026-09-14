@@ -44,15 +44,15 @@ const int Nbrs[NNBRS][2] = {
 
 
 int xycompare(const void *x1, const void *x2);
-double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl, double lam);
+double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl, double lam, int pen);
 void thomas(double *x, const double *a, const double *b, double *c, int n);
 void spline(double *D, const double *y, int n);
 void lookupspline(double *t, int *k, double dist, double len, int n);
 double evalspline(double t, const double D[2], const double y[2]);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-	int i, j, k, l, n, M, N, Eidx, Fidx, Ftmp, Fmin, Num, *Path, *xy, x, y, cnt;
-	const int scl=1;
+	int i, j, k, l, n, M, N, Eidx, Fidx, Ftmp, Fmin, Num, *Path, *xy, x, y, cnt, pen=1;
+	const int scl = 5;
 	const double *q1, *q2;
 	double *q1L, *q2L, *yy, *D1, *D2, *tmp1, *tmp2, *E, Etmp, Emin, t, a, b, lam = 0;
 
@@ -80,6 +80,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	q1 = mxGetPr(prhs[0]);
 	q2 = mxGetPr(prhs[1]);
     lam = mxGetScalar(prhs[2]);
+	pen = mxGetScalar(prhs[3]);
 
 	M = scl*(N-1)+1;
 	q1L = malloc(n*M*sizeof(double));
@@ -90,7 +91,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	D2 = D1 + 2*N;
 	tmp2 = D2 + N;
 
-	//mexPrintf("Begin spline interp...\n");
 	// compute spline interpolation 
 	// for each dimension
 	for (i = 0; i < n; ++i) {
@@ -100,14 +100,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 			tmp2[j] = q2[n*j + i];
 		}
 
-		//mexPrintf("Spline coeff for d=%d of q1\n",i);
 		spline(D1, tmp1, N);
-		//mexPrintf("Spline coeff for d=%d of q2\n",i);
 		spline(D2, tmp2, N);
 
 		// for each point in fine discretization
 		for (j = 0; j < M; ++j) {
-			//mexPrintf("Spline values at j=%d (out of M=%d)\n",j,M);
 			lookupspline(&t, &k, j/(M-1.0), 1, N);
 			q1L[n*j + i] = evalspline(t, D1+k, tmp1+k);
 			q2L[n*j + i] = evalspline(t, D2+k, tmp2+k);
@@ -129,7 +126,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	}
 	E[N*0 + 0] = 0;
 
-	//mexPrintf("Begin DP...\n");
 	for (j = 1; j < N; ++j) {
 		for (i = 1; i < N; ++i) {
 
@@ -141,7 +137,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 				l = j - Nbrs[Num][1];
 
 				if (k >= 0 && l >= 0) {
-					Etmp = E[N*l + k] + CostFn2(q1L,q2L,k,l,i,j,n,scl,lam);
+					Etmp = E[N*l + k] + CostFn2(q1L,q2L,k,l,i,j,n,scl,lam,pen);
 					if (Num == 0 || Etmp < Emin) {
 						Emin = Etmp;
 						Eidx = Num;
@@ -193,7 +189,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		y = xy[2*Fidx + 1];
 
 		if (x == i) {
-//			yy[i] = (y+1);
 			yy[i] = y;
 		}
 		else {
@@ -209,7 +204,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 			}
 		}
 
-//		yy[i] /= N;
 		yy[i] = (yy[i]-yy[0])/(N-1);
 	}
 
@@ -221,17 +215,40 @@ int xycompare(const void *x1, const void *x2) {
 	return (*(int *)x1 > *(int *)x2) - (*(int *)x1 < *(int *)x2);
 }
 
-double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl, double lam) {
-	double m = (j-l)/(double)(i-k), sqrtm = sqrt(m), E = 0, y, tmp, tmp_pen, ip, fp;
+double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl, double lam, int pen) {
+	double m = (j-l)/(double)(i-k), sqrtm = sqrt(m), E = 0, y, tmp, tmp_pen, ip, fp, q1dotq2;
 	int x, idx, d, iL=i*scl, kL=k*scl, lL=l*scl;
 
-    tmp_pen = (1-sqrtm)*(1-sqrtm);
 	for (x = kL; x <= iL; ++x) {
 		y = (x-kL)*m + lL;
 		fp = modf(y, &ip);
 		idx = (int)(ip + (fp >= 0.5));
 
 		for (d = 0; d < n; ++d) {
+			// roughness
+			if (pen == 1){
+				tmp_pen = (1-sqrtm)*(1-sqrtm);
+			}
+			// l2gam
+			if (pen == 2){
+				tmp_pen = (m - 1)*(m - 1);
+			}
+			// l2psi
+			if (pen == 3){
+				tmp_pen = (sqrtm - 1)*(sqrtm - 1);
+			}
+			// geodesic
+			if (pen == 4){
+				q1dotq2 = sqrtm;
+				if (q1dotq2 > 1){
+					q1dotq2 = 1;
+				}
+				else if (q1dotq2 < -1){
+					q1dotq2 = -1;
+				}
+				tmp_pen = acos(q1dotq2)*acos(q1dotq2);
+			}
+			
 			tmp = q1L[n*x + d] - sqrtm*q2L[n*idx + d];
 			E += (tmp*tmp + lam*tmp_pen);
 		}
