@@ -1,4 +1,6 @@
-# 3.6.X
+# 3.7.X
+
+# 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`
 * `optimum_reparam` takes a `penalty` argument, honored by the `DP`, `DP1` and `RBFGS` methods; when omitted each method keeps its previous penalty (`none` for `DP1`, `roughness` for `DP` and `RBFGS`)
 * replace vendored minFunc with Optimization Toolbox `fminunc`
