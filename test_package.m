@@ -64,6 +64,23 @@ for i = 1:numel(penalties)
     end
 end
 
+%% Test default warping penalty
+% Without a penalty argument each method keeps the penalty it applied before
+% the argument existed: none for DP1, roughness for DP and RBFGS.
+M = 101;
+timet = linspace(0,1,M);
+q1 = f_to_srvf(sin(2*pi*timet)', timet');
+q2 = f_to_srvf(sin(2*pi*timet.^1.6)', timet');
+defaults = {'DP1','none'; 'DP','roughness'; 'RBFGS','roughness'};
+for i = 1:size(defaults,1)
+    gam_default = optimum_reparam(q1, q2, timet', 0.5, defaults{i,1});
+    gam_named = optimum_reparam(q1, q2, timet', 0.5, defaults{i,1}, ...
+        0.0, 0.0, 7, defaults{i,2});
+    assert(isequal(gam_default, gam_named), ...
+        sprintf('Default penalty for %s is not %s', defaults{i,1}, ...
+        defaults{i,2}))
+end
+
 %% Test invalid warping penalty
 M = 101;
 q1 = sin(linspace(0,2*pi,M));
