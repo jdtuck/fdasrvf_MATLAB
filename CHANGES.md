@@ -1,6 +1,6 @@
 # 3.6.X
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`
-* `optimum_reparam` takes a `penalty` argument, honored by the `DP`, `DP1` and `RBFGS` methods
+* `optimum_reparam` takes a `penalty` argument, honored by the `DP`, `DP1` and `RBFGS` methods; when omitted each method keeps its previous penalty (`none` for `DP1`, `roughness` for `DP` and `RBFGS`)
 * replace vendored minFunc with Optimization Toolbox `fminunc`
 * replace vendored `LMFnlsq` sphere fitting with Optimization Toolbox `lsqnonlin`
 * replace vendored fdaM `basis` package with Curve Fitting Toolbox `spcol`/`augknt`
