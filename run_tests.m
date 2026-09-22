@@ -1,3 +1,3 @@
-suite = testsuite('test_package');
+suite = testsuite(pwd);
 runner = testrunner;
 results = run(runner,suite)
