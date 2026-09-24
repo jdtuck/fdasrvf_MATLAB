@@ -28,12 +28,10 @@ q2n=curve_to_q(beta2);
 
 % Compute geodesic distance
 q1dotq2=InnerProd_Q(q1,q2n);
-dist=acos(q1dotq2); 
+q1dotq2=min(max(q1dotq2,-1),1);
+dist=acos(q1dotq2);
 
 % Compute shooting vector
-if q1dotq2>1
-    q1dotq2=1;
-end
 u=q2n-q1dotq2*q1;
 normu=sqrt(InnerProd_Q(u,u));
 if normu>10^-4

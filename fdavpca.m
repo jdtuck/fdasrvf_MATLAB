@@ -177,7 +177,8 @@ classdef fdavpca
             qn = zeros(M, n);
             gam = zeros(M, n);
             for ii = 1:n
-                gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
+                gam(:, ii) = optimum_reparam(mq, q1(:, ii), obj.warp_data.time, ...
+                    obj.warp_data.lambda, obj.warp_data.method);
                 fn(:, ii) = warp_f_gamma(f(:, ii), gam(:, ii), obj.warp_data.time);
                 qn(:, ii) = f_to_srvf(fn(:, ii), obj.warp_data.time);
             end

@@ -28,7 +28,7 @@ end
 q2n = Find_Rotation_and_Seed_unique(q1,q2,reparamFlag,1);
 q2n = q2n/sqrt(InnerProd_Q(q2n,q2n));
 
-d = acos(InnerProd_Q(q1,q2n));
+d = acos(min(max(InnerProd_Q(q1,q2n),-1),1));
 if d < 0.0001
     v = zeros(size(q1));
 else

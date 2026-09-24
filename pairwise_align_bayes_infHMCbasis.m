@@ -238,9 +238,9 @@ if mcmcopts.nchains > 1
     binsize = mean(diff(time1));
     for i = 1:mcmcopts.nchains
         for j = i+1:mcmcopts.nchains
-            psi1 = sqrt(gradient(out.gamma(:,i),binsize));
-            psi2 = sqrt(gradient(out.gamma(:,j),binsize));
-            Dx(i,j) = acos(trapz(time1,psi1.*psi2));
+            psi1 = sqrt(max(gradient(out.gamma(:,i),binsize),0));
+            psi2 = sqrt(max(gradient(out.gamma(:,j),binsize),0));
+            Dx(i,j) = acos(min(max(trapz(time1,psi1.*psi2),-1),1));
         end
     end
     Dx = Dx + Dx.';

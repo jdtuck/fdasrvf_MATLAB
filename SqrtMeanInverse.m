@@ -19,7 +19,7 @@ time = linspace(0,1,T);
 psi = zeros(T,n);
 binsize = mean(diff(time));
 for i=1:n
-    psi(:,i) = sqrt(gradient(gam(:,i),binsize));
+    psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
 end
 
 %Find direction

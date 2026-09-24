@@ -129,7 +129,6 @@ classdef fdajpca
             
             % set up for fPCA in q-space
             mq_new = mean(qn,2);
-            id = round(length(time)/2);
             if srvf
                 m_new = sign(fn(id,:)).*sqrt(abs(fn(id,:)));  % scaled version
                 obj.mqn = [mq_new; mean(m_new)];
@@ -228,7 +227,8 @@ classdef fdajpca
             qn = zeros(M, n);
             gam = zeros(M, n);
             for ii = 1:n
-                gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
+                gam(:, ii) = optimum_reparam(mq, q1(:, ii), obj.warp_data.time, ...
+                    obj.warp_data.lambda, obj.warp_data.method);
                 fn(:, ii) = warp_f_gamma(f(:, ii), gam(:, ii), obj.warp_data.time);
                 qn(:, ii) = f_to_srvf(fn(:, ii), obj.warp_data.time);
             end
@@ -249,7 +249,7 @@ classdef fdajpca
                 if obj.log_der
                     out = gam_to_h(gam(:,i));
                 else
-                    psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
+                    psi(:, i) = sqrt(max(gradient(gam(:, i), binsize),0));
                     [out, ~] = inv_exp_map(obj.mu_psi, psi(:,i));
                 end
                 veca(:, i) = out;

@@ -730,7 +730,7 @@ function [qnew,gamma] = group_action_SRVF(q,h,M)
     [p,~]=size(q);
     gamma=cumtrapz(M.t,h.^2);
     gamma=gamma/gamma(end);
-    h=sqrt(gradient(gamma,M.t));
+    h=sqrt(max(gradient(gamma,M.t),0));
     if p>1
         h=repmat(h,p,1);
     end

@@ -97,7 +97,7 @@ classdef phbox
             dx = zeros(1,N);
             v = zeros(M,N);
             for i = 1:N
-                psi(:,i) = sqrt(gradient(gam(:,i),binsize));
+                psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
                 v(:,i) = inv_exp_map(obj.psi_median,psi(:,i));
                 dx(i) = sqrt(trapz(t,v(:,i).^2));
             end
@@ -126,8 +126,8 @@ classdef phbox
             obj.Q3_index = CR_50(maxloc_col);
             obj.Q1 = gam(:, obj.Q1_index);
             obj.Q3 = gam(:, obj.Q3_index);
-            Q1_psi = sqrt(gradient(obj.Q1,1/(M-1)))';
-            Q3_psi = sqrt(gradient(obj.Q3,1/(M-1)))';
+            Q1_psi = sqrt(max(gradient(obj.Q1,1/(M-1)),0))';
+            Q3_psi = sqrt(max(gradient(obj.Q3,1/(M-1)),0))';
             
             % identify phase quantiles
             [~, dx_ordering] = sort(dx);
@@ -153,8 +153,8 @@ classdef phbox
             obj.Q3a_index = CR_alpha(maxloc_col);
             obj.Q1a = gam(:, obj.Q1a_index);
             obj.Q3a = gam(:, obj.Q3a_index);
-            Q1a_psi = sqrt(gradient(obj.Q1a,1/(M-1)))';
-            Q3a_psi = sqrt(gradient(obj.Q3a,1/(M-1)))';
+            Q1a_psi = sqrt(max(gradient(obj.Q1a,1/(M-1)),0))';
+            Q3a_psi = sqrt(max(gradient(obj.Q3a,1/(M-1)),0))';
             
             % check quartile and quatnile going same direction
             tst = trapz(t, v(:,obj.Q1a_index).*v(:,obj.Q1_index));
@@ -215,12 +215,12 @@ classdef phbox
             Q1a_psi = Q1a_psi(:);
             Q3_psi = Q3_psi(:);
             Q3a_psi = Q3a_psi(:);
-            d1=acos(trapz(t,obj.psi_median.*Q1_psi));
-            d1a=acos(trapz(t,Q1_psi.*Q1a_psi));
-            dl=acos(trapz(t,Q1a_psi.*min_psi));
-            d3=acos(trapz(t,obj.psi_median.*Q3_psi));
-            d3a=acos(trapz(t,Q3_psi.*Q3a_psi));
-            du=acos(trapz(t,Q3a_psi.*max_psi));
+            d1=acos(min(max(trapz(t,obj.psi_median.*Q1_psi),-1),1));
+            d1a=acos(min(max(trapz(t,Q1_psi.*Q1a_psi),-1),1));
+            dl=acos(min(max(trapz(t,Q1a_psi.*min_psi),-1),1));
+            d3=acos(min(max(trapz(t,obj.psi_median.*Q3_psi),-1),1));
+            d3a=acos(min(max(trapz(t,Q3_psi.*Q3a_psi),-1),1));
+            du=acos(min(max(trapz(t,Q3a_psi.*max_psi),-1),1));
             part1=linspace(-d1-d1a-dl,-d1-d1a,100);
             part2=linspace(-d1-d1a,-d1,100);
             part3=linspace(-d1,0,100);

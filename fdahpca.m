@@ -152,7 +152,7 @@ classdef fdahpca
             end
             
             % coefficients
-            c = zeros(size(gam,1),no);
+            c = zeros(size(gam,2),no);
             obj.vm = mean(obj.vec,2);
             for jj = 1:no
                 for ii = 1:size(gam,2)
@@ -182,7 +182,8 @@ classdef fdahpca
             mq = obj.warp_data.mqn;
             gam = zeros(M, n);
             for ii = 1:n
-                gam(:, ii) = optimum_reparam(mq, obj.warp_data.time, q1(:, ii));
+                gam(:, ii) = optimum_reparam(mq, q1(:, ii), obj.warp_data.time, ...
+                    obj.warp_data.lambda, obj.warp_data.method);
             end
 
             no = size(obj.U,2);
@@ -196,13 +197,13 @@ classdef fdahpca
                 if obj.log_der
                     out = gam_to_h(gam(:,i));
                 else
-                    psi(:, i) = sqrt(gradietn(gam(:, i), binsize));
+                    psi(:, i) = sqrt(max(gradient(gam(:, i), binsize),0));
                     [out, ~] = inv_exp_map(mu_psi, psi(:,i));
                 end
                 vec1(:, i) = out;
             end
 
-            c = zeros(size(gam,1),no);
+            c = zeros(size(gam,2),no);
             for jj = 1:no
                 for ii = 1:size(gam,2)
                     c(ii,jj) = (vec1(:,ii)-obj.vm).'*obj.U(:,jj);

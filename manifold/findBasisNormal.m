@@ -1,24 +1,20 @@
 function basis = findBasisNormal(q)
 % Return basis vectors for normal space at q. basis is a cell array of size
+% n, one element per dimension of the curve
 
 [n,T]=size(q);
 
-f1=zeros(n,T);
-f2=zeros(n,T);
-for i=1:T
-    f1(:,i)=q(1,i)*q(:,i)/norm(q(:,i))+[norm(q(:,i));0];
-    f2(:,i)=q(2,i)*q(:,i)/norm(q(:,i))+[0;norm(q(:,i))];
-end
-h3=f1;
-h4=f2;
-integrandb3=zeros(1,T);
-integrandb4=zeros(1,T);
-for i=1:T
-    integrandb3(i)=q(:,i)'*h3(:,i);
-    integrandb4(i)=q(:,i)'*h4(:,i);
-end
-b3=h3-q*trapz(linspace(0,1,T),integrandb3);
-b4=h4-q*trapz(linspace(0,1,T),integrandb4);
+qnorm=sqrt(sum(q.^2,1));
+% guard against zero-velocity samples (q/|q| is taken as zero there)
+qunit=q./qnorm;
+qunit(:,qnorm==0)=0;
 
-basis{1}=b3;
-basis{2}=b4;
+% remove the component along q using the same inner product as the
+% tangent projection so the basis is exactly normal to q
+qq=InnerProd_Q(q,q);
+basis=cell(1,n);
+for j=1:n
+    h=repmat(q(j,:),n,1).*qunit;
+    h(j,:)=h(j,:)+qnorm;
+    basis{j}=h-q*InnerProd_Q(q,h)/qq;
+end

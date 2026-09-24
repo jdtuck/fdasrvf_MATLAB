@@ -35,11 +35,11 @@ if smooth
 else
     if parallel
         parfor i=1:n
-            psi(:,i) = sqrt(gradient(gam(:,i),binsize));
+            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
         end
     else
         for i=1:n
-            psi(:,i) = sqrt(gradient(gam(:,i),binsize));
+            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
         end
     end
 end

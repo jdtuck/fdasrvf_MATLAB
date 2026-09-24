@@ -1,4 +1,19 @@
 # 3.7.X
+* fix multinomial logistic class ordering: training and prediction now both use the standard softmax (`elastic_mlpcr_regression`, `elastic_mlogistic`), and remove the undefined `phi` call
+* fix `elastic_mlpcr_regression` crashes (undefined `N`/`N1`, overwritten `alpha`/`b`, nonexistent `LL`/`y_labels` properties, undefined `y_labels`/`option.y` in accuracy)
+* `align_fPCA` applies the final warping before centering so `fn`/`qn` match the returned `gam`
+* clip inner products to [-1,1] before every `acos`
+* clamp warping derivatives at zero before taking `sqrt`
+* guard zero-velocity samples in `findBasisNormal` and `Basis_Normal_A`; `findBasisNormal`/`projectTangent` now support curves in R^n and the normal basis is exactly orthogonal to q under `InnerProd_Q`
+* fix `Gram_Schmidt`, `Project_Tangent` and `Parallel_Transport_C` (previously errored)
+* guard zero distances in `SqrtMedian` and `time_warping_median`
+* `Find_Best_Rotation` chooses the reflection correction from `det(U*V')`
+* `predict(newdata)` in `elastic_pcr_regression`, `elastic_lpcr_regression` and `elastic_mlpcr_regression` now projects new data with the fPCA class's `project` method (previous inline projection errored); scores use matrix products instead of broadcasting row by column
+* fix `project` in `fdajpca`, `fdavpca`, `fdahpca` (`optimum_reparam` argument order, `gradietn` typo, alignment now uses the training `lambda`/`method`)
+* `fdahpca` coefficients have one row per function (were sized by the number of time points)
+* `fdajpca.calc_fpca` honors the `id` argument instead of always using the midpoint
+* `elastic_lpcr_regression` constructor was misnamed; fix undefined `N1`, `LL`, `y_labels` in the PCR regression classes; pass alignment options to `time_warping` as name-value arguments
+* add `RegressionPredictTest`
 
 # 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`

@@ -13,20 +13,22 @@ function fnew = Project_Tangent(f,q)
 % Output:
 % w_new: transmported w
 
-[n,~] = size(q);
-% Project w in T_q({\cal B}), ie the unit sphere
-w = f - InnerProd_Q(f,q)*q;
-% Form the basis for the Normal space of {\cal A}
+[n,T] = size(q);
+% Form the basis for the Normal space of {\cal A} and orthonormalize it
+% together with q so that the projection removes both the radial
+% direction of the unit sphere {\cal B} and the closure normals
 g = Basis_Normal_A(q);
 
 % Refer to the function Gram_Schmidt for the parameters
-Evorth = Gram_Schmidt(g,'InnerProd_Q');
-Ev = zeros(n,T,n);
+Evorth = Gram_Schmidt([{q}, g],'InnerProd_Q');
+nb = length(Evorth);
+Ev = zeros(n,T,nb);
 % Unpack Evorth structure
-for i = 1:n
+for i = 1:nb
     Ev(:,:,i) = Evorth{i};
 end
 
-for i = 1:n
-    fnew = w - InnerProd_Q(w,Ev(:,:,i))*Ev(:,:,i);
+fnew = f;
+for i = 1:nb
+    fnew = fnew - InnerProd_Q(f,Ev(:,:,i))*Ev(:,:,i);
 end

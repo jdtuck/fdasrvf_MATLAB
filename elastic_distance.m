@@ -37,5 +37,5 @@ dy = sqrt(trapz(time,(q1-qw).^2));
 
 time1 = linspace(0,1,length(time));
 binsize = mean(diff(time1));
-psi = sqrt(gradient(gam,binsize));
-dx = acos(trapz(time1,psi));
+psi = sqrt(max(gradient(gam,binsize),0));
+dx = acos(min(max(trapz(time1,psi),-1),1));

@@ -207,7 +207,7 @@ for r = 1:MaxItr
         end
     end
     
-    psi = sqrt(diff(gam.').*(M-1));
+    psi = sqrt(max(diff(gam.').*(M-1),0));
     mu = ones(1,M-1);
     Dx1 = zeros(1,N);
     for ii=1:N
@@ -220,13 +220,20 @@ for r = 1:MaxItr
     end
 end
 
-% last step with centering of gam
+% apply the final warping so the data matches the returned gam
 r = r+1;
+for k=1:N
+    f(:,k,r) = interp1(t, f(:,k,1), (t(end)-t(1)).*gam(k,:) + t(1))';
+    q(:,k,r) = f_to_srvf(f(:,k,r),t);
+end
+mq(:,r) = mean(q(:,:,r),2);
+
+% last step with centering of gam
 gamI = SqrtMeanInverse(gam);
 gamI_dev = gradient(gamI, 1/(M-1));
-mq(:,r+1) = interp1(t, mq(:,r), (t(end)-t(1)).*gamI + t(1))'.*sqrt(gamI_dev');
+mq(:,r+1) = interp1(t, mq(:,r), (t(end)-t(1)).*gamI + t(1))'.*sqrt(max(gamI_dev',0));
 for k = 1:N
-    q(:,k,r+1) = interp1(t, q(:,k,r), (t(end)-t(1)).*gamI + t(1))'.*sqrt(gamI_dev');
+    q(:,k,r+1) = interp1(t, q(:,k,r), (t(end)-t(1)).*gamI + t(1))'.*sqrt(max(gamI_dev',0));
     f(:,k,r+1) = interp1(t, f(:,k,r), (t(end)-t(1)).*gamI + t(1))';
     gam(k,:) = interp1(t, gam(k,:), (t(end)-t(1)).*gamI + t(1));
 end
