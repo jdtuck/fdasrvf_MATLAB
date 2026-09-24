@@ -14,6 +14,9 @@
 * `fdajpca.calc_fpca` honors the `id` argument instead of always using the midpoint
 * `elastic_lpcr_regression` constructor was misnamed; fix undefined `N1`, `LL`, `y_labels` in the PCR regression classes; pass alignment options to `time_warping` as name-value arguments
 * add `RegressionPredictTest`
+* `Find_Rotation_and_Seed_unique` estimates the warping from the rotated, seed-shifted curve it is applied to (was the original `q2`)
+* `fdacurve.karcher_mean` parallel branch projects the shooting vector onto the tangent space at the mean `mu` (was at the individual curve), matching the serial branch
+* add `KarcherResampleTest`, `ManifoldMapTest`, `SrvfConversionTest`, `WarpApplyTest` and `WarpingConversionTest`
 
 # 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`
