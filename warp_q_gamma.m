@@ -24,7 +24,7 @@ M = length(gamma);
 gam_dev = gradient(gamma, 1/(M-1));
 
 if spline
-    qo = interp1(t, q, (t(end)-t(1)).*gamma + t(1), 'makima')'.*sqrt(gam_dev');
+    qo = interp1(t, q, (t(end)-t(1)).*gamma + t(1), 'makima')'.*sqrt(max(gam_dev',0));
 else
-    qo = interp1(t, q, (t(end)-t(1)).*gamma + t(1))'.*sqrt(gam_dev');
+    qo = interp1(t, q, (t(end)-t(1)).*gamma + t(1))'.*sqrt(max(gam_dev',0));
 end

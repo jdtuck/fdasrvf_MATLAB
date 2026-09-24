@@ -2,15 +2,16 @@ function wproj = projectTangent(w,q,basis)
 
 w=w-InnerProd_Q(w,q)*q;
 % gram schmidt
-b1=basis{1};
-b2=basis{2};
+bo=cell(1,length(basis));
+for i=1:length(basis)
+    b=basis{i};
+    for j=1:i-1
+        b=b-InnerProd_Q(bo{j},b)*bo{j};
+    end
+    bo{i}=b/sqrt(InnerProd_Q(b,b));
+end
 
-basis1=b1/sqrt(InnerProd_Q(b1,b1));
-b2=b2-InnerProd_Q(basis1,b2)*basis1;
-basis2=b2/sqrt(InnerProd_Q(b2,b2));
-
-bo{1}=basis1;
-bo{2}=basis2;
-
-wproj=w-InnerProd_Q(w,bo{1})*bo{1}-InnerProd_Q(w,bo{2})*bo{2};
-
+wproj=w;
+for i=1:length(bo)
+    wproj=wproj-InnerProd_Q(w,bo{i})*bo{i};
+end

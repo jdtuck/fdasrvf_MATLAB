@@ -17,7 +17,7 @@ function [q2new,R] = Find_Best_Rotation(q1,q2)
 [n,~] = size(q1);
 A = q1*q2';
 [U,~,V] = svd(A);
-if det(A) > 0
+if det(U*V') > 0
     S = eye(n);
 else
     S = eye(n);

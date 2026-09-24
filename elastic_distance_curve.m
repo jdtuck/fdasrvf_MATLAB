@@ -59,5 +59,5 @@ end
 
 time1 = linspace(0,1,N);
 binsize = mean(diff(time1));
-psi = sqrt(gradient(gam,binsize));
-dx = acos(trapz(time1,psi));
+psi = sqrt(max(gradient(gam,binsize),0));
+dx = acos(min(max(trapz(time1,psi),-1),1));

@@ -18,7 +18,7 @@ function Y = Gram_Schmidt(X,varargin)
 
 epsilon = 0.000005;
 [~,cols] = size(X);
-Y = size(X);
+Y = cell(1,cols);
 i = 1;
 r = 1;
 Y{1} = X{1};
@@ -41,3 +41,4 @@ while( i <= cols )
         end
     end
 end
+Y = Y(1:i-1);

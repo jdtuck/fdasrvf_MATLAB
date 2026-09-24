@@ -263,8 +263,7 @@ classdef elastic_mlogistic
                         y_pred(ii,jj) = obj.alpha(jj) + trapz(newdata.time, q_tmp.' .* obj.beta(:, jj));
                     end
                 end
-                y_pred = phi(reshape(y_pred,1,n*m));
-                y_pred = reshape(y_pred,n,m);
+                y_pred = softmax_rows(y_pred);
                 [~, out.y_labels] = max(y_pred,[],2);
                 if (isempty(newdata.y))
                     out.PC = NaN;
@@ -296,8 +295,7 @@ classdef elastic_mlogistic
                     end
                 end
                 
-                y_pred = phi(reshape(y_pred,1,n*m));
-                y_pred = reshape(y_pred,n,m);
+                y_pred = softmax_rows(y_pred);
                 [~, out.y_labels] = max(y_pred,[],2);
                 PC = zeros(1,m);
                 cls_set = 1:m;
@@ -324,10 +322,8 @@ function nll = mlogit_loss(b, X, Y)
 M = size(X,2);
 B = reshape(b,M,m);
 Yhat = X * B;
-Yhat = Yhat - repmat(min(Yhat,[],2),1,m);
-Yhat = exp(-1.*Yhat);
-% l1-normalize
-Yhat = Yhat./repmat(sum(Yhat,2),1,m);
+% softmax, P(class j) proportional to exp(Yhat(:,j))
+Yhat = softmax_rows(Yhat);
 
 Yhat = Yhat .* Y;
 nll = sum(log(sum(Yhat,2)));
@@ -340,16 +336,11 @@ function grad = mlogit_gradient(b, X, Y)
 M = size(X,2);
 B = reshape(b,M,m);
 Yhat = X * B;
-Yhat = Yhat - repmat(min(Yhat,[],2),1,m);
-Yhat = exp(-1.*Yhat);
-% l1-normalize
-Yhat = Yhat./repmat(sum(Yhat,2),1,m);
+% softmax, P(class j) proportional to exp(Yhat(:,j))
+Yhat = softmax_rows(Yhat);
 
-Yhat1 = Yhat .* Y;
-Yhat1 = Yhat1./repmat(sum(Yhat1,2),1,m);
-Yhat = Yhat - Yhat1;
-grad = X.' * Yhat;
-grad = grad/(-1*N);
+grad = X.' * (Yhat - Y);
+grad = grad/N;
 grad = reshape(grad, M*m, 1);
 end
 
@@ -359,6 +350,12 @@ nll = mlogit_loss(b, X, Y);
 if nargout > 1
     g = mlogit_gradient(b, X, Y);
 end
+end
+
+function P = softmax_rows(Z)
+% row-wise softmax, P(i,j) = exp(Z(i,j)) / sum_k exp(Z(i,k))
+P = exp(Z - max(Z,[],2));
+P = P./sum(P,2);
 end
 
 function gamma = mlogit_warp_grad(alpha, beta, t, q, y)

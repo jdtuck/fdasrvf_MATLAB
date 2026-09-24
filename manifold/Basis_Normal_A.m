@@ -24,9 +24,13 @@ for t = 1:T
     qnorm(t) = norm(q(:,t));
 end
 
+% guard against zero-velocity samples (q/|q| is taken as zero there)
+qn = q./qnorm;
+qn(:,qnorm==0) = 0;
+
 delG = cell(1,n);
 for i = 1:n
-    tmp1 = repmat(q(i,:)./qnorm,n,1);
+    tmp1 = repmat(qn(i,:),n,1);
     tmp2 = repmat(qnorm,n,1);
     delG{i} = tmp1.*q + tmp2.*Ev(:,:,i);    
 end

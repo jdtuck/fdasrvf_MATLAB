@@ -76,7 +76,7 @@ for ctr = 0:end_idx
         q2new  = q2n;
         beta2new = beta2n;
     end
-    Ec = acos(InnerProd_Q(q1,q2new));
+    Ec = acos(min(max(InnerProd_Q(q1,q2new),-1),1));
     if Ec < minE
         Rbest = R;
         q2best = q2new;

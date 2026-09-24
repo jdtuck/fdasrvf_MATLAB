@@ -27,11 +27,11 @@ gam_dev = gradient(gamma, 1/T);
 
 if spline
     for j=1:n
-        qn(j,:) = interp1(linspace(0,1,T) , q(j,:), gamma, 'makima').*sqrt(gam_dev);
+        qn(j,:) = interp1(linspace(0,1,T) , q(j,:), gamma, 'makima').*sqrt(max(gam_dev,0));
     end
 else
     for j=1:n
-        qn(j,:) = interp1(linspace(0,1,T) , q(j,:), gamma, 'linear').*sqrt(gam_dev);
+        qn(j,:) = interp1(linspace(0,1,T) , q(j,:), gamma, 'linear').*sqrt(max(gam_dev,0));
     end
 end
 

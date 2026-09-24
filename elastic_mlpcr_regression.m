@@ -43,10 +43,10 @@ classdef elastic_mlpcr_regression
         warp_data % fdawarp with alignment data
         alpha % intercept
         b % coefficient vector
-        Loss % sum of squared errors
+        Loss % multinomial logistic loss
         pca % pca of aligned functional data
         n_classes % number of classes
-        ylabels % predicted labels
+        y_labels % predicted labels
         PC % probability of classification
         
     end
@@ -63,6 +63,7 @@ classdef elastic_mlpcr_regression
             obj.y = y(:);
             
             % code labels
+            N = length(obj.y);
             m = max(y);
             obj.n_classes = m;
             obj.Y = zeros(N,m);
@@ -139,7 +140,7 @@ classdef elastic_mlpcr_regression
             no = size(out_pca.coef,2);
             
             % LS using PCA basis
-            Phi = ones(N1,no+1);
+            Phi = ones(size(out_pca.coef,1),no+1);
             Phi(:,2:(no+1)) = out_pca.coef;
             % find alpha and beta using bfgs
             options = optimoptions("fminunc",Algorithm="quasi-newton", ...
@@ -148,14 +149,11 @@ classdef elastic_mlpcr_regression
             obj.b = fminunc(@(b) mlogit_optim(b,Phi,obj.Y),b0,options);
             
             % Compute the loss
-            obj.LL = mlogit_loss(obj.b,Phi,obj.Y);
+            obj.Loss = mlogit_loss(obj.b,Phi,obj.Y);
             
             B0 = reshape(obj.b, no+1, m);
             obj.alpha = B0(1,:);
             obj.b = B0(2:end,:);
-            
-            obj.alpha = obj.b(1);
-            obj.b = obj.b(2:end);
             obj.pca = out_pca;
         end
         
@@ -217,7 +215,7 @@ classdef elastic_mlpcr_regression
                         psi = zeros(TT,n);
                         binsize = mean(diff(obj.time));
                         for i = 1:n
-                            psi(:,i) = sqrt(gradient(gam(:,i),binsize));
+                            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
                         end
                         
                         for i = 1:n
@@ -248,7 +246,7 @@ classdef elastic_mlpcr_regression
                         psi = zeros(TT,n);
                         binsize = mean(diff(objtime));
                         for i = 1:n
-                            psi(:,i) = sqrt(gradient(gam(:,i),binsize));
+                            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
                         end
                         
                         for i = 1:n
@@ -273,27 +271,12 @@ classdef elastic_mlpcr_regression
                     end
                 end
                 
+                y_pred = softmax_rows(y_pred);
+                [~, obj.y_labels] = max(y_pred,[],2);
                 if (isempty(newdata.y))
-                    y_pred = phi(reshape(y_pred,1,n*m));
-                    y_pred = reshape(y_pred,n,m);
-                    [~, obj.y_labels] = max(y_pred,[],2);
                     obj.PC = NaN;
                 else
-                    y_pred = phi(reshape(y_pred,1,n*m));
-                    y_pred = reshape(y_pred,n,m);
-                    [~, obj.y_labels] = max(y_pred,[],2);
-                    obj.PC = zeros(1,m);
-                    cls_set = 1:m;
-                    for ii = 1:m
-                        cls_sub = setdiff(cls_set,ii);
-                        TP = sum(obj.y(obj.y_labels == ii) == ii);
-                        FP = sum(obj.y(ismember(obj.y_labels,cls_sub)) == ii);
-                        TN = sum(obj.y(ismember(obj.y_labels,cls_sub)) == ...
-                            y_labels(ismember(obj.y_labels,cls_sub)));
-                        FN = sum(ismember(obj.y(obj.y_labels==ii), cls_sub));
-                        obj.PC(ii) = (TP+TN)/(TP+FP+FN+TN);
-                    end
-                    obj.PC = sum(option.y == y_labels)./length(y_labels);
+                    obj.PC = sum(newdata.y(:) == obj.y_labels)./length(obj.y_labels);
                 end
             else
                 n = size(obj.pca.coef,1);
@@ -304,21 +287,9 @@ classdef elastic_mlpcr_regression
                     end
                 end
                 
-                y_pred = phi(reshape(y_pred,1,n*m));
-                y_pred = reshape(y_pred,n,m);
+                y_pred = softmax_rows(y_pred);
                 [~, obj.y_labels] = max(y_pred,[],2);
-                obj.PC = zeros(1,m);
-                cls_set = 1:m;
-                for ii = 1:m
-                    cls_sub = setdiff(cls_set,ii);
-                    TP = sum(obj.y(obj.y_labels == ii) == ii);
-                    FP = sum(obj.y(ismember(obj.y_labels,cls_sub)) == ii);
-                    TN = sum(obj.y(ismember(obj.y_labels,cls_sub)) == ...
-                        y_labels(ismember(obj.y_labels,cls_sub)));
-                    FN = sum(ismember(obj.y(obj.y_labels==ii), cls_sub));
-                    obj.PC(ii) = (TP+TN)/(TP+FP+FN+TN);
-                end
-                obj.PC = sum(option.y == y_labels)./length(y_labels);
+                obj.PC = sum(obj.y == obj.y_labels)./length(obj.y_labels);
             end
         end
     end
@@ -332,10 +303,8 @@ function nll = mlogit_loss(b, X, Y)
 M = size(X,2);
 B = reshape(b,M,m);
 Yhat = X * B;
-Yhat = Yhat - repmat(min(Yhat,[],2),1,m);
-Yhat = exp(-1.*Yhat);
-% l1-normalize
-Yhat = Yhat./repmat(sum(Yhat,2),1,m);
+% softmax, P(class j) proportional to exp(Yhat(:,j))
+Yhat = softmax_rows(Yhat);
 
 Yhat = Yhat .* Y;
 nll = sum(log(sum(Yhat,2)));
@@ -348,16 +317,11 @@ function grad = mlogit_gradient(b, X, Y)
 M = size(X,2);
 B = reshape(b,M,m);
 Yhat = X * B;
-Yhat = Yhat - repmat(min(Yhat,[],2),1,m);
-Yhat = exp(-1.*Yhat);
-% l1-normalize
-Yhat = Yhat./repmat(sum(Yhat,2),1,m);
+% softmax, P(class j) proportional to exp(Yhat(:,j))
+Yhat = softmax_rows(Yhat);
 
-Yhat1 = Yhat .* Y;
-Yhat1 = Yhat1./repmat(sum(Yhat1,2),1,m);
-Yhat = Yhat - Yhat1;
-grad = X.' * Yhat;
-grad = grad/(-1*N);
+grad = X.' * (Yhat - Y);
+grad = grad/N;
 grad = reshape(grad, M*m, 1);
 end
 
@@ -367,5 +331,11 @@ nll = mlogit_loss(b, X, Y);
 if nargout > 1
     g = mlogit_gradient(b, X, Y);
 end
+end
+
+function P = softmax_rows(Z)
+% row-wise softmax, P(i,j) = exp(Z(i,j)) / sum_k exp(Z(i,k))
+P = exp(Z - max(Z,[],2));
+P = P./sum(P,2);
 end
 

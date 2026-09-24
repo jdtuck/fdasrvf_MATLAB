@@ -200,7 +200,7 @@ classdef elastic_lpcr_regression
                         psi = zeros(TT,n);
                         binsize = mean(diff(obj.time));
                         for i = 1:n
-                            psi(:,i) = sqrt(gradient(gam(:,i),binsize));
+                            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
                         end
                         
                         for i = 1:n
@@ -231,7 +231,7 @@ classdef elastic_lpcr_regression
                         psi = zeros(TT,n);
                         binsize = mean(diff(objtime));
                         for i = 1:n
-                            psi(:,i) = sqrt(gradient(gam(:,i),binsize));
+                            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
                         end
                         
                         for i = 1:n

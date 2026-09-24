@@ -16,7 +16,7 @@ function X = geodesic_sphere_Full(q1,q2,stp,closed)
 % Output:
 % X: matrix of geodsic samples
 
-theta = acos(InnerProd_Q(q1,q2));
+theta = acos(min(max(InnerProd_Q(q1,q2),-1),1));
 [n,T] = size(q1);
 X = zeros(n,T,stp+1);
 if theta > 0.0001

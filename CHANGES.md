@@ -1,4 +1,13 @@
 # 3.7.X
+* fix multinomial logistic class ordering: training and prediction now both use the standard softmax (`elastic_mlpcr_regression`, `elastic_mlogistic`), and remove the undefined `phi` call
+* fix `elastic_mlpcr_regression` crashes (undefined `N`/`N1`, overwritten `alpha`/`b`, nonexistent `LL`/`y_labels` properties, undefined `y_labels`/`option.y` in accuracy)
+* `align_fPCA` applies the final warping before centering so `fn`/`qn` match the returned `gam`
+* clip inner products to [-1,1] before every `acos`
+* clamp warping derivatives at zero before taking `sqrt`
+* guard zero-velocity samples in `findBasisNormal` and `Basis_Normal_A`; `findBasisNormal`/`projectTangent` now support curves in R^n and the normal basis is exactly orthogonal to q under `InnerProd_Q`
+* fix `Gram_Schmidt`, `Project_Tangent` and `Parallel_Transport_C` (previously errored)
+* guard zero distances in `SqrtMedian` and `time_warping_median`
+* `Find_Best_Rotation` chooses the reflection correction from `det(U*V')`
 
 # 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`

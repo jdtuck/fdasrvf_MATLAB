@@ -182,13 +182,13 @@ function [q20,gam0] = initialize(q1,q2,M,options)
                 q1dn=spline(M.t,q1,tdp);
                 q2dn=spline(M.t,q2,tdp);
                 gamdp=DynamicProgrammingQ(q2dn,q1dn,0,1);
-                hdp=sqrt(gradient(gamdp,1/(Tdp-1)));
+                hdp=sqrt(max(gradient(gamdp,1/(Tdp-1)),0));
                 h0=spline(tdp,hdp,t); % resample 
                 [q20,gam0]=group_action_SRVF(q2,h0,M);
             else
                 gam0=DynamicProgrammingQ(q2,q1,0,1);
                 [n,~]=size(q2);
-                q20=spline(t,q2,gam0).*repmat(sqrt(gradient(gam0,1/(T-1))),n,1);
+                q20=spline(t,q2,gam0).*repmat(sqrt(max(gradient(gam0,1/(T-1)),0)),n,1);
             end
            
         case 'sgd'

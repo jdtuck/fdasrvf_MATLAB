@@ -361,7 +361,7 @@ classdef fdawarp
                 f1(:,:,r+1) = f_temp;
 
                 ds(r+1) = sum(simps(obj.time, (mq(:,r)*ones(1,N)-q(:,:,r+1)).^2)) + ...
-                    lambda*sum(simps(obj.time, (1-sqrt(gam_dev')).^2));
+                    lambda*sum(simps(obj.time, (1-sqrt(max(gam_dev',0))).^2));
 
                 % Minimization Step
                 % compute the mean of the matched function
@@ -899,10 +899,12 @@ classdef fdawarp
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),t,true,option.spl);
-                        v = q_temp(:,k) - mq_c
+                        v = q_temp(:,k) - mq_c;
                         d = sqrt(trapz(t, v.*v));
-                        vtil(:,k) = v/d;
-                        dtil(k) = 1/d;
+                        if d > eps
+                            vtil(:,k) = v/d;
+                            dtil(k) = 1/d;
+                        end
                     end
                 else
                     for k = 1:N
@@ -914,14 +916,16 @@ classdef fdawarp
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),t,true,option.spl);
                         v = q_temp(:,k) - mq_c;
                         d = sqrt(trapz(t, v.*v));
-                        vtil(:,k) = v/d;
-                        dtil(k) = 1/d;
+                        if d > eps
+                            vtil(:,k) = v/d;
+                            dtil(k) = 1/d;
+                        end
                     end
                 end
                 q(:,:,r+1) = q_temp;
                 f1(:,:,r+1) = f_temp;
 
-                ds_tmp = sqrt(sum(simps(t,(q(:,:,r+1)-mq(:,r)*ones(1,N)).^2)))+lambda*sum(simps(t,(1-sqrt(gam_dev')).^2));
+                ds_tmp = sqrt(sum(simps(t,(q(:,:,r+1)-mq(:,r)*ones(1,N)).^2)))+lambda*sum(simps(t,(1-sqrt(max(gam_dev',0))).^2));
                 if (isreal(ds_tmp))
                     ds(r+1) = ds_tmp;
                 else
@@ -932,7 +936,11 @@ classdef fdawarp
                 % Minimization Step
                 % compute the mean of the matched function
                 stp = .3;
-                vbar = sum(vtil,2)*sum(dtil)^(-1);
+                if any(dtil)
+                    vbar = sum(vtil,2)*sum(dtil)^(-1);
+                else
+                    vbar = zeros(M,1);
+                end
                 mq(:,r+1) = mq(:,r) + stp*vbar;
                 mf(:,r+1) = median(f1(1,:,1)) + cumtrapz(t, mq(:,r+1).*abs(mq(:,r+1)));
 
@@ -1213,11 +1221,11 @@ classdef fdawarp
                 % compute the psi-function
                 psi1 = zeros(n,size(rgam,2));
                 len = zeros(1,n);
-                ip = zeors(1,n);
+                ip = zeros(1,n);
                 for i = 1:n
                     psi1(i,:) = gradient(rgam(i,:), binsize)./sqrt(abs(gradient(rgam(i,:), binsize))+eps);
                     ip(i) = ones(1,M)*psi1(i,:)'/M;
-                    len(i) = acos(ones(1,M)*psi1(i,:)'/M);
+                    len(i) = acos(min(max(ip(i),-1),1));
                 end
                 [~, seq2] = sort(len);
 
@@ -1238,7 +1246,7 @@ classdef fdawarp
                 for i = 1:n
                     psi1(i,:) = gradient(rgam(i,:), binsize)./sqrt(abs(gradient(rgam(i,:), binsize))+eps);
                     ip(i) = ones(1,M)*psi1(i,:)'/M;
-                    len(i) = acos(ones(1,M)*psi1(i,:)'/M);
+                    len(i) = acos(min(max(ip(i),-1),1));
                 end
 
                 % combine x-variability and y-variability
