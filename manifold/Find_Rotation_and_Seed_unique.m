@@ -60,7 +60,7 @@ for ctr = 0:end_idx
     if(reparamFlag)
         
         if norm(q1-q2n,'fro') > 0.0001
-            gam = optimum_reparam_curve(q2,q1,lam,method);
+            gam = optimum_reparam_curve(q2n,q1,lam,method);
             gamI = invertGamma(gam);
             gamI = (gamI-gamI(1))/(gamI(end)-gamI(1));
             q2new = warp_srvf_gamma(q2n,gamI,scale);
