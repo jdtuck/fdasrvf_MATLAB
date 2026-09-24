@@ -270,7 +270,7 @@ classdef fdacurve
                         
                         % Project to tangent space of manifold to obtain v_i
                         if obj.closed
-                            v1(:,:,i)=projectTangent(w,q1,obj.basis);
+                            v1(:,:,i)=projectTangent(w,mu,obj.basis);
                         else
                             v1(:,:,i)=w;
                         end
