@@ -41,15 +41,15 @@ classdef elastic_lpcr_regression
         warp_data % fdawarp with alignment data
         alpha % intercept
         b % coefficient vector
-        Loss % sum of squared errors
+        Loss % logistic loss
         PC % probability of classification
         pca % pca of aligned functional data
-        ylabels % predicted labels
+        y_labels % predicted labels
         
     end
     
     methods
-        function obj = elastic_pcr_regression(f, y, time)
+        function obj = elastic_lpcr_regression(f, y, time)
             %elastic_regression Construct an instance of this class
             % Input:
             %   f: (M,N): matrix defining N functions of M samples
@@ -111,7 +111,10 @@ classdef elastic_lpcr_regression
             
             %% Align Data
             obj.warp_data = fdawarp(obj.f,obj.time);
-            obj.warp_data = obj.warp_data.time_warping(0, option);
+            obj.warp_data = obj.warp_data.time_warping(0, ...
+                parallel=option.parallel, closepool=option.closepool, ...
+                smooth=option.smooth, sparam=option.sparam, ...
+                method=option.method, MaxItr=option.MaxItr);
             
             switch method
                 case 'combined'
@@ -127,7 +130,7 @@ classdef elastic_lpcr_regression
             no = size(out_pca.coef,2);
             
             % LS using PCA basis
-            Phi = ones(N1,no+1);
+            Phi = ones(size(out_pca.coef,1),no+1);
             Phi(:,2:(no+1)) = out_pca.coef;
             % find alpha and beta using bfgs
             options = optimoptions("fminunc",Algorithm="quasi-newton", ...
@@ -136,7 +139,7 @@ classdef elastic_lpcr_regression
             obj.b = fminunc(@(b) logit_optim(b,Phi,obj.y),b0,options);
             
             % Compute the loss
-            obj.LL = logit_loss(obj.b,Phi,obj.y);
+            obj.Loss = logit_loss(obj.b,Phi,obj.y);
 
             obj.alpha = obj.b(1);
             obj.b = obj.b(2:end);
@@ -155,7 +158,7 @@ classdef elastic_lpcr_regression
             % Input:
             % newdata - struct containing new data for prediction
             % newdata.f - (M,N) matrix of functions
-            % newdata.time - vector of time points
+            % newdata.time - vector of time points (must match the training grid)
             % newdata.y - truth if available
             % newdata.smooth - smooth data if needed
             % newdata.sparam - number of times to run filter
@@ -166,124 +169,28 @@ classdef elastic_lpcr_regression
             % structure with fields:
             % y_labels: predicted labels
             % PC: probability of classficiation if truth available
-            omethod = obj.warp_data.method;
-            lambda = obj.warp_data.lambda;
-            M = length(obj.time);
             if (nargin>1)
                 if (newdata.smooth)
                     newdata.f = smooth_data(newdata.f,newdata.sparam);
                 end
-                q1 = f_to_srvf(newdata.f,newdata.time);
-                n = size(q1,2);
-                y_pred = zeros(n,1);
-                mq = obj.warp_data.mqn;
-                fn = zeros(M,n);
-                qn = zeros(M,n);
-                gam = zeros(M,n);
-                for ii = 1:n
-                    gam(:,ii) = optimum_reparam(mq,q1(:,ii),obj.time,lambda,omethod);
-                    fn(:,ii) = warp_f_gamma(newdata.f(:,ii),gam(:,ii),obj.time);
-                    qn(:,ii) = f_to_srvf(fn(:,ii),obj.time);
-                end
-                m_new = sign(fn(obj.pca.id,:)).*sqrt(abs(fn(obj.pca.id,:)));
-                qn1 = [qn; m_new];
-                U = obj.pca.U;
-                no = size(U,2);
-                
-                switch class(obj.pca)
-                    case 'fdajpca'
-                        C = obj.pca.C;
-                        TT = length(obj.time);
-                        mu_g = obj.pca.mu_g;
-                        mu_psi = obj.pca.mu_psi;
-                        vec = zeros(M,n);
-                        psi = zeros(TT,n);
-                        binsize = mean(diff(obj.time));
-                        for i = 1:n
-                            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
-                        end
-                        
-                        for i = 1:n
-                            vec(:,i) = inv_exp_map(mu_psi, psi(:,i));
-                        end
-                        
-                        g = [qn1; C*vec];
-                        a = zeros(n,no);
-                        for i = 1:n
-                            for j = 1:no
-                                a(i,j) = (g(:,i)-mu_g)*U(:,j);
-                            end
-                        end
-                        
-                    case 'fdavpca'
-                        a = matrix(0,n,no);
-                        for k = 1:no
-                            for i = 1:n
-                                a(i,k) = (qn1(:,i)-obj.pca.mqn)*U(:,k);
-                            end
-                        end
-                        
-                    case 'fdahpca'
-                        a = zeros(n,no);
-                        mu_psi = model.pca.mu;
-                        vec = zeros(M,n);
-                        TT = length(obj.time);
-                        psi = zeros(TT,n);
-                        binsize = mean(diff(objtime));
-                        for i = 1:n
-                            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
-                        end
-                        
-                        for i = 1:n
-                            vec(:,i) = inv_exp_map(mu_psi, psi(:,i));
-                        end
-                        
-                        vm = mean(obj.pca.vec,2);
-                        
-                        for k = 1:no
-                            for i = 1:n
-                                a(i,k) = sum((vec(:,i)-vm).*U(:,k));
-                            end
-                        end
-                        
-                    otherwise
-                        error('invalid pca class');
-                end
-                
-                for ii = 1:n
-                    y_pred(ii) = obj.alpha + sum(a(ii,:).*obj.b);
-                end
+                % align and project the new data onto the fPCA basis the
+                % model was fit on
+                new_pca = obj.pca.project(newdata.f);
+                a = new_pca.new_coef(:,1:size(obj.pca.coef,2));
+                y_pred = phi(obj.alpha + a*obj.b);
+                obj.y_labels = ones(size(y_pred));
+                obj.y_labels(y_pred < 0.5) = -1;
                 
                 if (isempty(newdata.y))
-                    y_pred = phi(y_pred);
-                    obj.y_labels = ones(1,n);
-                    obj.y_labels(y_pred < 0.5) = -1;
                     obj.PC = NaN;
                 else
-                    y_pred = phi(y_pred);
-                    obj.y_labels = ones(1,n);
-                    obj.y_labels(y_pred < 0.5) = -1;
-                    TP = sum(newdata.y(y_labels == 1) == 1);
-                    FP = sum(newdata.y(y_labels == -1) == 1);
-                    TN = sum(newdata.y(y_labels == -1) == -1);
-                    FN = sum(newdata.y(y_labels == 1) == -1);
-                    obj.PC = (TP+TN)/(TP+FP+FN+TN);
+                    obj.PC = sum(newdata.y(:) == obj.y_labels)./length(obj.y_labels);
                 end
             else
-                n = size(obj.pca.coef,1);
-                y_pred = zeros(n,1);
-                for ii = 1:n
-                    y_pred(ii) = obj.alpha + obj.pca.coef(ii,:)*obj.b;
-                end
-                
-                y_pred = phi(y_pred);
-                obj.y_labels = ones(1,n);
+                y_pred = phi(obj.alpha + obj.pca.coef*obj.b);
+                obj.y_labels = ones(size(y_pred));
                 obj.y_labels(y_pred < 0.5) = -1;
-                TP = sum(obj.y(y_labels == 1) == 1);
-                FP = sum(obj.y(y_labels == -1) == 1);
-                TN = sum(obj.y(y_labels == -1) == -1);
-                FN = sum(obj.y(y_labels == 1) == -1);
-                obj.PC = (TP+TN)/(TP+FP+FN+TN);
+                obj.PC = sum(obj.y == obj.y_labels)./length(obj.y_labels);
             end
         end
     end
