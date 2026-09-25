@@ -14,6 +14,10 @@
 * `fdajpca.calc_fpca` honors the `id` argument instead of always using the midpoint
 * `elastic_lpcr_regression` constructor was misnamed; fix undefined `N1`, `LL`, `y_labels` in the PCR regression classes; pass alignment options to `time_warping` as name-value arguments
 * add `RegressionPredictTest`
+* `time_warping` and `time_warping_median`: `fn`/`qn` are now the original data warped by the returned `gam` (previously they kept the preceding iteration's alignment while `gam` came from the final matching step); `mqn` is the mean of `qn` for `time_warping`
+* `time_warping_median` honors `smooth` (the SRVFs were computed from the unsmoothed data)
+* `fdahpca.calc_fpca` with `log_der = true` returned all-NaN `gam_pca` (a row vector was passed to `h_to_gam`); the direction buffer is now sized by `stds` and `no`
+* add `TimeWarpingConsistencyTest`
 
 # 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`

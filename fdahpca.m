@@ -130,13 +130,13 @@ classdef fdahpca
             % TFPCA
             obj.psi_pca = zeros(length(obj.stds),length(obj.mu),no);
             obj.gam_pca = zeros(length(obj.stds),length(obj.mu),no);
-            v = zeros(5,length(obj.mu),3);
+            v = zeros(length(obj.stds),length(obj.mu),no);
             for j=1:no      % three components
                 for k=1:length(obj.stds)   % -2, -1, 0, 1, 2 std from the mean
                     v(k,:,j) = obj.stds(k)*sqrt(Sig(j))*obj.U(:,j)';
                     if obj.log_der
                         obj.psi_pca(k,:,j) = v(k,:,j);
-                        gam0 = h_to_gam(obj.psi_pca(k,:,j));
+                        gam0 = h_to_gam(obj.psi_pca(k,:,j).').';   % column: a row is read as T one-sample curves
                     else
                         vn = norm(v(k,:,j))/sqrt(T);
                         if vn < 0.0001
