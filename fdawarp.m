@@ -390,12 +390,16 @@ classdef fdawarp
                 end
             end
             gamI_o = SqrtMeanInverse(gam_o');
-            mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,obj.time);
+            % Center gam, then warp the original data once by the final
+            % gam, so fn = f o gam and mqn = mean(qn) hold exactly.
+            % (Previously fn/qn kept the previous iteration's alignment
+            % while gam came from this final matching step.)
             for k = 1:N
-                q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,obj.time);
-                f1(:,k,r+1) = warp_f_gamma(f1(:,k,r),gamI_o,obj.time);
                 gam_o(k,:) = interp1(obj.time, gam_o(k,:), (obj.time(end)-obj.time(1)).*gamI_o + obj.time(1));
+                f1(:,k,r+1) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
+                q(:,k,r+1) = f_to_srvf(f1(:,k,r+1),obj.time,true,option.spl);
             end
+            mq(:,r+1) = mean(q(:,:,r+1),2);
 
             %% Aligned data & stats
             obj.fn = f1(:,:,r+1);
@@ -842,7 +846,7 @@ classdef fdawarp
             end
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(obj.f,t,true,option.spl);
+            q = f_to_srvf(f1,t,true,option.spl);
 
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
@@ -967,11 +971,15 @@ classdef fdawarp
             end
 
             gamI_o = SqrtMeanInverse(gam_o');
+            % Center gam and the median template, then warp the original
+            % data once by the final gam, so fn = f o gam holds exactly.
+            % (Previously fn/qn kept the previous iteration's alignment
+            % while gam came from this final matching step.)
             mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,obj.time);
             for k = 1:N
-                q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,obj.time);
-                f1(:,k,r+1) = warp_f_gamma(f1(:,k,r),gamI_o,obj.time);
                 gam_o(k,:) = warp_f_gamma(gam_o(k,:),gamI_o,obj.time);
+                f1(:,k,r+1) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
+                q(:,k,r+1) = f_to_srvf(f1(:,k,r+1),obj.time,true,option.spl);
             end
 
             %% Aligned data & stats
