@@ -10,7 +10,7 @@ classdef SrvfConversionTest < matlab.unittest.TestCase
 
     methods (Test)
         function testFtoSrvfRoundTrip(testCase)
-            % f -> q -> f recovers the original (smooth=false, gradient path)
+            % f -> q -> f recovers the original (smooth=false, spline path)
             t = linspace(0, 1, 101)';
             f = sin(2*pi*t);
             q = f_to_srvf(f, t, false);
@@ -19,16 +19,58 @@ classdef SrvfConversionTest < matlab.unittest.TestCase
                 'f_to_srvf/srvf_to_f round-trip failed');
         end
 
-        function testFtoSrvfSmoothFalseVsGradient(testCase)
-            % smooth=false branch must match the manual SRVF formula exactly
+        function testFtoSrvfRoundTripComplex(testCase)
+            % Oscillatory, sharp and multi-column functions round-trip
+            % accurately (errors relative to the range of f)
+            t = linspace(0, 1, 401)';
+            f = [sin(2*pi*10*t), sin(2*pi*30*t) + 0.3*t, ...
+                exp(-200*(t-0.5).^2), t.^3.*sin(40*t)];
+            tol = [1e-4, 2e-3, 1e-5, 1e-4];
+            q = f_to_srvf(f, t, false);
+            frec = srvf_to_f(q, t, f(1,:));
+            for k = 1:size(f,2)
+                err = max(abs(frec(:,k) - f(:,k))) / (max(f(:,k)) - min(f(:,k)));
+                testCase.verifyLessThan(err, tol(k), ...
+                    sprintf('round-trip error too large for column %d', k));
+            end
+        end
+
+        function testFtoSrvfRoundTripConvergence(testCase)
+            % Refining the grid reduces the round-trip error (>= 3rd order)
+            err = zeros(1,2);
+            for j = 1:2
+                t = linspace(0, 1, 100*2^(j-1)+1)';
+                f = sin(2*pi*5*t);
+                q = f_to_srvf(f, t, false);
+                err(j) = max(abs(srvf_to_f(q, t, f(1)) - f));
+            end
+            testCase.verifyGreaterThan(err(1)/err(2), 8, ...
+                'round-trip error does not converge fast enough');
+        end
+
+        function testFtoSrvfSmoothFalseMatchesSplineDerivative(testCase)
+            % smooth=false must match the interpolating spline derivative
             t = linspace(0, 1, 101)';
             f = sin(2*pi*t) + 0.5*t.^2;
             q = f_to_srvf(f, t, false);
-            binsize = mean(diff(t));
-            fy = gradient(f, binsize);
+            fy = fnval(fnder(csapi(t, f)), t);
             qexp = fy ./ sqrt(abs(fy) + eps);
             testCase.verifyLessThan(max(abs(q(:) - qexp(:))), 1e-12, ...
-                'f_to_srvf smooth=false does not match gradient formula');
+                'f_to_srvf smooth=false does not match spline derivative');
+            % and approximates the true SRSF of f
+            fyt = 2*pi*cos(2*pi*t) + t;
+            qt = fyt ./ sqrt(abs(fyt) + eps);
+            testCase.verifyLessThan(max(abs(q(:) - qt)), 1e-2, ...
+                'f_to_srvf smooth=false inaccurate versus analytic SRSF');
+        end
+
+        function testSrvfToFStartsAtFo(testCase)
+            % srvf_to_f honors the initial value of each function
+            t = linspace(0, 1, 101)';
+            q = [ones(101,1), -ones(101,1)];
+            f = srvf_to_f(q, t, [2, -3]);
+            testCase.verifyEqual(f(1,:), [2, -3], 'AbsTol', 1e-12);
+            testCase.verifyEqual(f(end,:), [3, -4], 'AbsTol', 1e-10);
         end
 
         function testFtoSrvfConstantIsZero(testCase)
