@@ -1,4 +1,5 @@
 # 3.7.X
+* `f_to_srvf` with `smooth=false` now differentiates the interpolating cubic spline (the `spl` argument is ignored), and `srvf_to_f` integrates the spline of `q|q|` instead of using `cumtrapz`; the round trip `f -> q -> f` is now O(h^4) accurate (previously O(h^2) and poor for oscillatory functions). `smooth` now defaults to `false` package-wide (the interpolating spline); the alignment classes (`fdawarp`, `pcaTB`, `bootTB`, ...) honor `option.spl` (default `true`) and use the smoothing spline only when `option.spl = false`. `smooth=true` remains lossy by design
 * fix multinomial logistic class ordering: training and prediction now both use the standard softmax (`elastic_mlpcr_regression`, `elastic_mlogistic`), and remove the undefined `phi` call
 * fix `elastic_mlpcr_regression` crashes (undefined `N`/`N1`, overwritten `alpha`/`b`, nonexistent `LL`/`y_labels` properties, undefined `y_labels`/`option.y` in accuracy)
 * `align_fPCA` applies the final warping before centering so `fn`/`qn` match the returned `gam`
