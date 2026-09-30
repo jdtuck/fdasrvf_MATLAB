@@ -64,6 +64,15 @@ classdef SrvfConversionTest < matlab.unittest.TestCase
                 'f_to_srvf smooth=false inaccurate versus analytic SRSF');
         end
 
+        function testFtoSrvfDefaultIsInterpolating(testCase)
+            % The default uses the interpolating spline (round-trip safe);
+            % smooth=true remains available and differs on noisy data
+            t = linspace(0, 1, 101)';
+            f = sin(2*pi*t) + 0.05*sin(2*pi*40*t);
+            testCase.verifyEqual(f_to_srvf(f, t), f_to_srvf(f, t, false));
+            testCase.verifyGreaterThan(max(abs(f_to_srvf(f, t) - f_to_srvf(f, t, true))), 1e-3);
+        end
+
         function testSrvfToFStartsAtFo(testCase)
             % srvf_to_f honors the initial value of each function
             t = linspace(0, 1, 101)';

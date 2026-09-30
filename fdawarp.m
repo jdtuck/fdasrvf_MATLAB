@@ -124,7 +124,7 @@ classdef fdawarp
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
-            % option.spl = true; % use spline interpolation 
+            % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output:
@@ -244,7 +244,7 @@ classdef fdawarp
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
-            % option.spl = true; % use spline interpolation 
+            % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output:
@@ -292,7 +292,7 @@ classdef fdawarp
             end
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(f1,obj.time,true,option.spl,option.parallel);
+            q = f_to_srvf(f1,obj.time,~option.spl,option.spl,option.parallel);
 
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
@@ -345,7 +345,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,true,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,~option.spl,option.spl);
                     end
                 else
                     for k = 1:N
@@ -354,7 +354,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,true,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,~option.spl,option.spl);
                     end
                 end
                 q(:,:,r+1) = q_temp;
@@ -397,7 +397,7 @@ classdef fdawarp
             for k = 1:N
                 gam_o(k,:) = interp1(obj.time, gam_o(k,:), (obj.time(end)-obj.time(1)).*gamI_o + obj.time(1));
                 f1(:,k,r+1) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
-                q(:,k,r+1) = f_to_srvf(f1(:,k,r+1),obj.time,true,option.spl);
+                q(:,k,r+1) = f_to_srvf(f1(:,k,r+1),obj.time,~option.spl,option.spl);
             end
             mq(:,r+1) = mean(q(:,:,r+1),2);
 
@@ -797,7 +797,7 @@ classdef fdawarp
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
-            % option.spl = true; % use spline interpolation
+            % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output:
@@ -846,7 +846,7 @@ classdef fdawarp
             end
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(f1,t,true,option.spl);
+            q = f_to_srvf(f1,t,~option.spl,option.spl);
 
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
@@ -873,7 +873,7 @@ classdef fdawarp
 
             gamI_o = SqrtMeanInverse(gam_o');
             mf = warp_f_gamma(mf,gamI_o,t);
-            mq = f_to_srvf(mf,t,true,option.spl);
+            mq = f_to_srvf(mf,t,~option.spl,option.spl);
 
             %% Compute Mean
             fprintf('Computing Karcher median of %d functions in SRVF space...\n',N);
@@ -902,7 +902,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,true,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,~option.spl,option.spl);
                         v = q_temp(:,k) - mq_c;
                         d = sqrt(trapz(t, v.*v));
                         if d > eps
@@ -917,7 +917,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,true,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,~option.spl,option.spl);
                         v = q_temp(:,k) - mq_c;
                         d = sqrt(trapz(t, v.*v));
                         if d > eps
@@ -979,7 +979,7 @@ classdef fdawarp
             for k = 1:N
                 gam_o(k,:) = warp_f_gamma(gam_o(k,:),gamI_o,obj.time);
                 f1(:,k,r+1) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
-                q(:,k,r+1) = f_to_srvf(f1(:,k,r+1),obj.time,true,option.spl);
+                q(:,k,r+1) = f_to_srvf(f1(:,k,r+1),obj.time,~option.spl,option.spl);
             end
 
             %% Aligned data & stats
@@ -1042,7 +1042,7 @@ classdef fdawarp
             % option.sparam = 25; % number of times to run filter
             % option.showplot = 1; % turns on and off plotting
             % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS, expBayes)
-            % option.spl = true; % use spline interpolation
+            % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output: structure containing
@@ -1090,10 +1090,10 @@ classdef fdawarp
 
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(obj.f,obj.time,true,option.spl,option.parallel);
+            q = f_to_srvf(obj.f,obj.time,~option.spl,option.spl,option.parallel);
 
             %% Compute the q-function of the plot
-            mq = f_to_srvf(mu,obj.time,true,option.spl);
+            mq = f_to_srvf(mu,obj.time,~option.spl,option.spl);
 
             fn1 = zeros(M,N);
             qn1 = zeros(M,N);
@@ -1119,7 +1119,7 @@ classdef fdawarp
                             mu(1), obj.f(1,k));
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
-                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,true,option.spl);
+                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,~option.spl,option.spl);
                 end
             else
                 for k = 1:N
@@ -1131,7 +1131,7 @@ classdef fdawarp
                             mu(1), obj.f(1,k));
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
-                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,true,option.spl);
+                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,~option.spl,option.spl);
                 end
             end
 

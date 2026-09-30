@@ -10,7 +10,7 @@ function q = f_to_srvf(f,time,smooth,spl, parallel)
 % Input:
 % f: matrix of functions
 % time: vector of time samples
-% smooth: use smoothing splines (default: true)
+% smooth: use smoothing splines instead of the interpolating spline (default: false)
 % spl: deprecated and ignored (kept for backward compatibility); when
 %      smooth is false the derivative always comes from an interpolating
 %      cubic spline
@@ -21,13 +21,13 @@ function q = f_to_srvf(f,time,smooth,spl, parallel)
 %
 % Note: with smooth=false the derivative is that of the interpolating cubic
 % spline, which srvf_to_f integrates exactly, so f -> q -> f is accurate to
-% O(h^4) for smooth f. smooth=true (default) applies a smoothing spline, so
+% O(h^4) for smooth f. smooth=true applies a smoothing spline, so
 % high-frequency content is removed on purpose and is not recovered.
 
 arguments
     f double
     time double
-    smooth=true
+    smooth=false
     spl=false
     parallel=false
 end
