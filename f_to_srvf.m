@@ -1,4 +1,4 @@
-function q = f_to_srvf(f,time,smooth,spl, parallel)
+function q = f_to_srvf(f,time,smooth,spl,parallel,nworkers)
 % F_TO_SRVF Convert function to Square-Root Velocity Function
 % -------------------------------------------------------------------------
 % Convert to SRSF
@@ -15,6 +15,7 @@ function q = f_to_srvf(f,time,smooth,spl, parallel)
 %      smooth is false the derivative always comes from an interpolating
 %      cubic spline
 % paralell: compute in parallel
+% nworkers: number of workers for the parallel pool (0: prompt)
 %
 % Output:
 % q: matrix of SRSFs
@@ -30,24 +31,11 @@ arguments
     smooth=false
     spl=false
     parallel=false
+    nworkers=0
 end
 
 if parallel == 1
-    if isempty(gcp('nocreate'))
-        % prompt user for number threads to use
-        nThreads = input('Enter number of threads to use: ');
-        if nThreads > 1
-            parpool(nThreads);
-        elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-            while (nThreads > 12) % wait until user figures it out
-                fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                nThreads = input('Enter number of threads to use: ');
-            end
-            if nThreads > 1
-                parpool(nThreads);
-            end
-        end
-    end
+    start_parpool(nworkers);
 end
 
 [M, N] = size(f);
