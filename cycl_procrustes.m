@@ -1,12 +1,15 @@
-function [Xmtch, Xp_star, p_star, O_star, obj] = cycl_procrustes(X,Y)
+function [Xmtch, Xp_star, p_star, O_star, obj] = cycl_procrustes(X,Y,parallel,nworkers)
 %CYCL_PROCRUSTES Align two matrices by a cyclic row shift and an orthogonal 
 % alignment
 %
 %   [XMTCH, XP_STAR, P_STAR, O_STAR, OBJ] = CYCL_PROCRUSTES(X,Y)
+%   [...] = CYCL_PROCRUSTES(X,Y,PARALLEL,NWORKERS)
 %
 %   INPUT
 %       X  – n‑by‑m matrix to be shifted (rows are ordered observations).  
 %       Y  – n‑by‑m reference matrix (same size as X).  
+%       parallel – evaluate the cyclic shifts in parallel (default false).
+%       nworkers – number of workers for the parallel pool (0: prompt).
 %
 %   OUTPUT
 %       Xmtch   – X after the optimal shift (p_star) and the optimal
@@ -60,6 +63,12 @@ function [Xmtch, Xp_star, p_star, O_star, obj] = cycl_procrustes(X,Y)
 if nargin < 2
     error('Two input matrices (X,Y) are required.');
 end
+if nargin < 3
+    parallel = false;
+end
+if nargin < 4
+    nworkers = 0;
+end
 [nX,mX] = size(X);
 [nY,mY] = size(Y);
 if nX ~= nY, error('X and Y must have the same number of rows.'); end
@@ -81,7 +90,8 @@ fobj = @(A,B) sum(svd(A'*B));
 %% ---- Exhaustive (brute force) search over all cyclic shifts ------------------------
 VPfunc = zeros(n,1);                    % objective for each shift
 
-parfor p = 1:n-1                        % parallel loop (parfor)
+M = parfor_workers(parallel, nworkers);
+parfor (p = 1:n-1, M)                   % parallel loop (parfor)
     Xp = [X(p+1:end,:); X(1:p,:)];      % cyclically shifted X
     VPfunc(p) = fobj(Xp,Y);            % evaluate objective
 end

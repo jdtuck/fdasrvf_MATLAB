@@ -19,6 +19,7 @@ function out = pcaTB(f, time, a, p, var_exp, method, option)
 % default options
 % option.parallel = 0; % turns offs MATLAB parallel processing (need
 % parallel processing toolbox)
+% option.nworkers = 0; % number of workers for parallel pool (0: prompt)
 % option.closepool = 0; % determines wether to close matlabpool
 % option.smooth = 0; % smooth data using standard box filter
 % option.sparam = 25; % number of times to run filter
@@ -41,6 +42,7 @@ arguments
     var_exp = 0.99;
     method = "combined";
     option.parallel = 0;
+    option.nworkers = 0;
     option.closepool = 0;
     option.smooth = 0;
     option.sparam = 25;
@@ -51,7 +53,7 @@ end
 
 %% Align Data
 out_warp = fdawarp(f,time);
-out_warp = out_warp.time_warping_median(0,'parallel',option.parallel,'closepool',option.closepool,'smooth',option.smooth, ...
+out_warp = out_warp.time_warping_median(0,'parallel',option.parallel,'nworkers',option.nworkers,'closepool',option.closepool,'smooth',option.smooth, ...
     'sparam', option.sparam, 'method', option.method, 'spl', option.spl, 'MaxItr', option.MaxItr);
 
 %% Calculate pca

@@ -74,6 +74,7 @@ classdef elastic_pcr_regression
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.closepool = 1; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
@@ -89,6 +90,7 @@ classdef elastic_pcr_regression
                 method
                 var_exp = 0.99;
                 option.parallel = 1;
+                option.nworkers = 0;
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
@@ -107,7 +109,7 @@ classdef elastic_pcr_regression
             %% Align Data
             obj.warp_data = fdawarp(obj.f,obj.time);
             obj.warp_data = obj.warp_data.time_warping(0, ...
-                parallel=option.parallel, closepool=option.closepool, ...
+                parallel=option.parallel, nworkers=option.nworkers, closepool=option.closepool, ...
                 smooth=option.smooth, sparam=option.sparam, ...
                 method=option.method, MaxItr=option.MaxItr);
             

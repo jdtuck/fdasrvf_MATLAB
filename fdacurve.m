@@ -160,6 +160,7 @@ classdef fdacurve
             % option.lambda = 0.0;  % penalty
             % option.parallel = 0; % turns on MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.closepool = 0; % determines wether to close matlabpool
             % option.MaxItr = 20;  % maximum iterations
             % option.method = 'DP'; % reparam method
@@ -176,6 +177,7 @@ classdef fdacurve
                 option.rotation = true;
                 option.lambda = 0.0;
                 option.parallel = 0;
+                option.nworkers = 0;
                 option.closepool = 0;
                 option.MaxItr = 20;
                 option.method = 'DP';
@@ -183,21 +185,7 @@ classdef fdacurve
             
             % time warping on a set of functions
             if option.parallel == 1
-                if isempty(gcp('nocreate'))
-                    % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
-                    if nThreads > 1
-                        parpool(nThreads);
-                    elseif nThreads > maxNumCompThreads % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > maxNumCompThreads) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is %d\n Enter a number between 1 and %d\n',maxNumCompThreads,maxNumCompThreads);
-                            nThreads = input('Enter number of threads to use: ');
-                        end
-                        if nThreads > 1
-                            parpool(nThreads);
-                        end
-                    end
-                end
+                start_parpool(option.nworkers);
             end
             
             % Initialize mu as one of the shapes
@@ -417,6 +405,7 @@ classdef fdacurve
             % option.lambda = 0.0;  % penalty
             % option.parallel = 0; % turns on MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.closepool = 0; % determines wether to close matlabpool
             % option.MaxItr = 20;  % maximum iterations
             % option.method = 'DP'; % reparam method
@@ -434,6 +423,7 @@ classdef fdacurve
                 option.rotation = true;
                 option.lambda = 0.0;
                 option.parallel = 0;
+                option.nworkers = 0;
                 option.closepool = 0;
                 option.MaxItr = 20;
                 option.method = 'DP';
@@ -441,21 +431,7 @@ classdef fdacurve
             
             % time warping on a set of functions
             if option.parallel == 1
-                if isempty(gcp('nocreate'))
-                    % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
-                    if nThreads > 1
-                        parpool(nThreads);
-                    elseif nThreads > maxNumCompThreads % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > maxNumCompThreads) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is %d\n Enter a number between 1 and %d\n',maxNumCompThreads,maxNumCompThreads);
-                            nThreads = input('Enter number of threads to use: ');
-                        end
-                        if nThreads > 1
-                            parpool(nThreads);
-                        end
-                    end
-                end
+                start_parpool(option.nworkers);
             end
             
             % Initialize mu as one of the shapes

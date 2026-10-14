@@ -1,4 +1,4 @@
-function [amp, phase] = elastic_depth(f, time, lambda, parallel)
+function [amp, phase] = elastic_depth(f, time, lambda, parallel, nworkers)
 % ELASTIC_DISTANCE Calculates the elastic depth between
 % functions
 % -------------------------------------------------------------------------
@@ -6,48 +6,36 @@ function [amp, phase] = elastic_depth(f, time, lambda, parallel)
 %
 % Usage: [dy, dx] = elastic_depth(f1, f2, time)
 %        [dy, dx] = elastic_depth(f1, f2, time, lambda)
+%        [dy, dx] = elastic_depth(f1, f2, time, lambda, parallel, nworkers)
 %
 % Input:
 % f: matrix of M time points of N functions, e.g., MxN
 % time: vector of size \eqn{N} describing the sample points
 % lambda controls amount of warping (default = 0)
+% parallel: compute in parallel (default = 1)
+% nworkers: number of workers for the parallel pool (0: prompt)
 %
 % Output
 % amp: amplitude depth
 % phase: phase depth
 arguments
     f double
-    time doulbe
+    time double
     lambda = 0;
     parallel = 1;
+    nworkers = 0;
 end
 
-if parallel == 1
-    if isempty(gcp('nocreate'))
-        % prompt user for number threads to use
-        nThreads = input('Enter number of threads to use: ');
-        if nThreads > 1
-            parpool(nThreads);
-        elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-            while (nThreads > 12) % wait until user figures it out
-                fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                nThreads = input('Enter number of threads to use: ');
-            end
-            if nThreads > 1
-                parpool(nThreads);
-            end
-        end
-    end
-end
+M = parfor_workers(parallel, nworkers);
 
 N = size(f,2);
 
 % compute the pairwise distance
 phs_dist = zeros(N,N);
 amp_dist = zeros(N,N);
-parfor i = 1:N
+parfor (i = 1:N, M)
     for j = i:N
-        [da, dp] = elastic_distance(f(:,i),f(:,j),time,lambda)
+        [da, dp] = elastic_distance(f(:,i),f(:,j),time,lambda);
         
         % y-distance
         amp_dist(i,j) = da;
