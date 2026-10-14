@@ -120,11 +120,12 @@ classdef fdawarp
             % default options
             % option.parallel = 0; % turns on MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
-            % option.spl = true; % use spline interpolation 
+            % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output:
@@ -137,6 +138,7 @@ classdef fdawarp
                 srvf = false
                 mu = NaN
                 option.parallel = 1;
+                option.nworkers = 0;
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
@@ -153,7 +155,7 @@ classdef fdawarp
                     obj = obj.time_warping(lam_vec(i), option);
                 else
                     obj = obj.multiple_align_functions(mu, lam_vec(i), ...
-                        parallel=option.parallel,closepool=option.closepool,...
+                        parallel=option.parallel,nworkers=option.nworkers,closepool=option.closepool,...
                         smooth=option.smooth,sparam=option.sparam,...
                         method=option.method,spl=option.spl,MaxItr=option.MaxItr);
                 end
@@ -240,11 +242,12 @@ classdef fdawarp
             % default options
             % option.parallel = 0; % turns on MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
-            % option.spl = true; % use spline interpolation 
+            % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output:
@@ -253,6 +256,7 @@ classdef fdawarp
                 obj
                 lambda = 0;
                 option.parallel = 0;
+                option.nworkers = 0;
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
@@ -263,21 +267,7 @@ classdef fdawarp
 
             % time warping on a set of functions
             if option.parallel == 1
-                if isempty(gcp('nocreate'))
-                    % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
-                    if nThreads > 1
-                        parpool(nThreads);
-                    elseif nThreads > maxNumCompThreads % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > maxNumCompThreads) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is %d\n Enter a number between 1 and %d\n',maxNumCompThreads,maxNumCompThreads);
-                            nThreads = input('Enter number of threads to use: ');
-                        end
-                        if nThreads > 1
-                            parpool(nThreads);
-                        end
-                    end
-                end
+                start_parpool(option.nworkers);
             end
             %% Parameters
 
@@ -292,7 +282,7 @@ classdef fdawarp
             end
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(f1,obj.time,true,option.spl,option.parallel);
+            q = f_to_srvf(f1,obj.time,~option.spl,option.spl,option.parallel,option.nworkers);
 
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
@@ -345,7 +335,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,true,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,~option.spl,option.spl);
                     end
                 else
                     for k = 1:N
@@ -354,7 +344,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,true,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,~option.spl,option.spl);
                     end
                 end
                 q(:,:,r+1) = q_temp;
@@ -390,12 +380,16 @@ classdef fdawarp
                 end
             end
             gamI_o = SqrtMeanInverse(gam_o');
-            mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,obj.time);
+            % Center gam, then warp the original data once by the final
+            % gam, so fn = f o gam and mqn = mean(qn) hold exactly.
+            % (Previously fn/qn kept the previous iteration's alignment
+            % while gam came from this final matching step.)
             for k = 1:N
-                q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,obj.time);
-                f1(:,k,r+1) = warp_f_gamma(f1(:,k,r),gamI_o,obj.time);
                 gam_o(k,:) = interp1(obj.time, gam_o(k,:), (obj.time(end)-obj.time(1)).*gamI_o + obj.time(1));
+                f1(:,k,r+1) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
+                q(:,k,r+1) = f_to_srvf(f1(:,k,r+1),obj.time,~option.spl,option.spl);
             end
+            mq(:,r+1) = mean(q(:,:,r+1),2);
 
             %% Aligned data & stats
             obj.fn = f1(:,:,r+1);
@@ -789,11 +783,12 @@ classdef fdawarp
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
             % parallel processing toolbox)
-            % option.closepool = 0; % determines whether to close matlabpool
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
+            % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
-            % option.spl = true; % use spline interpolation
+            % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output:
@@ -802,6 +797,7 @@ classdef fdawarp
                 obj
                 lambda = 0;
                 option.parallel = 0;
+                option.nworkers = 0;
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
@@ -811,21 +807,7 @@ classdef fdawarp
             end
             % time warping on a set of functions
             if option.parallel == 1
-                if isempty(gcp('nocreate'))
-                    % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
-                    if nThreads > 1
-                        parpool(nThreads);
-                    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > 12) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                            nThreads = input('Enter number of threads to use: ');
-                        end
-                        if nThreads > 1
-                            parpool(nThreads);
-                        end
-                    end
-                end
+                start_parpool(option.nworkers);
             end
             %% Parameters
 
@@ -842,7 +824,7 @@ classdef fdawarp
             end
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(obj.f,t,true,option.spl);
+            q = f_to_srvf(f1,t,~option.spl,option.spl);
 
             %% Set initial using the original f space
             fprintf('\nInitializing...\n');
@@ -869,7 +851,7 @@ classdef fdawarp
 
             gamI_o = SqrtMeanInverse(gam_o');
             mf = warp_f_gamma(mf,gamI_o,t);
-            mq = f_to_srvf(mf,t,true,option.spl);
+            mq = f_to_srvf(mf,t,~option.spl,option.spl);
 
             %% Compute Mean
             fprintf('Computing Karcher median of %d functions in SRVF space...\n',N);
@@ -898,7 +880,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,true,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,~option.spl,option.spl);
                         v = q_temp(:,k) - mq_c;
                         d = sqrt(trapz(t, v.*v));
                         if d > eps
@@ -913,7 +895,7 @@ classdef fdawarp
                             mf(1,r), f1(1,k,1));
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
-                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,true,option.spl);
+                        q_temp(:,k) = f_to_srvf(f_temp(:,k),t,~option.spl,option.spl);
                         v = q_temp(:,k) - mq_c;
                         d = sqrt(trapz(t, v.*v));
                         if d > eps
@@ -967,11 +949,15 @@ classdef fdawarp
             end
 
             gamI_o = SqrtMeanInverse(gam_o');
+            % Center gam and the median template, then warp the original
+            % data once by the final gam, so fn = f o gam holds exactly.
+            % (Previously fn/qn kept the previous iteration's alignment
+            % while gam came from this final matching step.)
             mq(:,r+1) = warp_q_gamma(mq(:,r),gamI_o,obj.time);
             for k = 1:N
-                q(:,k,r+1) = warp_q_gamma(q(:,k,r),gamI_o,obj.time);
-                f1(:,k,r+1) = warp_f_gamma(f1(:,k,r),gamI_o,obj.time);
                 gam_o(k,:) = warp_f_gamma(gam_o(k,:),gamI_o,obj.time);
+                f1(:,k,r+1) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
+                q(:,k,r+1) = f_to_srvf(f1(:,k,r+1),obj.time,~option.spl,option.spl);
             end
 
             %% Aligned data & stats
@@ -1029,12 +1015,13 @@ classdef fdawarp
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.showplot = 1; % turns on and off plotting
             % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS, expBayes)
-            % option.spl = true; % use spline interpolation
+            % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
             %
             % Output: structure containing
@@ -1044,6 +1031,7 @@ classdef fdawarp
                 mu
                 lambda = 0;
                 option.parallel = 0;
+                option.nworkers = 0;
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
@@ -1055,21 +1043,7 @@ classdef fdawarp
 
             % time warping on a set of functions
             if option.parallel == 1
-                if isempty(gcp('nocreate'))
-                    % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
-                    if nThreads > 1
-                        parpool(nThreads);
-                    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > 12) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                            nThreads = input('Enter number of threads to use: ');
-                        end
-                        if nThreads > 1
-                            parpool(nThreads);
-                        end
-                    end
-                end
+                start_parpool(option.nworkers);
             end
 
             fprintf('\n lambda = %5.2f \n', lambda);
@@ -1082,10 +1056,10 @@ classdef fdawarp
 
 
             %% Compute the q-function of the plot
-            q = f_to_srvf(obj.f,obj.time,true,option.spl,option.parallel);
+            q = f_to_srvf(obj.f,obj.time,~option.spl,option.spl,option.parallel,option.nworkers);
 
             %% Compute the q-function of the plot
-            mq = f_to_srvf(mu,obj.time,true,option.spl);
+            mq = f_to_srvf(mu,obj.time,~option.spl,option.spl);
 
             fn1 = zeros(M,N);
             qn1 = zeros(M,N);
@@ -1111,7 +1085,7 @@ classdef fdawarp
                             mu(1), obj.f(1,k));
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
-                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,true,option.spl);
+                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,~option.spl,option.spl);
                 end
             else
                 for k = 1:N
@@ -1123,7 +1097,7 @@ classdef fdawarp
                             mu(1), obj.f(1,k));
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
-                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,true,option.spl);
+                    qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,~option.spl,option.spl);
                 end
             end
 

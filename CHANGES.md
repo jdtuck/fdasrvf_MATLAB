@@ -1,4 +1,5 @@
 # 3.7.X
+* `f_to_srvf` with `smooth=false` now differentiates the interpolating cubic spline (the `spl` argument is ignored), and `srvf_to_f` integrates the spline of `q|q|` instead of using `cumtrapz`; the round trip `f -> q -> f` is now O(h^4) accurate (previously O(h^2) and poor for oscillatory functions). `smooth` now defaults to `false` package-wide (the interpolating spline); the alignment classes (`fdawarp`, `pcaTB`, `bootTB`, ...) honor `option.spl` (default `true`) and use the smoothing spline only when `option.spl = false`. `smooth=true` remains lossy by design
 * fix multinomial logistic class ordering: training and prediction now both use the standard softmax (`elastic_mlpcr_regression`, `elastic_mlogistic`), and remove the undefined `phi` call
 * fix `elastic_mlpcr_regression` crashes (undefined `N`/`N1`, overwritten `alpha`/`b`, nonexistent `LL`/`y_labels` properties, undefined `y_labels`/`option.y` in accuracy)
 * `align_fPCA` applies the final warping before centering so `fn`/`qn` match the returned `gam`
@@ -14,6 +15,10 @@
 * `fdajpca.calc_fpca` honors the `id` argument instead of always using the midpoint
 * `elastic_lpcr_regression` constructor was misnamed; fix undefined `N1`, `LL`, `y_labels` in the PCR regression classes; pass alignment options to `time_warping` as name-value arguments
 * add `RegressionPredictTest`
+* `time_warping` and `time_warping_median`: `fn`/`qn` are now the original data warped by the returned `gam` (previously they kept the preceding iteration's alignment while `gam` came from the final matching step); `mqn` is the mean of `qn` for `time_warping`
+* `time_warping_median` honors `smooth` (the SRVFs were computed from the unsmoothed data)
+* `fdahpca.calc_fpca` with `log_der = true` returned all-NaN `gam_pca` (a row vector was passed to `h_to_gam`); the direction buffer is now sized by `stds` and `no`
+* add `TimeWarpingConsistencyTest`
 
 # 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`
