@@ -16,8 +16,9 @@ function [amp, ph] = bootTB(f, time, a, p, B, var_exp, option)
 % var_exp: compute number of pcs based on value percent variance explained (default = 0.99)
 %
 % default options
-% option.parallel = 1; % turns offs MATLAB parallel processing (need
+% option.parallel = 1; % turns on MATLAB parallel processing (need
 % parallel processing toolbox)
+% option.nworkers = 0; % number of workers for parallel pool (0: prompt)
 % option.closepool = 0; % determines whether to close matlabpool
 % option.smooth = 0; % smooth data using standard box filter
 % option.sparam = 25; % number of times to run filter
@@ -58,7 +59,8 @@ arguments
     p = 0.99;
     B = 500;
     var_exp = 0.99;
-    option.parallel = 0;
+    option.parallel = 1;
+    option.nworkers = 0;
     option.closepool = 0;
     option.smooth = 0;
     option.sparam = 25;
@@ -71,53 +73,49 @@ end
 
 %% Align Data
 out_med = fdawarp(f,time);
-out_med = out_med.time_warping_median(0,'parallel',option.parallel,'closepool',option.closepool,'smooth',option.smooth, ...
+out_med = out_med.time_warping_median(0,'parallel',option.parallel,'nworkers',option.nworkers,'closepool',option.closepool,'smooth',option.smooth, ...
     'sparam', option.sparam, 'method', option.method, 'spl', option.spl, 'MaxItr', option.MaxItr);
 
 %% Calculate CI
-if isempty(gcp('nocreate'))
-    % prompt user for number threads to use
-    nThreads = input('Enter number of threads to use: ');
-    if nThreads > 1
-        parpool(nThreads);
-    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-        while (nThreads > 12) % wait until user figures it out
-            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-            nThreads = input('Enter number of threads to use: ');
-        end
-        if nThreads > 1
-            parpool(nThreads);
-        end
-    end
+if option.parallel == 1
+    start_parpool(option.nworkers);
 end
 fprintf('Bootstrap Sampling. \n');
-obj = ProgressBar(B, ...
-    'IsParallel', true, ...
-    'WorkerDirectory', pwd, ...
-    'Title', 'Progress' ...
-    );
-
-obj.setup([], [], []);
-
 bootlwr_amp = zeros(M,B);
 bootupr_amp = zeros(M,B);
 bootlwr_ph = zeros(M,B);
 bootupr_ph = zeros(M,B);
-parfor (k = 1:B)
-    samples = joint_gauss_model(out_med, 100, var_exp);
-    obja = ampbox(samples);
-    amp_b = obja.construct_boxplot(1-p,.3);
-    objp = phbox(samples);
-    ph_b = objp.construct_boxplot(1-p,.3);
-    bootlwr_amp(:,k) = amp_b.Q1a;
-    bootupr_amp(:,k) = amp_b.Q3a;
-    bootlwr_ph(:,k) = ph_b.Q1a;
-    bootupr_ph(:,k) = ph_b.Q3a;
-    updateParallel([], pwd);
-end
-obj.release();
+if option.parallel == 1
+    obj = ProgressBar(B, ...
+        'IsParallel', true, ...
+        'WorkerDirectory', pwd, ...
+        'Title', 'Progress' ...
+        );
 
-if option.closepool == 1
+    obj.setup([], [], []);
+    parfor (k = 1:B)
+        [la, ua, lp, up] = boot_sample(out_med, var_exp, p);
+        bootlwr_amp(:,k) = la;
+        bootupr_amp(:,k) = ua;
+        bootlwr_ph(:,k) = lp;
+        bootupr_ph(:,k) = up;
+        updateParallel([], pwd);
+    end
+    obj.release();
+else
+    obj = ProgressBar(B, 'Title', 'Progress');
+    for k = 1:B
+        [la, ua, lp, up] = boot_sample(out_med, var_exp, p);
+        bootlwr_amp(:,k) = la;
+        bootupr_amp(:,k) = ua;
+        bootlwr_ph(:,k) = lp;
+        bootupr_ph(:,k) = up;
+        obj([], [], []);
+    end
+    obj.release();
+end
+
+if option.parallel == 1 && option.closepool == 1
     delete(gcp('nocreate'));
 end
 
@@ -135,3 +133,13 @@ amp = obj1.construct_boxplot(a,.3);
 obj1 = phbox(boot_out);
 ph = obj1.construct_boxplot(a,.3);
 
+function [lwr_amp, upr_amp, lwr_ph, upr_ph] = boot_sample(out_med, var_exp, p)
+samples = joint_gauss_model(out_med, 100, var_exp);
+obja = ampbox(samples);
+amp_b = obja.construct_boxplot(1-p,.3);
+objp = phbox(samples);
+ph_b = objp.construct_boxplot(1-p,.3);
+lwr_amp = amp_b.Q1a;
+upr_amp = amp_b.Q3a;
+lwr_ph = ph_b.Q1a;
+upr_ph = ph_b.Q3a;

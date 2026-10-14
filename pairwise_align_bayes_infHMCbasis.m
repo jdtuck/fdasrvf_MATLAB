@@ -31,6 +31,8 @@ function [out, chains] = pairwise_align_bayes_infHMCbasis(y1i, y2i, time, mcmcop
 % mcmcopts.nbasis = 10; %number of basis of gradient g
 % mcmcopts.basis = 'fourier';  %'fourier' 'legendre'
 % mcmcopts.extrainfo = true;
+% mcmcopts.parallel = true; % run chains in parallel when nchains > 1
+% mcmcopts.nworkers = 0; % number of workers for parallel pool (0: min(numcores, nchains))
 %
 % Output:
 % structure containing
@@ -80,6 +82,8 @@ arguments
     mcmcopts.sampfreq = 5; %controls smoothness of fitrgp
     mcmcopts.seed = randi(floor(intmax/10));
     mcmcopts.extrainfo = true;
+    mcmcopts.parallel = true;
+    mcmcopts.nworkers = 0;
 end
 
 if (length(y1i) ~= length(y2i))
@@ -105,7 +109,7 @@ if mcmcopts.nchains > 1
     end
 end
 
-isparallel = true;
+isparallel = mcmcopts.parallel;
 try
     tmp = ver('parallel');
 catch
@@ -117,10 +121,11 @@ if mcmcopts.nchains == 1
 end
 
 if isparallel
-    nThreads = min(feature('numcores'),mcmcopts.nchains);
-    if isempty(gcp('nocreate'))
-        parpool(nThreads);
+    nThreads = mcmcopts.nworkers;
+    if isempty(nThreads) || nThreads < 1
+        nThreads = min(feature('numcores'),mcmcopts.nchains);
     end
+    start_parpool(nThreads);
     mcmcopts_p = cell(1,mcmcopts.nchains);
     for i = 1:mcmcopts.nchains
         mcmcopts.initcoef = random_starts(:,i);

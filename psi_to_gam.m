@@ -1,13 +1,20 @@
-function gam = psi_to_gam(psi)
+function gam = psi_to_gam(psi, parallel, nworkers)
 % psi_to_gam Convert shooting vectors to warping functions
 % -----------------------------------------------------_
+
+arguments
+    psi double
+    parallel=false
+    nworkers=0
+end
 
 if size(psi,2) > 1
     [T, n] = size(psi);
     time = linspace(0,1,T);
 
     gam = zeros(T,n);
-    parfor i=1:n
+    M = parfor_workers(parallel, nworkers);
+    parfor (i=1:n, M)
         gam_tmp = cumtrapz(time,psi(:,i).^2);
         gam(:,i) = (gam_tmp-min(gam_tmp))/(max(gam_tmp)-min(gam_tmp));
     end

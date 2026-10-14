@@ -86,6 +86,7 @@ classdef elastic_mlogistic
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.B = []; % defines basis if empty uses bspline
@@ -99,6 +100,7 @@ classdef elastic_mlogistic
             arguments
                 obj
                 option.parallel = 0;
+                option.nworkers = 0;
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
@@ -108,21 +110,7 @@ classdef elastic_mlogistic
             end
             
             if option.parallel == 1
-                if isempty(gcp('nocreate'))
-                    % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
-                    if nThreads > 1
-                        parpool(nThreads);
-                    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > 12) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                            nThreads = input('Enter number of threads to use: ');
-                        end
-                        if nThreads > 1
-                            parpool(nThreads);
-                        end
-                    end
-                end
+                start_parpool(option.nworkers);
             end
             
             %% Initialize

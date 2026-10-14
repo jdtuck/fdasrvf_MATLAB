@@ -1,4 +1,4 @@
-function vec = gam_to_v(gam, smooth, parallel)
+function vec = gam_to_v(gam, smooth, parallel, nworkers)
 % GAM_TO_V Convert warping function to shooting vectors
 % -----------------------------------------------------
 
@@ -6,6 +6,11 @@ arguments
     gam double
     smooth=true
     parallel=false
+    nworkers=0
+end
+
+if parallel
+    start_parpool(nworkers);
 end
 
 [T,n] = size(gam);

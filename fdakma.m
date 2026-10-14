@@ -86,6 +86,7 @@ classdef fdakma
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.alignment = true; % performa alignment
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
@@ -103,6 +104,7 @@ classdef fdakma
                 seeds = [];
                 lambda1 = 0;
                 option.parallel = 0;
+                option.nworkers = 0;
                 option.alignment = true;
                 option.closepool = 0;
                 option.smooth = 0;
@@ -116,21 +118,7 @@ classdef fdakma
             
             % time warping on a set of functions
             if option.parallel == 1
-                if isempty(gcp('nocreate'))
-                    % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
-                    if nThreads > 1
-                        parpool(nThreads);
-                    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > 12) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                            nThreads = input('Enter number of threads to use: ');
-                        end
-                        if nThreads > 1
-                            parpool(nThreads);
-                        end
-                    end
-                end
+                start_parpool(option.nworkers);
             end
             %% Parameters
             
@@ -295,6 +283,7 @@ classdef fdakma
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
             % parallel processing toolbox)
+            % option.nworkers = 0; % number of workers for parallel pool (0: prompt)
             % option.alignment = true; % performa alignment
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
@@ -310,6 +299,7 @@ classdef fdakma
                 obj
                 lambda1 = 0
                 option.parallel = 0;
+                option.nworkers = 0;
                 option.alignment = true;
                 option.closepool = 0;
                 option.smooth = 0;
@@ -322,21 +312,7 @@ classdef fdakma
             
             % time warping on a set of functions
             if option.parallel == 1
-                if isempty(gcp('nocreate'))
-                    % prompt user for number threads to use
-                    nThreads = input('Enter number of threads to use: ');
-                    if nThreads > 1
-                        parpool(nThreads);
-                    elseif nThreads > 12 % check if the maximum allowable number of threads is exceeded
-                        while (nThreads > 12) % wait until user figures it out
-                            fprintf('Maximum number of threads allowed is 12\n Enter a number between 1 and 12\n');
-                            nThreads = input('Enter number of threads to use: ');
-                        end
-                        if nThreads > 1
-                            parpool(nThreads);
-                        end
-                    end
-                end
+                start_parpool(option.nworkers);
             end
             %% Parameters
             [M, N] = size(obj.f);
