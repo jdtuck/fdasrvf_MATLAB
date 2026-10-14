@@ -18,7 +18,7 @@ function [amp, ph] = bootTB(f, time, a, p, B, var_exp, option)
 % default options
 % option.parallel = 1; % turns offs MATLAB parallel processing (need
 % parallel processing toolbox)
-% option.closepool = 0; % determines wether to close matlabpool
+% option.closepool = 0; % determines whether to close matlabpool
 % option.smooth = 0; % smooth data using standard box filter
 % option.sparam = 25; % number of times to run filter
 % option.showplot = 1; % turns on and off plotting
@@ -117,16 +117,19 @@ parfor (k = 1:B)
 end
 obj.release();
 
-delete(gcp('nocreate'));
+if option.closepool == 1
+    delete(gcp('nocreate'));
+end
 
 %% Tolerance Bounds
 boot_amp = [bootlwr_amp bootupr_amp];
 boot_amp_q = f_to_srvf(boot_amp, time);
 boot_ph = [bootlwr_ph bootupr_ph];
 boot_out = out_med;
-boot_out.fn = boot_amp;
-boot_out.qn = boot_amp_q;
-boot_out.gam = boot_ph;
+boot_out.rsamps = 1;
+boot_out.fs = boot_amp;
+boot_out.qs = boot_amp_q;
+boot_out.gams = boot_ph;
 obj1 = ampbox(boot_out);
 amp = obj1.construct_boxplot(a,.3);
 obj1 = phbox(boot_out);

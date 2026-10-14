@@ -789,7 +789,7 @@ classdef fdawarp
             % default options
             % option.parallel = 0; % turns offs MATLAB parallel processing (need
             % parallel processing toolbox)
-            % option.closepool = 0; % determines wether to close matlabpool
+            % option.closepool = 0; % determines whether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
