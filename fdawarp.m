@@ -967,7 +967,7 @@ classdef fdawarp
             std_f0 = std(obj.f, 0, 2);
             std_fn = std(obj.fn, 0, 2);
             obj.mqn = mq(:,r+1);
-            obj.fmean = mean(obj.f(1,:))+cumtrapz(t,obj.mqn.*abs(obj.mqn));
+            obj.fmean = median(obj.f(1,:))+cumtrapz(t,obj.mqn.*abs(obj.mqn));
 
             fgam = zeros(M,N);
             for ii = 1:N
