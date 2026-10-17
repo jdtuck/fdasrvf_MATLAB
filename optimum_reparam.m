@@ -21,12 +21,13 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty)
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
 % nbhd_dim: size of the grid (default = 7)
 % penalty: penalty term the amount of warping is measured with, options are
-% "none", "roughness", "l2gam", "l2psi" and "geodesic".  The default is the
-% penalty each method has always applied: "none" for "DP1" and "roughness"
-% for "DP" and "RBFGS".  The penalty is weighted by lambda, so it has no
-% effect when lambda is 0.  It is honored by the "DP", "DP1" and "RBFGS"
-% methods; "SIMUL" and "RBFGSM" do not apply a penalty and ignore both it
-% and lambda.
+% "none", "roughness", "l2gam", "l2psi" and "geodesic" (default =
+% "roughness").  The penalty is weighted by lambda, so it has no effect when
+% lambda is 0.  It is honored by the "DP", "DP1" and "RBFGS" methods;
+% "SIMUL" and "RBFGSM" do not apply a penalty and ignore both it and lambda.
+% For "DP" and "DP1", "roughness" is the integral of (1-sqrt(gamdot))^2,
+% the same as "l2psi" and the same default the R ("roughness") and Python
+% ("l2psi") packages apply.
 %
 % Output:
 % gam: warping function
@@ -39,17 +40,7 @@ arguments
     f1o = 0.0;
     f2o = 0.0;
     nbhd_dim = 7;
-    penalty {mustBeTextScalar} = '';
-end
-
-% Keep each method's historical penalty when none is given, so existing
-% callers get the same warps: DP1 applied none, DP and RBFGS roughness.
-if strlength(penalty) == 0
-    if strcmpi(method, 'DP1')
-        penalty = 'none';
-    else
-        penalty = 'roughness';
-    end
+    penalty {mustBeTextScalar} = 'roughness';
 end
 
 % The two solver families number the penalties differently, so translate the

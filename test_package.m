@@ -65,21 +65,38 @@ for i = 1:numel(penalties)
 end
 
 %% Test default warping penalty
-% Without a penalty argument each method keeps the penalty it applied before
-% the argument existed: none for DP1, roughness for DP and RBFGS.
+% Without a penalty argument every method applies roughness, so a nonzero
+% lambda changes the warp, matching the R and Python defaults.
 M = 101;
 timet = linspace(0,1,M);
 q1 = f_to_srvf(sin(2*pi*timet)', timet');
 q2 = f_to_srvf(sin(2*pi*timet.^1.6)', timet');
-defaults = {'DP1','none'; 'DP','roughness'; 'RBFGS','roughness'};
-for i = 1:size(defaults,1)
-    gam_default = optimum_reparam(q1, q2, timet', 0.5, defaults{i,1});
-    gam_named = optimum_reparam(q1, q2, timet', 0.5, defaults{i,1}, ...
-        0.0, 0.0, 7, defaults{i,2});
+for method = {'DP1','DP','RBFGS'}
+    gam_default = optimum_reparam(q1, q2, timet', 0.5, method{1});
+    gam_named = optimum_reparam(q1, q2, timet', 0.5, method{1}, ...
+        0.0, 0.0, 7, 'roughness');
     assert(isequal(gam_default, gam_named), ...
-        sprintf('Default penalty for %s is not %s', defaults{i,1}, ...
-        defaults{i,2}))
+        sprintf('Default penalty for %s is not roughness', method{1}))
 end
+
+%% Test time warping passes lambda and penalty through
+% A nonzero lambda must change the default alignment, and naming the
+% default penalty must not.
+M = 101;
+timet = linspace(0,1,M)';
+f = [exp(-(timet-0.3).^2/0.005), exp(-(timet-0.6).^2/0.005)];
+obj = fdawarp(f,timet);
+obj0 = obj.time_warping(0);
+obj5 = obj.time_warping(5);
+obj5n = obj.time_warping(5, penalty='roughness');
+obj5none = obj.time_warping(5, penalty='none');
+assert(max(abs(obj0.gam(:)-obj5.gam(:))) > 1e-3, 'lambda ignored by time_warping')
+assert(isequal(obj5.gam, obj5n.gam), 'time_warping default penalty is not roughness')
+assert(isequal(obj0.gam, obj5none.gam), 'time_warping did not pass penalty through')
+assert(strcmp(obj5.penalty, 'roughness'), 'time_warping did not store the penalty')
+[~, gam0] = pairwise_align(f(:,1), f(:,2), timet);
+[~, gam5] = pairwise_align(f(:,1), f(:,2), timet, 5);
+assert(max(abs(gam0-gam5)) > 1e-3, 'lambda ignored by pairwise_align')
 
 %% Test invalid warping penalty
 M = 101;

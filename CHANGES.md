@@ -19,6 +19,8 @@
 * `time_warping_median` honors `smooth` (the SRVFs were computed from the unsmoothed data)
 * `fdahpca.calc_fpca` with `log_der = true` returned all-NaN `gam_pca` (a row vector was passed to `h_to_gam`); the direction buffer is now sized by `stds` and `no`
 * add `TimeWarpingConsistencyTest`
+* `optimum_reparam` defaults to the `roughness` penalty for every method, including `DP1`, so `lambda > 0` changes the default alignment again (the `none` default for `DP1` from 3.7.0 made `time_warping(lambda)` ignore `lambda` once the MEX files were rebuilt). For `DP`/`DP1` this is the integral of (1-sqrt(gamdot))^2, the same default as R (`roughness`) and Python (`l2psi`)
+* `time_warping`, `time_warping_median`, `multiple_align_functions` and `ppd` take `option.penalty` (default `roughness`) and store it in the new `penalty` property; `pairwise_align` takes a `penalty` argument
 
 # 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`
