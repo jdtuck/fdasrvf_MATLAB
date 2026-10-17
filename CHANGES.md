@@ -21,6 +21,7 @@
 * add `TimeWarpingConsistencyTest`
 * `optimum_reparam` defaults to the `roughness` penalty for every method, including `DP1`, so `lambda > 0` changes the default alignment again (the `none` default for `DP1` from 3.7.0 made `time_warping(lambda)` ignore `lambda` once the MEX files were rebuilt). For `DP`/`DP1` this is the integral of (1-sqrt(gamdot))^2, the same default as R (`roughness`) and Python (`l2psi`)
 * `time_warping`, `time_warping_median`, `multiple_align_functions` and `ppd` take `option.penalty` (default `roughness`) and store it in the new `penalty` property; `pairwise_align` takes a `penalty` argument
+* `DynamicProgrammingQ` (`DP1`) is back to the original grid (`scl = 1`); 3.7.0 accidentally reverted it to the 5x upsampled grid removed in 2018. `DP1` now matches the released 3.6.x MEX, Python `DP` and R `DPo` to machine precision
 
 # 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`

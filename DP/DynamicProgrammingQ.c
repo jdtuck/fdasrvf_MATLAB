@@ -52,7 +52,7 @@ double evalspline(double t, const double D[2], const double y[2]);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int i, j, k, l, n, M, N, Eidx, Fidx, Ftmp, Fmin, Num, *Path, *xy, x, y, cnt, pen=1;
-	const int scl = 5;
+	const int scl = 1;
 	const double *q1, *q2;
 	double *q1L, *q2L, *yy, *D1, *D2, *tmp1, *tmp2, *E, Etmp, Emin, t, a, b, lam = 0;
 
