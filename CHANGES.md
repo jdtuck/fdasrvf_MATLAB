@@ -13,12 +13,16 @@
 * fix `project` in `fdajpca`, `fdavpca`, `fdahpca` (`optimum_reparam` argument order, `gradietn` typo, alignment now uses the training `lambda`/`method`)
 * `fdahpca` coefficients have one row per function (were sized by the number of time points)
 * `fdajpca.calc_fpca` honors the `id` argument instead of always using the midpoint
+* fix `fdahpns`: `calc_fpns` passed `stds` instead of the PNS fit to `fastPNSe2s`, and `project` had the `optimum_reparam` argument order wrong, ignored the training `lambda`/`method`/`penalty`, and used the wrong PNS map (now `fastPNSs2e`)
 * `elastic_lpcr_regression` constructor was misnamed; fix undefined `N1`, `LL`, `y_labels` in the PCR regression classes; pass alignment options to `time_warping` as name-value arguments
 * add `RegressionPredictTest`
 * `time_warping` and `time_warping_median`: `fn`/`qn` are now the original data warped by the returned `gam` (previously they kept the preceding iteration's alignment while `gam` came from the final matching step); `mqn` is the mean of `qn` for `time_warping`
 * `time_warping_median` honors `smooth` (the SRVFs were computed from the unsmoothed data)
 * `fdahpca.calc_fpca` with `log_der = true` returned all-NaN `gam_pca` (a row vector was passed to `h_to_gam`); the direction buffer is now sized by `stds` and `no`
 * add `TimeWarpingConsistencyTest`
+* `optimum_reparam` defaults to the `roughness` penalty for every method, including `DP1`, so `lambda > 0` changes the default alignment again (the `none` default for `DP1` from 3.7.0 made `time_warping(lambda)` ignore `lambda` once the MEX files were rebuilt). For `DP`/`DP1` this is the integral of (1-sqrt(gamdot))^2, the same default as R (`roughness`) and Python (`l2psi`)
+* `time_warping`, `time_warping_median`, `multiple_align_functions` and `ppd` take `option.penalty` (default `roughness`) and store it in the new `penalty` property; `pairwise_align` takes a `penalty` argument
+* `DynamicProgrammingQ` (`DP1`) is back to the original grid (`scl = 1`); 3.7.0 accidentally reverted it to the 5x upsampled grid removed in 2018. `DP1` now matches the released 3.6.x MEX, Python `DP` and R `DPo` to machine precision
 
 # 3.7.0
 * add warping penalties (`none`, `roughness`, `l2gam`, `l2psi`, `geodesic`) to `DynamicProgrammingQ2`
