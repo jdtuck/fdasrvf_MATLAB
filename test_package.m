@@ -161,6 +161,28 @@ hpca = fdahpca(out);
 hpca = hpca.calc_fpca();
 assert(length(out.time) == 101, 'Length Not Right')
 
+%% Test horizontal fPNS projection of the training data
+% Re-aligning the training functions to mqn with the training lambda, method
+% and penalty should recover the training warps, so projecting them should
+% recover the training PNS coefficients.
+out = fdawarp(f, t);
+out = out.time_warping(MaxItr=1);
+hpns = fdahpns(out);
+hpns = hpns.calc_fpns();
+hpns = hpns.project(out.f);
+assert(isequal(size(hpns.new_coef), size(hpns.coef)), 'fPNS projection size wrong')
+q1 = f_to_srvf(out.f, out.time);
+gam = zeros(size(out.gam));
+for ii = 1:size(q1, 2)
+    gam(:, ii) = optimum_reparam(out.mqn, q1(:, ii), out.time, out.lambda, ...
+        out.method, 0, 0, 7, out.penalty);
+end
+assert(max(abs(gam(:) - out.gam(:))) < 0.05, 'fPNS projection warps not recovered')
+assert(max(abs(hpns.new_coef(1, :) - hpns.coef(1, :))) < 0.1*max(abs(hpns.coef(1, :))), ...
+    'fPNS projection first coefficient not recovered')
+assert(norm(hpns.new_coef - hpns.coef, 'fro') < 0.3*norm(hpns.coef, 'fro'), ...
+    'fPNS projection coefficients not recovered')
+
 %% Test amp boxplot
 out = fdawarp(f, t);
 out = out.time_warping_median(MaxItr=1);

@@ -13,6 +13,7 @@
 * fix `project` in `fdajpca`, `fdavpca`, `fdahpca` (`optimum_reparam` argument order, `gradietn` typo, alignment now uses the training `lambda`/`method`)
 * `fdahpca` coefficients have one row per function (were sized by the number of time points)
 * `fdajpca.calc_fpca` honors the `id` argument instead of always using the midpoint
+* fix `fdahpns`: `calc_fpns` passed `stds` instead of the PNS fit to `fastPNSe2s`, and `project` had the `optimum_reparam` argument order wrong, ignored the training `lambda`/`method`/`penalty`, and used the wrong PNS map (now `fastPNSs2e`)
 * `elastic_lpcr_regression` constructor was misnamed; fix undefined `N1`, `LL`, `y_labels` in the PCR regression classes; pass alignment options to `time_warping` as name-value arguments
 * add `RegressionPredictTest`
 * `time_warping` and `time_warping_median`: `fn`/`qn` are now the original data warped by the returned `gam` (previously they kept the preceding iteration's alignment while `gam` came from the final matching step); `mqn` is the mean of `qn` for `time_warping`
