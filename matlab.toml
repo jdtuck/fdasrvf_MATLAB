@@ -12,6 +12,9 @@ path = [
     "mex",
     "util",
 ]
+test = [
+    "tests",
+]
 
 [project]
 summary = "MATLAB library for elastic functional data analysis A MATLAB package for functional data analysis using the square root velocity framework which performs pair-wise and group-wise alignment as well as modeling using functional component analysis"
