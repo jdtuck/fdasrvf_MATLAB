@@ -66,7 +66,7 @@ classdef WarpApplyTest < matlab.unittest.TestCase
             % error near the sqrt singularity at 0)
             g = linspace(0, 1, testCase.M).^2;
             gii = invertGamma(invertGamma(g));
-            testCase.verifyLessThan(max(abs(gii(:) - g(:))), 5e-3, ...
+            testCase.verifyLessThan(max(abs(gii(:) - g(:))), 2e-3, ...
                 'Double gamma inversion did not recover the original');
         end
 
