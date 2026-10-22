@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        release: [R2026a]
+        release: [R2026b]
     
     runs-on: ${{ matrix.os }}
 
@@ -44,8 +44,8 @@ jobs:
         uses: matlab-actions/run-command@v3
         with:
           command: |
-            mex -setup:D:\hostedtoolcache\windows\MATLAB\2026.1.999\x64\bin\win64\mexopts\mingw64_g++.xml C++
-            mex -setup:D:\hostedtoolcache\windows\MATLAB\2026.1.999\x64\bin\win64\mexopts\mingw64.xml C
+            mex(['-setup:' fullfile(matlabroot,'bin','win64','mexopts','mingw64_g++.xml')],'C++')
+            mex(['-setup:' fullfile(matlabroot,'bin','win64','mexopts','mingw64.xml')],'C')
       - if: runner.os == 'Linux'
         uses: matlab-actions/setup-matlab@v3
         with:
