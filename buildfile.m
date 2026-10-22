@@ -50,5 +50,5 @@ end
 function packageTask(~)
     % Define actions for packaging the toolbox
     disp("Packaging toolbox...");
-    matlab.addons.toolbox.packageToolbox("fdasrvf.prj");
+    matlab.addons.toolbox.packageToolbox("matlab.toml");
 end
