@@ -29,6 +29,7 @@ summary = "MATLAB library for elastic functional data analysis A MATLAB package 
 ]
 
 [[package]]
+name = "fdasrvf"
 configuration-name = "fdasrvf"
 supported-platforms = [
     "windows",

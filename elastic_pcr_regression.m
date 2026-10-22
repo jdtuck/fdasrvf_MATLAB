@@ -134,7 +134,9 @@ classdef elastic_pcr_regression
             Phi(:,2:(no+1)) = out_pca.coef;
             xx = Phi.' * Phi;
             xy = Phi.' * obj.y;
-            obj.b = (xx + lam * R)\xy;
+            % minimum-norm solve: Phi can be rank deficient when the number
+            % of PCs approaches N (e.g., joint fPCA with few functions)
+            obj.b = lsqminnorm(xx + lam * R, xy);
             obj.alpha = obj.b(1);
             obj.b = obj.b(2:end);
             
