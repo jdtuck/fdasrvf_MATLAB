@@ -4,6 +4,10 @@ import matlab.buildtool.tasks.TestTask
 import matlab.buildtool.tasks.CleanTask
 import matlab.buildtool.tasks.MexTask
 
+% Make sure the repo root (setup_paths.m, SqrtMean.m, ...) is on the path so
+% tests can call setup_paths regardless of the build tool's working folder
+addpath(fileparts(mfilename('fullpath')));
+
 % Create a plan from task functions
 plan = buildplan(localfunctions);
 
