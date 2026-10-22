@@ -1,0 +1,48 @@
+name = "fdasrvf"
+
+[folders]
+path = [
+    "PNS",
+    "PNS/subfunctions",
+    "PPD",
+    "armadillo_cpp/armadillo/mex_interface",
+    "basis",
+    "data",
+    "manifold",
+    "mex",
+    "util",
+]
+
+[project]
+summary = "MATLAB library for elastic functional data analysis A MATLAB package for functional data analysis using the square root velocity framework which performs pair-wise and group-wise alignment as well as modeling using functional component analysis"
+
+[project.labels."Toolbox - Toolbox1"]
+"Getting Started Guide" = [
+]
+"Toolbox Image File" = [
+    "logo.png",
+]
+"App Gallery File" = [
+]
+
+[[package]]
+configuration-name = "fdasrvf"
+supported-platforms = [
+    "windows",
+    "linux",
+    "macos",
+]
+preview-image-file = "logo.png"
+use-license-bsd = false
+output-folder = "release"
+output-file-name = "fdasrvf.mltbx"
+provider.organization = ""
+provider.name = "J. Derek Tucker"
+provider.email = "jdtuck@sandia.gov"
+name = ""
+description = "A MATLAB package for functional data analysis using the square root\nvelocity framework which performs pair-wise and group-wise\nalignment as well as modeling using functional component\nanalysis"
+display-name = "fdasrvf"
+summary = "MATLAB library for elastic functional data analysis"
+package-root = "/"
+version = "3.7.0"
+id = "d2fedf53-1edb-440d-8cef-5bfb62d1b8ba"
