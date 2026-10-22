@@ -1,8 +1,10 @@
 % setup paths
-addpath(genpath('mex'))
-addpath(genpath('basis'))
-addpath(genpath('data'))
-addpath(genpath('util'))
-addpath(genpath('manifold'))
-addpath(genpath('PNS'))
-addpath(genpath('PPD'))
+root = fileparts(mfilename('fullpath'));
+addpath(root)
+addpath(genpath(fullfile(root,'mex')))
+addpath(genpath(fullfile(root,'basis')))
+addpath(genpath(fullfile(root,'data')))
+addpath(genpath(fullfile(root,'util')))
+addpath(genpath(fullfile(root,'manifold')))
+addpath(genpath(fullfile(root,'PNS')))
+addpath(genpath(fullfile(root,'PPD')))

@@ -14,7 +14,7 @@ classdef TimeWarpingConsistencyTest < matlab.unittest.TestCase
     methods (TestClassSetup)
         function setupData(testCase)
             setup_paths;
-            S = load('data/simu_data.mat');
+            S = load('simu_data.mat');
             testCase.f = S.f;
             testCase.t = S.t(:);
         end

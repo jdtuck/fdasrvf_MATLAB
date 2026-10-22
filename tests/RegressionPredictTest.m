@@ -16,7 +16,7 @@ classdef RegressionPredictTest < matlab.unittest.TestCase
     methods (TestClassSetup)
         function setupPaths(testCase)
             setup_paths;
-            d = load('data/simu_data.mat');
+            d = load('simu_data.mat');
             testCase.f = d.f;
             testCase.t = d.t;
         end

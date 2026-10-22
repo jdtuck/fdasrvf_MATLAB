@@ -1,6 +1,6 @@
 setup_paths
 
-load data/simu_data.mat
+load simu_data.mat
 
 %% Test Distance and Gamma Calc
 [dy,dx] = elastic_distance(f(:,1),f(:,1),t, 0, 'DP1');
@@ -198,7 +198,7 @@ ph_data = ph_data.construct_boxplot(.05, 1);
 assert(length(ph_data.Q1) == 101)
 
 %% Test Curve Align
-load data/MPEG7.mat
+load MPEG7.mat
 curve = Xdata{1,2};
 [n, M] = size(curve);
 K = size(Xdata,2);
