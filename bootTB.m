@@ -23,7 +23,7 @@ function [amp, ph] = bootTB(f, time, a, p, B, var_exp, option)
 % option.smooth = 0; % smooth data using standard box filter
 % option.sparam = 25; % number of times to run filter
 % option.showplot = 1; % turns on and off plotting
-% option.method = 'DP1'; % optimization method (DP, DP2, SIMUL, RBFGS)
+% option.method = 'DP'; % optimization method (DP, DP2, SIMUL, RBFGS)
 % option.w = 0.0; % BFGS weight
 % option.MaxItr = 20;  % maximum iterations
 %
@@ -64,7 +64,7 @@ arguments
     option.closepool = 0;
     option.smooth = 0;
     option.sparam = 25;
-    option.method = 'DP1';
+    option.method = 'DP';
     option.spl = true;
     option.MaxItr = 20;
 end

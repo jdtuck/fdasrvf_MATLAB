@@ -100,7 +100,7 @@ classdef elastic_lpcr_regression
                 option.smooth = 0;
                 option.sparam = 25;
                 option.showplot = 0;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.MaxItr = 20;
             end
 

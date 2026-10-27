@@ -125,7 +125,7 @@ classdef fdawarp
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
             % option.penalty = 'roughness'; % warping penalty weighted by lambda (none, roughness, l2gam, l2psi, geodesic)
             % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
@@ -144,7 +144,7 @@ classdef fdawarp
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.penalty = 'roughness';
                 option.spl = true;
                 option.MaxItr = 20;
@@ -249,7 +249,7 @@ classdef fdawarp
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
             % option.penalty = 'roughness'; % warping penalty weighted by lambda (none, roughness, l2gam, l2psi, geodesic)
             % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
@@ -264,7 +264,7 @@ classdef fdawarp
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.penalty = 'roughness';
                 option.spl = true;
                 option.MaxItr = 20;
@@ -808,7 +808,7 @@ classdef fdawarp
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.penalty = 'roughness';
                 option.spl = true;
                 option.MaxItr = 20;
@@ -1029,7 +1029,7 @@ classdef fdawarp
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.showplot = 1; % turns on and off plotting
-            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS, expBayes)
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS, expBayes)
             % option.penalty = 'roughness'; % warping penalty weighted by lambda (none, roughness, l2gam, l2psi, geodesic)
             % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
@@ -1046,7 +1046,7 @@ classdef fdawarp
                 option.smooth = 0;
                 option.sparam = 25;
                 option.showplot = 1;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.penalty = 'roughness';
                 option.spl = true;
                 option.MaxItr = 20;

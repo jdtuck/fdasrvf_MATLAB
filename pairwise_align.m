@@ -12,7 +12,7 @@ function [f2_align, gam] = pairwise_align(f1,f2,time,lambda,method,penalty)
 % f2: vector defining M samples of function 2
 % time: time vector of length M
 % lambda: weight of the warping penalty (default = 0)
-% method: optimization method (default = 'DP1'), see optimum_reparam
+% method: optimization method (default = 'DP'), see optimum_reparam
 % penalty: warping penalty (default = 'roughness'), see optimum_reparam
 %
 % Output:
@@ -23,7 +23,7 @@ arguments
     f2 double
     time double
     lambda = 0
-    method = 'DP1'
+    method = 'DP'
     penalty = 'roughness'
 end
 q1 = f_to_srvf(f1,time);
