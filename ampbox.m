@@ -151,6 +151,12 @@ classdef ampbox
             
             obj.Q1a_index = CR_alpha(maxloc_row);
             obj.Q3a_index = CR_alpha(maxloc_col);
+            
+            % check quartile and quantile going same direction
+            tst = trapz(t, (q_tilde(:,obj.Q1a_index) - obj.q_median).*(q_tilde(:,obj.Q1_index) - obj.q_median));
+            if (tst < 0)
+                [obj.Q1a_index, obj.Q3a_index] = deal(obj.Q3a_index, obj.Q1a_index);
+            end
             Q1a_q = q_tilde(:,obj.Q1a_index);
             Q3a_q = q_tilde(:,obj.Q3a_index);
             obj.Q1a = f_tilde(:,obj.Q1a_index);
@@ -188,8 +194,6 @@ classdef ampbox
             end
             [~, max_index] = min(distance_to_upper);
             [~, min_index] = min(distance_to_lower);
-            min_q = q_tilde(:,min_index);
-            max_q = q_tilde(:,max_index);
             obj.minn = f_tilde(:,min_index);
             obj.maxx = f_tilde(:,max_index);
             
@@ -204,12 +208,15 @@ classdef ampbox
                 Fs2(:,396+j) = (1-s(j)) * obj.Q3 + s(j) * obj.Q3a;
                 Fs2(:,495+j) = (1-s(j)) * obj.Q3a + s(j) * obj.maxx;
             end
-            d1=sqrt(trapz(t,(obj.q_median-Q1_q).^2));
-            d1a=sqrt(trapz(t,(Q1_q-Q1a_q).^2));
-            dl=sqrt(trapz(t,(Q1a_q-min_q).^2));
-            d3=sqrt(trapz(t,(obj.q_median-Q3_q).^2));
-            d3a=sqrt(trapz(t,(Q3_q-Q3a_q).^2));
-            du=sqrt(trapz(t,(Q3a_q-max_q).^2));
+            % place each curve at its distance from the median; the increments
+            % between neighbouring curves then sum to that distance (pairwise
+            % distances like d(Q1,Q1a) would overshoot by the triangle inequality)
+            d1 = dy(obj.Q1_index);
+            d1a = dy(obj.Q1a_index) - d1;
+            dl = dy(min_index) - d1 - d1a;
+            d3 = dy(obj.Q3_index);
+            d3a = dy(obj.Q3a_index) - d3;
+            du = dy(max_index) - d3 - d3a;
             part1=linspace(-d1-d1a-dl,-d1-d1a,100);
             part2=linspace(-d1-d1a,-d1,100);
             part3=linspace(-d1,0,100);

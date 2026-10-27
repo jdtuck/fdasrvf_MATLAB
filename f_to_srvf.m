@@ -14,7 +14,7 @@ function q = f_to_srvf(f,time,smooth,spl,parallel,nworkers)
 % spl: deprecated and ignored (kept for backward compatibility); when
 %      smooth is false the derivative always comes from an interpolating
 %      cubic spline
-% paralell: compute in parallel
+% parallel: compute in parallel
 % nworkers: number of workers for the parallel pool (0: prompt)
 %
 % Output:

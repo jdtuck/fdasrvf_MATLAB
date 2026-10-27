@@ -1258,7 +1258,13 @@ classdef fdawarp
             % -------------------------------------------------------------------------
             % Usage: obj.plot()
 
-            if (obj.rsamps)
+            % plot random samples only when they are all present,
+            % otherwise fall back to the original and aligned data
+            has_rsamps = ~isempty(obj.rsamps) && obj.rsamps && ...
+                ~isempty(obj.ft) && ~isempty(obj.gams) && ...
+                ~isempty(obj.fs) && ~isempty(obj.qs);
+
+            if (has_rsamps)
 
                 figure(1); clf
                 M = length(obj.time);
