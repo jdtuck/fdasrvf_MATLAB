@@ -4,7 +4,7 @@ function h = gam_to_h(gam, smooth, parallel, nworkers)
 
 arguments
     gam double
-    smooth=true
+    smooth=false
     parallel=false
     nworkers=0
 end
@@ -26,7 +26,7 @@ if smooth
     end
 else
     parfor (i=1:n, M)
-        psi = log(gradient(gam(:,i),binsize));
+        psi = log(max(gradient(gam(:,i),binsize),eps));
         h(:,i) = psi - trapz(time, psi);
     end
 end
