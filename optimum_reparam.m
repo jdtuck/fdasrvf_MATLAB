@@ -20,7 +20,8 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty,sc
 % w: controls LRBFGS (default = 0.01)
 % f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
-% nbhd_dim: size of the grid (default = 7)
+% nbhd_dim: size of the grid for "DP" (default = 10, the 63 slopes "DP1"
+% searches)
 % penalty: penalty term the amount of warping is measured with, options are
 % "none", "roughness", "l2gam", "l2psi" and "geodesic" (default =
 % "roughness").  The penalty is weighted by lambda, so it has no effect when
@@ -29,11 +30,10 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty,sc
 % For "DP" and "DP1", "roughness" is the integral of (1-sqrt(gamdot))^2,
 % the same as "l2psi" and the same default the R ("roughness") and Python
 % ("l2psi") packages apply.
-% scl: for "DP" and "DP1", the SRVFs are resampled scl times finer to
-% evaluate the alignment cost; the warp stays on the grid t (default = 3).
-% "DP1" passes it to DynamicProgrammingQ; "DP" resamples q1 and q2 at the
-% midpoints of the finer grid, since DynamicProgrammingQ2 treats them as
-% piecewise constant.  scl = 1 turns the resampling off.
+% scl: for "DP1", the SRVFs are resampled scl times finer to evaluate the
+% alignment cost; the warp stays on the grid t (default = 3, 1 turns the
+% resampling off).  "DP" integrates the linearly interpolated SRVFs
+% exactly, so it does not use scl.
 %
 % Output:
 % gam: warping function
@@ -45,7 +45,7 @@ arguments
     method = 'DP1';
     f1o = 0.0;
     f2o = 0.0;
-    nbhd_dim = 7;
+    nbhd_dim = 10;
     penalty {mustBeTextScalar} = 'roughness';
     scl (1,1) {mustBeInteger, mustBePositive} = 3;
 end
@@ -79,17 +79,7 @@ switch upper(method)
         if size(t,2) == 1
             t = t';
         end 
-        if scl == 1
-            [G,T] = DynamicProgrammingQ2(q1,t,q2,t,t,t,lambda,nbhd_dim,pen_dp);
-        else
-            % DynamicProgrammingQ2 holds Q(:,k) over [Tq(k),Tq(k+1)) and
-            % never reads the last column
-            Tq = linspace(t(1),t(end),scl*(length(t)-1)+1);
-            tm = (Tq(1:end-1)+Tq(2:end))/2;
-            Q1 = [spline(t,q1,tm), zeros(size(q1,1),1)];
-            Q2 = [spline(t,q2,tm), zeros(size(q2,1),1)];
-            [G,T] = DynamicProgrammingQ2(Q1,Tq,Q2,Tq,t,t,lambda,nbhd_dim,pen_dp);
-        end
+        [G,T] = DynamicProgrammingQ2(q1,t,q2,t,t,t,lambda,nbhd_dim,pen_dp);
         gam0 = interp1(T,G,t);
     case 'DP1'
         if size(q1,2) == 1

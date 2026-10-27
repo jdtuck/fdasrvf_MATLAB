@@ -55,8 +55,9 @@ classdef DynamicProgrammingTest < matlab.unittest.TestCase
         end
 
         function testDPFitsAsWellAsTrueWarp(testCase)
-            % "DP" resamples the SRVFs scl = 3 times finer by default; with
-            % scl = 1 its fit was 1.5x worse than the true warp's
+            % "DP" integrates the linearly interpolated SRVFs exactly over a
+            % 10-point neighborhood; the old step-function cost over 7 points
+            % fit 1.5x worse than the true warp's
             gam = optimum_reparam(testCase.q1, testCase.q2, testCase.t, 0, 'DP');
             dy = alignError(testCase, gam(:));
             dyTrue = alignError(testCase, testCase.gamInv);
@@ -64,16 +65,16 @@ classdef DynamicProgrammingTest < matlab.unittest.TestCase
                 'DP alignment should fit about as well as the true warp');
         end
 
-        function testSclPassedThrough(testCase)
-            % scl = 1 gives the solvers' unresampled results
+        function testSolverArguments(testCase)
+            % scl reaches DynamicProgrammingQ, and "DP" defaults to nbhd_dim = 10
             t = testCase.t;
             q1n = testCase.q1 / norm(testCase.q1);
             q2n = testCase.q2 / norm(testCase.q2);
             gam = optimum_reparam(testCase.q1, testCase.q2, t, 0, 'DP1', 0, 0, 7, 'roughness', 1);
             g = DynamicProgrammingQ(q2n', q1n', 0, 1, 1);
             testCase.verifyEqual(gam(:), (g(:) - g(1)) / (g(end) - g(1)), 'AbsTol', 1e-14);
-            gam = optimum_reparam(testCase.q1, testCase.q2, t, 0, 'DP', 0, 0, 7, 'roughness', 1);
-            [G, T] = DynamicProgrammingQ2(q1n', t', q2n', t', t', t', 0, 7, 1);
+            gam = optimum_reparam(testCase.q1, testCase.q2, t, 0, 'DP');
+            [G, T] = DynamicProgrammingQ2(q1n', t', q2n', t', t', t', 0, 10, 1);
             g = interp1(T, G, t');
             testCase.verifyEqual(gam(:), (g(:) - g(1)) / (g(end) - g(1)), 'AbsTol', 1e-14);
         end

@@ -302,13 +302,13 @@ classdef fdawarp
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                        mf(1), f1(1,k,1), 7, option.penalty);
+                        mf(1), f1(1,k,1), 10, option.penalty);
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                        mf(1), f1(1,k,1), 7, option.penalty);
+                        mf(1), f1(1,k,1), 10, option.penalty);
                 end
             end
             gamI_o = SqrtMeanInverse(gam_o');
@@ -337,7 +337,7 @@ classdef fdawarp
                     parfor k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                            mf(1,r), f1(1,k,1), 7, option.penalty);
+                            mf(1,r), f1(1,k,1), 10, option.penalty);
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,~option.spl,option.spl);
@@ -346,7 +346,7 @@ classdef fdawarp
                     for k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                            mf(1,r), f1(1,k,1), 7, option.penalty);
+                            mf(1,r), f1(1,k,1), 10, option.penalty);
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,~option.spl,option.spl);
@@ -375,13 +375,13 @@ classdef fdawarp
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                        mf(1,r), f1(1,k,1), 7, option.penalty);
+                        mf(1,r), f1(1,k,1), 10, option.penalty);
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                        mf(1,r), f1(1,k,1), 7, option.penalty);
+                        mf(1,r), f1(1,k,1), 10, option.penalty);
                 end
             end
             gamI_o = SqrtMeanInverse(gam_o');
@@ -847,13 +847,13 @@ classdef fdawarp
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                        mf(1), f1(1,k,1), 7, option.penalty);
+                        mf(1), f1(1,k,1), 10, option.penalty);
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                        mf(1), f1(1,k,1), 7, option.penalty);
+                        mf(1), f1(1,k,1), 10, option.penalty);
                 end
             end
 
@@ -885,7 +885,7 @@ classdef fdawarp
                     parfor k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                            mf(1,r), f1(1,k,1), 7, option.penalty);
+                            mf(1,r), f1(1,k,1), 10, option.penalty);
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),t,~option.spl,option.spl);
@@ -900,7 +900,7 @@ classdef fdawarp
                     for k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                            mf(1,r), f1(1,k,1), 7, option.penalty);
+                            mf(1,r), f1(1,k,1), 10, option.penalty);
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),t,~option.spl,option.spl);
@@ -946,13 +946,13 @@ classdef fdawarp
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                        mf(1,r), f1(1,k,1), 7, option.penalty);
+                        mf(1,r), f1(1,k,1), 10, option.penalty);
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                        mf(1,r), f1(1,k,1), 7, option.penalty);
+                        mf(1,r), f1(1,k,1), 10, option.penalty);
                 end
             end
 
@@ -1093,7 +1093,7 @@ classdef fdawarp
                         gam1(k,:) = out_e.gamma;
                     else
                         gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method, ...
-                            mu(1), obj.f(1,k), 7, option.penalty);
+                            mu(1), obj.f(1,k), 10, option.penalty);
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
                     qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,~option.spl,option.spl);
@@ -1105,7 +1105,7 @@ classdef fdawarp
                         gam1(k,:) = out_e.gamma;
                     else
                         gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method, ...
-                            mu(1), obj.f(1,k), 7, option.penalty);
+                            mu(1), obj.f(1,k), 10, option.penalty);
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
                     qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,~option.spl,option.spl);

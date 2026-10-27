@@ -135,7 +135,7 @@ classdef fdahpns
             gam = zeros(M, n);
             for ii = 1:n
                 gam(:, ii) = optimum_reparam(mq, q1(:, ii), obj.warp_data.time, ...
-                    obj.warp_data.lambda, obj.warp_data.method, 0, 0, 7, penalty);
+                    obj.warp_data.lambda, obj.warp_data.method, 0, 0, 10, penalty);
             end
 
             psi = zeros(M, n);
