@@ -6,7 +6,7 @@ function psi = gam_to_psi(gam, smooth, parallel, nworkers)
 
 arguments
     gam double
-    smooth=true
+    smooth=false
     parallel=false
     nworkers=0
 end

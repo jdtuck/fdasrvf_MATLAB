@@ -4,7 +4,7 @@ function vec = gam_to_v(gam, smooth, parallel, nworkers)
 
 arguments
     gam double
-    smooth=true
+    smooth=false
     parallel=false
     nworkers=0
 end

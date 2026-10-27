@@ -1,8 +1,8 @@
 classdef WarpingConversionTest < matlab.unittest.TestCase
     % WARPINGCONVERSIONTEST Tests for warping-coordinate conversions
     %   Covers gam_to_psi/psi_to_gam, gam_to_v/v_to_gam and gam_to_h/h_to_gam.
-    %   All use smooth=false so the numerics are exact and no Curve Fitting
-    %   Toolbox 'fit' call is exercised.
+    %   All use smooth=false (the default) so the numerics are exact and no
+    %   Curve Fitting Toolbox 'fit' call is exercised.
 
     properties
         M
@@ -82,6 +82,15 @@ classdef WarpingConversionTest < matlab.unittest.TestCase
             [~, dx] = elastic_distance(f, f, t);
             testCase.verifyLessThan(dx, 1e-10, ...
                 'Phase distance of a function to itself should be ~0');
+        end
+
+        function testHFlatSegmentFinite(testCase)
+            % A warp with a flat segment (gamdot = 0) gives a finite h
+            s = linspace(0, 1, testCase.M)';
+            gam0 = interp1([0 .3 .5 1], [0 .4 .4 1], s);
+            h = gam_to_h(gam0);
+            testCase.verifyTrue(all(isfinite(h)), ...
+                'gam_to_h should be finite for flat warp segments');
         end
     end
 end
