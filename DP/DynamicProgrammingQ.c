@@ -52,15 +52,28 @@ double evalspline(double t, const double D[2], const double y[2]);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int i, j, k, l, n, M, N, Eidx, Fidx, Ftmp, Fmin, Num, *Path, *xy, x, y, cnt, pen=1;
-	const int scl = 1;
+	// q1 and q2 are resampled scl times finer for the cost along each
+	// path segment; the path itself stays on the N x N grid
+	int scl = 3;
 	const double *q1, *q2;
 	double *q1L, *q2L, *yy, *D1, *D2, *tmp1, *tmp2, *E, Etmp, Emin, t, a, b, lam = 0;
 
-	if (nrhs != 4)
-		mexErrMsgTxt("usage: [gam] = DynamicProgrammingQ(q1,q2,lam,pen)");
+	if (nrhs != 4 && nrhs != 5)
+		mexErrMsgTxt("usage: [gam] = DynamicProgrammingQ(q1,q2,lam,pen[,scl])");
 
 	if (!mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]) || !mxIsDouble(prhs[2]) || !mxIsDouble(prhs[3]))
 		mexErrMsgTxt("Expected double precision arguments.");
+
+	if (nrhs == 5) {
+		double scl_arg;
+		if (!mxIsDouble(prhs[4]))
+			mexErrMsgTxt("Expected double precision arguments.");
+		scl_arg = mxGetScalar(prhs[4]);
+		// written so that NaN is rejected too
+		if (!(scl_arg >= 1) || scl_arg > 64 || scl_arg != floor(scl_arg))
+			mexErrMsgTxt("Expected scl to be an integer between 1 and 64.");
+		scl = (int)scl_arg;
+	}
 
 	if (mxGetNumberOfDimensions(prhs[0]) != 2 || mxGetNumberOfDimensions(prhs[1]) != 2)
 		mexErrMsgTxt("First two arguments expected to be two dimensional.");
@@ -235,7 +248,7 @@ int xycompare(const void *x1, const void *x2) {
 
 double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j, int n, int scl, double lam, int pen) {
 	double m = (j-l)/(double)(i-k), sqrtm = sqrt(m), E = 0, y, tmp, tmp_pen = 0, ip, fp, q1dotq2;
-	int x, idx, d, iL=i*scl, kL=k*scl, lL=l*scl;
+	int x, idx, d, iL=i*scl, kL=k*scl, lL=l*scl, jL=j*scl;
 
 	// the penalty only depends on the slope m, so evaluate it once per call.
 	// pen == 0 leaves tmp_pen at 0, i.e. no penalty.
@@ -268,10 +281,20 @@ double CostFn2(const double *q1L, const double *q2L, int k, int l, int i, int j,
 	for (x = kL; x <= iL; ++x) {
 		y = (x-kL)*m + lL;
 		fp = modf(y, &ip);
-		idx = (int)(ip + (fp >= 0.5));
+		idx = (int)ip;
+		// y can land a rounding error past the segment end jL
+		if (idx >= jL) {
+			idx = jL;
+			fp = 0;
+		}
 
+		// interpolate q2 linearly between grid points; rounding to the
+		// nearest one made the cost, and so the warp, jump on the grid
 		for (d = 0; d < n; ++d) {
-			tmp = q1L[n*x + d] - sqrtm*q2L[n*idx + d];
+			tmp = q2L[n*idx + d];
+			if (fp > 0)
+				tmp += fp*(q2L[n*(idx+1) + d] - tmp);
+			tmp = q1L[n*x + d] - sqrtm*tmp;
 			E += (tmp*tmp + lam*tmp_pen);
 		}
 	}
