@@ -125,7 +125,7 @@ classdef fdawarp
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
             % option.penalty = 'roughness'; % warping penalty weighted by lambda (none, roughness, l2gam, l2psi, geodesic)
             % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
@@ -144,7 +144,7 @@ classdef fdawarp
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.penalty = 'roughness';
                 option.spl = true;
                 option.MaxItr = 20;
@@ -249,7 +249,7 @@ classdef fdawarp
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
             % option.penalty = 'roughness'; % warping penalty weighted by lambda (none, roughness, l2gam, l2psi, geodesic)
             % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
@@ -264,7 +264,7 @@ classdef fdawarp
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.penalty = 'roughness';
                 option.spl = true;
                 option.MaxItr = 20;
@@ -302,13 +302,13 @@ classdef fdawarp
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                        mf(1), f1(1,k,1), 7, option.penalty);
+                        mf(1), f1(1,k,1), 10, option.penalty);
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                        mf(1), f1(1,k,1), 7, option.penalty);
+                        mf(1), f1(1,k,1), 10, option.penalty);
                 end
             end
             gamI_o = SqrtMeanInverse(gam_o');
@@ -337,7 +337,7 @@ classdef fdawarp
                     parfor k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                            mf(1,r), f1(1,k,1), 7, option.penalty);
+                            mf(1,r), f1(1,k,1), 10, option.penalty);
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,~option.spl,option.spl);
@@ -346,7 +346,7 @@ classdef fdawarp
                     for k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                            mf(1,r), f1(1,k,1), 7, option.penalty);
+                            mf(1,r), f1(1,k,1), 10, option.penalty);
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),obj.time);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),obj.time,~option.spl,option.spl);
@@ -375,13 +375,13 @@ classdef fdawarp
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                        mf(1,r), f1(1,k,1), 7, option.penalty);
+                        mf(1,r), f1(1,k,1), 10, option.penalty);
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,obj.time,lambda,option.method, ...
-                        mf(1,r), f1(1,k,1), 7, option.penalty);
+                        mf(1,r), f1(1,k,1), 10, option.penalty);
                 end
             end
             gamI_o = SqrtMeanInverse(gam_o');
@@ -808,7 +808,7 @@ classdef fdawarp
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.penalty = 'roughness';
                 option.spl = true;
                 option.MaxItr = 20;
@@ -847,13 +847,13 @@ classdef fdawarp
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                        mf(1), f1(1,k,1), 7, option.penalty);
+                        mf(1), f1(1,k,1), 10, option.penalty);
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq;
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                        mf(1), f1(1,k,1), 7, option.penalty);
+                        mf(1), f1(1,k,1), 10, option.penalty);
                 end
             end
 
@@ -885,7 +885,7 @@ classdef fdawarp
                     parfor k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                            mf(1,r), f1(1,k,1), 7, option.penalty);
+                            mf(1,r), f1(1,k,1), 10, option.penalty);
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),t,~option.spl,option.spl);
@@ -900,7 +900,7 @@ classdef fdawarp
                     for k = 1:N
                         q_c = q(:,k,1); mq_c = mq(:,r);
                         gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                            mf(1,r), f1(1,k,1), 7, option.penalty);
+                            mf(1,r), f1(1,k,1), 10, option.penalty);
                         gam_dev(k,:) = gradient(gam_o(k,:), 1/(M-1));
                         f_temp(:,k) = warp_f_gamma(f1(:,k,1),gam_o(k,:),t);
                         q_temp(:,k) = f_to_srvf(f_temp(:,k),t,~option.spl,option.spl);
@@ -946,13 +946,13 @@ classdef fdawarp
                 parfor k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                        mf(1,r), f1(1,k,1), 7, option.penalty);
+                        mf(1,r), f1(1,k,1), 10, option.penalty);
                 end
             else
                 for k = 1:N
                     q_c = q(:,k,1); mq_c = mq(:,r);
                     gam_o(k,:) = optimum_reparam(mq_c,q_c,t,lambda,option.method, ...
-                        mf(1,r), f1(1,k,1), 7, option.penalty);
+                        mf(1,r), f1(1,k,1), 10, option.penalty);
                 end
             end
 
@@ -1029,7 +1029,7 @@ classdef fdawarp
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
             % option.showplot = 1; % turns on and off plotting
-            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS, expBayes)
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS, expBayes)
             % option.penalty = 'roughness'; % warping penalty weighted by lambda (none, roughness, l2gam, l2psi, geodesic)
             % option.spl = true; % use interpolating spline derivative (false: smoothing spline, lossy)
             % option.MaxItr = 20;  % maximum iterations
@@ -1046,7 +1046,7 @@ classdef fdawarp
                 option.smooth = 0;
                 option.sparam = 25;
                 option.showplot = 1;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.penalty = 'roughness';
                 option.spl = true;
                 option.MaxItr = 20;
@@ -1093,7 +1093,7 @@ classdef fdawarp
                         gam1(k,:) = out_e.gamma;
                     else
                         gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method, ...
-                            mu(1), obj.f(1,k), 7, option.penalty);
+                            mu(1), obj.f(1,k), 10, option.penalty);
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
                     qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,~option.spl,option.spl);
@@ -1105,7 +1105,7 @@ classdef fdawarp
                         gam1(k,:) = out_e.gamma;
                     else
                         gam1(k,:) = optimum_reparam(mq,q(:,k),obj.time,lambda,option.method, ...
-                            mu(1), obj.f(1,k), 7, option.penalty);
+                            mu(1), obj.f(1,k), 10, option.penalty);
                     end
                     fn1(:,k) = warp_f_gamma(obj.f(:,k,1),gam1(k,:),obj.time);
                     qn1(:,k) = f_to_srvf(fn1(:,k),obj.time,~option.spl,option.spl);

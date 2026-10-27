@@ -163,7 +163,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 				k = i - Nbrs[Num][0];
 				l = j - Nbrs[Num][1];
 
-				if (k >= 0 && l >= 0) {
+				// the edge cost is >= 0 when lam >= 0, so a source that already
+				// costs at least Emin cannot win; skip computing its edge
+				if (k >= 0 && l >= 0 && (Num == 0 || lam < 0 || E[N*l + k] < Emin)) {
 					Etmp = E[N*l + k] + CostFn2(q1L,q2L,k,l,i,j,n,scl,lam,pen);
 					if (Num == 0 || Etmp < Emin) {
 						Emin = Etmp;

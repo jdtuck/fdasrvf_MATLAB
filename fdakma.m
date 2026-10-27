@@ -91,7 +91,7 @@ classdef fdakma
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP1'; % optimization method (DP, DP2, SIMUL, RBFGS)
+            % option.method = 'DP'; % optimization method (DP, DP2, SIMUL, RBFGS)
             % option.MaxItr = 20;  % maximum iterations
             % option.thresh = 0.01; % cost function threshold
             %
@@ -109,7 +109,7 @@ classdef fdakma
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             end
@@ -288,7 +288,7 @@ classdef fdakma
             % option.closepool = 0; % determines wether to close matlabpool
             % option.smooth = 0; % smooth data using standard box filter
             % option.sparam = 25; % number of times to run filter
-            % option.method = 'DP1'; % optimization method (DP, SIMUL, RBFGS)
+            % option.method = 'DP'; % optimization method (DP, SIMUL, RBFGS)
             % option.MaxItr = 20;  % maximum iterations
             % option.thresh = 0.01; % cost function threshold
             %
@@ -304,7 +304,7 @@ classdef fdakma
                 option.closepool = 0;
                 option.smooth = 0;
                 option.sparam = 25;
-                option.method = 'DP1';
+                option.method = 'DP';
                 option.MaxItr = 20;
                 option.thresh = 0.01;
             end
