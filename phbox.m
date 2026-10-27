@@ -170,7 +170,9 @@ classdef phbox
             upper_v = v3 + k_p *IQR * v3 / sqrt(trapz(t,v3.^2));
             lower_v = v1 + k_p *IQR * v1 / sqrt(trapz(t,v1.^2));
             
-            whisker_dis = max(lower_v,upper_v);
+            upper_dis = sqrt(trapz(t,upper_v.^2));
+            lower_dis = sqrt(trapz(t,lower_v.^2));
+            whisker_dis = max(lower_dis,upper_dis);
             
             % identify phase outliers
             obj.outlier_index = [];
