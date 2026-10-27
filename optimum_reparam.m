@@ -1,4 +1,4 @@
-function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty)
+function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty,scl)
 % OPTIMUM_REPARAM Calculates Warping for two SRVFs
 % -------------------------------------------------------------------------%
 % This function aligns two SRSF functions using Dynamic Programming
@@ -8,6 +8,7 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty)
 %         gam = optimum_reparam(q1,q2,t,lambda,method)
 %         gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim)
 %         gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty)
+%         gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty,scl)
 %
 % Input:
 % q1: srsf of function 1
@@ -15,11 +16,13 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty)
 % t: sample points of function 2
 % lambda: controls amount of warping (default = 0)
 % method: controls which optimization method (default="DP") options are
-% Dynamic Programming ("DP"), and Riemannian BFGS ("RBFGS")
+% Dynamic Programming ("DP", "DP1"), and Riemannian BFGS ("RBFGS").  "DP"
+% fits as well as "DP1" and is faster
 % w: controls LRBFGS (default = 0.01)
 % f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
-% nbhd_dim: size of the grid (default = 7)
+% nbhd_dim: size of the grid for "DP" (default = 10, the 63 slopes "DP1"
+% searches)
 % penalty: penalty term the amount of warping is measured with, options are
 % "none", "roughness", "l2gam", "l2psi" and "geodesic" (default =
 % "roughness").  The penalty is weighted by lambda, so it has no effect when
@@ -28,6 +31,10 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty)
 % For "DP" and "DP1", "roughness" is the integral of (1-sqrt(gamdot))^2,
 % the same as "l2psi" and the same default the R ("roughness") and Python
 % ("l2psi") packages apply.
+% scl: for "DP1", the SRVFs are resampled scl times finer to evaluate the
+% alignment cost; the warp stays on the grid t (default = 3, 1 turns the
+% resampling off).  "DP" integrates the linearly interpolated SRVFs
+% exactly, so it does not use scl.
 %
 % Output:
 % gam: warping function
@@ -36,11 +43,12 @@ arguments
     q2
     t
     lambda = 0.0;
-    method = 'DP1';
+    method = 'DP';
     f1o = 0.0;
     f2o = 0.0;
-    nbhd_dim = 7;
+    nbhd_dim = 10;
     penalty {mustBeTextScalar} = 'roughness';
+    scl (1,1) {mustBeInteger, mustBePositive} = 3;
 end
 
 % The two solver families number the penalties differently, so translate the
@@ -81,7 +89,7 @@ switch upper(method)
         if size(q2,2) == 1
             q2 = q2';
         end 
-        [gam0] = DynamicProgrammingQ(q2,q1,lambda,pen_dp);
+        [gam0] = DynamicProgrammingQ(q2,q1,lambda,pen_dp,scl);
     case 'SIMUL'
         [s1,s2, g1,g2,~,~,~]  = simul_align(c1,c2);
         u = linspace(0,1,length(g1));

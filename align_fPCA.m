@@ -55,7 +55,7 @@ arguments
     option.smooth = 0;
     option.sparam = 25;
     option.showplot = 1;
-    option.method = 'DP1';
+    option.method = 'DP';
     option.MaxItr = 20;
 end
 

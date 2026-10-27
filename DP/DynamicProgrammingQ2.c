@@ -10,9 +10,8 @@
  * function [G, T, dist] = DynamicProgrammingQ2( Q1, T1, Q2, T2, tv1, tv2, lam, nbhd_dim )
  * function [G, T, dist] = DynamicProgrammingQ2( Q1, T1, Q2, T2, tv1, tv2, lam, nbhd_dim, pen )
  *
- * Q1, Q2    dim x n arrays of SRVF samples (column-major).  Only the first
- *           nsamps-1 columns are read; Q is piecewise constant between
- *           changepoints.
+ * Q1, Q2    dim x n arrays of SRVF samples (column-major).  Q is linear
+ *           between changepoints, and the cost integrates it exactly.
  * T1, T2    1 x nsamps changepoint parameters.
  * tv1, tv2  1 x ntv parameter values defining the DP grid.
  * lam       scalar warping penalty weight.

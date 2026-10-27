@@ -74,7 +74,7 @@ q2 = f_to_srvf(sin(2*pi*timet.^1.6)', timet');
 for method = {'DP1','DP','RBFGS'}
     gam_default = optimum_reparam(q1, q2, timet', 0.5, method{1});
     gam_named = optimum_reparam(q1, q2, timet', 0.5, method{1}, ...
-        0.0, 0.0, 7, 'roughness');
+        0.0, 0.0, 10, 'roughness');
     assert(isequal(gam_default, gam_named), ...
         sprintf('Default penalty for %s is not roughness', method{1}))
 end
