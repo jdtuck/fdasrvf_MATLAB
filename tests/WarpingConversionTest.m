@@ -1,8 +1,8 @@
 classdef WarpingConversionTest < matlab.unittest.TestCase
     % WARPINGCONVERSIONTEST Tests for warping-coordinate conversions
     %   Covers gam_to_psi/psi_to_gam, gam_to_v/v_to_gam and gam_to_h/h_to_gam.
-    %   All use smooth=false so the numerics are exact and no Curve Fitting
-    %   Toolbox 'fit' call is exercised.
+    %   All use smooth=false (the default) so the numerics are exact and no
+    %   Curve Fitting Toolbox 'fit' call is exercised.
 
     properties
         M
@@ -64,6 +64,33 @@ classdef WarpingConversionTest < matlab.unittest.TestCase
                 'Non-identity warp did not round-trip through psi');
             testCase.verifyGreaterThan(max(abs(gam0(:) - s)), 1e-2, ...
                 'Test warp is too close to identity to be meaningful');
+        end
+
+        function testPsiIsUnitNorm(testCase)
+            % psi lies on the Hilbert sphere
+            s = linspace(0, 1, testCase.M)';
+            gam0 = (exp(3*s) - 1) / (exp(3) - 1);
+            psi = gam_to_psi([testCase.gamId, gam0], false);
+            testCase.verifyEqual(sqrt(trapz(s, psi.^2)), [1 1], 'AbsTol', 1e-12, ...
+                'psi should have unit L2 norm');
+        end
+
+        function testPhaseDistanceIdentical(testCase)
+            % Aligning a function to itself gives zero phase distance
+            t = linspace(0, 1, testCase.M);
+            f = (sin(2*pi*t) + t)';
+            [~, dx] = elastic_distance(f, f, t);
+            testCase.verifyLessThan(dx, 1e-10, ...
+                'Phase distance of a function to itself should be ~0');
+        end
+
+        function testHFlatSegmentFinite(testCase)
+            % A warp with a flat segment (gamdot = 0) gives a finite h
+            s = linspace(0, 1, testCase.M)';
+            gam0 = interp1([0 .3 .5 1], [0 .4 .4 1], s);
+            h = gam_to_h(gam0);
+            testCase.verifyTrue(all(isfinite(h)), ...
+                'gam_to_h should be finite for flat warp segments');
         end
     end
 end
