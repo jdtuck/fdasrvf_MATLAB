@@ -35,6 +35,10 @@ double dp_costs(
 
         if ( sr < 0 || sc < 0 ) continue;
 
+        /* The edge weight is >= 0 when lam >= 0, so a source that already
+         * costs at least the best candidate cannot win; skip its edge. */
+        if ( lam >= 0 && E[ntv1*sr+sc] >= E[ntv1*tr+tc] ) continue;
+
         w = dp_edge_weight( Q1, T1, nsamps1, Q2, T2, nsamps2, dim, 
           tv1[sc], tv1[tc], tv2[sr], tv2[tr], idxv1[sc], idxv2[sr], lam, pen );
 
