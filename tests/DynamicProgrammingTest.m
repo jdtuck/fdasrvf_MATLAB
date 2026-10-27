@@ -1,9 +1,10 @@
 classdef DynamicProgrammingTest < matlab.unittest.TestCase
     % DYNAMICPROGRAMMINGTEST Accuracy of the DP1 alignment on a known warp
     %   f2 = f1 o gam_true, so aligning q2 to q1 should recover the inverse
-    %   of gam_true.  The DP cost interpolates q2 between grid points;
-    %   rounding to the nearest grid point instead left the warp up to 0.63
-    %   grid cells off and the fit worse than the true warp's.
+    %   of gam_true.  The DP cost resamples q1 and q2 three times finer
+    %   (scl = 3) and interpolates q2 between those points; rounding q2 to
+    %   the nearest grid point at scl = 1 left the warp up to 0.63 grid cells
+    %   off and the fit worse than the true warp's.
 
     properties
         t
@@ -39,6 +40,18 @@ classdef DynamicProgrammingTest < matlab.unittest.TestCase
             dyTrue = alignError(testCase, testCase.gamInv);
             testCase.verifyLessThan(dy, 1.1 * dyTrue, ...
                 'DP1 alignment should fit about as well as the true warp');
+        end
+
+        function testDefaultScale(testCase)
+            % scl defaults to 3 and can be set as a fifth argument
+            q1 = testCase.q1';
+            q2 = testCase.q2';
+            g = DynamicProgrammingQ(q2, q1, 0, 0);
+            testCase.verifyEqual(DynamicProgrammingQ(q2, q1, 0, 0, 3), g, ...
+                'DynamicProgrammingQ should default to scl = 3');
+            g1 = DynamicProgrammingQ(q2, q1, 0, 0, 1);
+            testCase.verifyEqual(size(g1), size(g));
+            testCase.verifyTrue(all(diff(g1) >= 0), 'scl = 1 warp should be monotone');
         end
     end
 end
