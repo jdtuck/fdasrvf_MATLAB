@@ -73,7 +73,8 @@ validateattributes(workerDirName, {'char'}, {'nonempty'});
 % initialized and the worker file is created. The condition is skipped in
 % the following calls.
 if isempty(workerFileName)
-    uuid = char(java.util.UUID.randomUUID);
+    % tempname() gives a unique name without needing the Java runtime
+    [~, uuid] = fileparts(tempname);
     workerFileName = fullfile(workerDirName, [filePattern, uuid]);
     
     fid = fopen(workerFileName, 'wb');
