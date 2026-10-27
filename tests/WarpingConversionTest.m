@@ -78,7 +78,7 @@ classdef WarpingConversionTest < matlab.unittest.TestCase
         function testPhaseDistanceIdentical(testCase)
             % Aligning a function to itself gives zero phase distance
             t = linspace(0, 1, testCase.M);
-            f = sin(2*pi*t) + t;
+            f = (sin(2*pi*t) + t)';
             [~, dx] = elastic_distance(f, f, t);
             testCase.verifyLessThan(dx, 1e-10, ...
                 'Phase distance of a function to itself should be ~0');
