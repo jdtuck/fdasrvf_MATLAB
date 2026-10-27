@@ -65,5 +65,23 @@ classdef WarpingConversionTest < matlab.unittest.TestCase
             testCase.verifyGreaterThan(max(abs(gam0(:) - s)), 1e-2, ...
                 'Test warp is too close to identity to be meaningful');
         end
+
+        function testPsiIsUnitNorm(testCase)
+            % psi lies on the Hilbert sphere
+            s = linspace(0, 1, testCase.M)';
+            gam0 = (exp(3*s) - 1) / (exp(3) - 1);
+            psi = gam_to_psi([testCase.gamId, gam0], false);
+            testCase.verifyEqual(sqrt(trapz(s, psi.^2)), [1 1], 'AbsTol', 1e-12, ...
+                'psi should have unit L2 norm');
+        end
+
+        function testPhaseDistanceIdentical(testCase)
+            % Aligning a function to itself gives zero phase distance
+            t = linspace(0, 1, testCase.M);
+            f = sin(2*pi*t) + t;
+            [~, dx] = elastic_distance(f, f, t);
+            testCase.verifyLessThan(dx, 1e-10, ...
+                'Phase distance of a function to itself should be ~0');
+        end
     end
 end
