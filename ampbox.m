@@ -151,6 +151,12 @@ classdef ampbox
             
             obj.Q1a_index = CR_alpha(maxloc_row);
             obj.Q3a_index = CR_alpha(maxloc_col);
+            
+            % check quartile and quantile going same direction
+            tst = trapz(t, (q_tilde(:,obj.Q1a_index) - obj.q_median).*(q_tilde(:,obj.Q1_index) - obj.q_median));
+            if (tst < 0)
+                [obj.Q1a_index, obj.Q3a_index] = deal(obj.Q3a_index, obj.Q1a_index);
+            end
             Q1a_q = q_tilde(:,obj.Q1a_index);
             Q3a_q = q_tilde(:,obj.Q3a_index);
             obj.Q1a = f_tilde(:,obj.Q1a_index);
