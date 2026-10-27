@@ -43,6 +43,18 @@ classdef ManifoldMapTest < matlab.unittest.TestCase
                 'inv_exp_map o exp_map did not recover the tangent vector');
         end
 
+        function testInvExpMapSmallAngle(testCase)
+            % The angle stays accurate for nearby points, where acos of
+            % the inner product would round to zero or ~1e-8
+            v0 = sin(2*pi*linspace(0, 1, testCase.M))';
+            v = v0 - inner_product(v0, testCase.psi) * testCase.psi;
+            v = 1e-7 * v / L2norm(v);
+            p2 = exp_map(testCase.psi, v);
+            [~, theta] = inv_exp_map(testCase.psi, p2);
+            testCase.verifyEqual(theta, 1e-7, 'RelTol', 1e-6, ...
+                'inv_exp_map angle inaccurate for nearby points');
+        end
+
         function testL2normOnes(testCase)
             % L2 norm of the constant one function over [0,1] is 1
             testCase.verifyEqual(L2norm(ones(testCase.M, 1)), 1, 'AbsTol', 1e-12, ...

@@ -4,59 +4,18 @@ function vec = gam_to_v(gam, smooth, parallel, nworkers)
 
 arguments
     gam double
-    smooth=true
+    smooth=false
     parallel=false
     nworkers=0
 end
 
-if parallel
-    start_parpool(nworkers);
-end
-
 [T,n] = size(gam);
-time = linspace(0,1,T);
 
-psi = zeros(T,n);
-binsize = mean(diff(time));
-
-if smooth
-    if parallel
-        parfor i = 1:n
-            y = fit(time', gam(:,i),'smoothingspline','SmoothingParam',.9999);
-            fy = differentiate(y, time);
-            idx = fy <= 0;
-            fy(idx) = 0;
-            psi(:,i) = sqrt(fy);
-        end
-    else
-        for i = 1:n
-            y = fit(time', gam(:,i),'smoothingspline','SmoothingParam',.9999);
-            fy = differentiate(y, time);
-            idx = fy <= 0;
-            fy(idx) = 0;
-            psi(:,i) = sqrt(fy);
-        end
-    end
-else
-    if parallel
-        parfor i=1:n
-            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
-        end
-    else
-        for i=1:n
-            psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
-        end
-    end
-end
+psi = gam_to_psi(gam, smooth, parallel, nworkers);
 
 mu = ones(1, T);
 vec = zeros(T,n);
-if parallel
-    parfor i = 1:n
-        vec(:,i) = inv_exp_map(mu,psi(:,i));
-    end
-else
-    for i = 1:n
-        vec(:,i) = inv_exp_map(mu,psi(:,i));
-    end
+M = parfor_workers(parallel, nworkers);
+parfor (i = 1:n, M)
+    vec(:,i) = inv_exp_map(mu,psi(:,i));
 end

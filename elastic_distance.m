@@ -36,6 +36,7 @@ qw = f_to_srvf(fw.',time);
 dy = sqrt(trapz(time,(q1-qw).^2));
 
 time1 = linspace(0,1,length(time));
-binsize = mean(diff(time1));
-psi = sqrt(max(gradient(gam,binsize),0));
-dx = acos(min(max(trapz(time1,psi),-1),1));
+psi = gam_to_psi(gam(:), false);
+% atan2 form of acos(<psi,1>), accurate for small distances
+ip = trapz(time1(:),psi);
+dx = atan2(sqrt(trapz(time1(:),(psi-ip).^2)), ip);

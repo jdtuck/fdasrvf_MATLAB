@@ -1,10 +1,12 @@
 function psi = gam_to_psi(gam, smooth, parallel, nworkers)
 % GAM_TO_PSI Convert warping function to hilbert sphere points
 % -----------------------------------------------------
+% psi = sqrt(gamdot), rescaled to unit L2 norm so it lies on the Hilbert
+% sphere (smoothing and clipping negative slopes otherwise move it off)
 
 arguments
     gam double
-    smooth=true
+    smooth=false
     parallel=false
     nworkers=0
 end
@@ -29,3 +31,7 @@ else
         psi(:,i) = sqrt(max(gradient(gam(:,i),binsize),0));
     end
 end
+
+nrm = sqrt(trapz(time, psi.^2, 1));
+nrm(nrm == 0) = 1;
+psi = psi ./ nrm;
