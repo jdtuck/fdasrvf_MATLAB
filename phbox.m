@@ -126,8 +126,6 @@ classdef phbox
             obj.Q3_index = CR_50(maxloc_col);
             obj.Q1 = gam(:, obj.Q1_index);
             obj.Q3 = gam(:, obj.Q3_index);
-            Q1_psi = sqrt(max(gradient(obj.Q1,1/(M-1)),0))';
-            Q3_psi = sqrt(max(gradient(obj.Q3,1/(M-1)),0))';
             
             % identify phase quantiles
             [~, dx_ordering] = sort(dx);
@@ -151,17 +149,16 @@ classdef phbox
             
             obj.Q1a_index = CR_alpha(maxloc_row);
             obj.Q3a_index = CR_alpha(maxloc_col);
-            obj.Q1a = gam(:, obj.Q1a_index);
-            obj.Q3a = gam(:, obj.Q3a_index);
-            Q1a_psi = sqrt(max(gradient(obj.Q1a,1/(M-1)),0))';
-            Q3a_psi = sqrt(max(gradient(obj.Q3a,1/(M-1)),0))';
             
             % check quartile and quatnile going same direction
             tst = trapz(t, v(:,obj.Q1a_index).*v(:,obj.Q1_index));
             if (tst < 0)
-                obj.Q1a = gam(:,obj.Q3a_index);
-                obj.Q3a = gam(:,obj.Q1a_index);
+                [obj.Q1a_index, obj.Q3a_index] = deal(obj.Q3a_index, obj.Q1a_index);
             end
+            obj.Q1a = gam(:, obj.Q1a_index);
+            obj.Q3a = gam(:, obj.Q3a_index);
+            Q1a_psi = psi(:, obj.Q1a_index);
+            Q3a_psi = psi(:, obj.Q3a_index);
             
             % compute phase whiskers
             IQR = dx(obj.Q1_index) + dx(obj.Q3_index);
@@ -197,8 +194,6 @@ classdef phbox
             [~, min_index] = min(distance_to_lower);
             obj.minn = gam(:,min_index);
             obj.maxx = gam(:,max_index);
-            min_psi = psi(:,min_index);
-            max_psi = psi(:,max_index);
             
             s = linspace(0,1,100);
             t = t(:);
@@ -213,16 +208,15 @@ classdef phbox
                 Fs2(:,396+j) = (1-s(j)) * (obj.Q3-t) + s(j) * (obj.Q3a-t);
                 Fs2(:,495+j) = (1-s(j)) * (obj.Q3a-t) + s(j) * (obj.maxx-t);
             end
-            Q1_psi = Q1_psi(:);
-            Q1a_psi = Q1a_psi(:);
-            Q3_psi = Q3_psi(:);
-            Q3a_psi = Q3a_psi(:);
-            [~,d1]=inv_exp_map(obj.psi_median,Q1_psi);
-            [~,d1a]=inv_exp_map(Q1_psi,Q1a_psi);
-            [~,dl]=inv_exp_map(Q1a_psi,min_psi);
-            [~,d3]=inv_exp_map(obj.psi_median,Q3_psi);
-            [~,d3a]=inv_exp_map(Q3_psi,Q3a_psi);
-            [~,du]=inv_exp_map(Q3a_psi,max_psi);
+            % place each curve at its distance from the median; the increments
+            % between neighbouring curves then sum to that distance (pairwise
+            % distances like d(Q1,Q1a) would overshoot by the triangle inequality)
+            d1 = dx(obj.Q1_index);
+            d1a = dx(obj.Q1a_index) - d1;
+            dl = dx(min_index) - d1 - d1a;
+            d3 = dx(obj.Q3_index);
+            d3a = dx(obj.Q3a_index) - d3;
+            du = dx(max_index) - d3 - d3a;
             part1=linspace(-d1-d1a-dl,-d1-d1a,100);
             part2=linspace(-d1-d1a,-d1,100);
             part3=linspace(-d1,0,100);
