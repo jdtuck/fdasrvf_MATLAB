@@ -22,11 +22,15 @@ classdef ampbox
     %   f_median - median function
     %   q_median - median srvf
     %   plt - surface plot mesh
+    %   r50 - distance bounding the 50% central region
+    %   ralpha - distance bounding the (1-alpha) central region
+    %   whisker_dis - whisker (outlier cutoff) distance
     %
     %
     % ampbox Methods:
     %   ampbox - class constructor
     %   construct_boxplot - construct boxplot
+    %   classify - place new functions in the boxplot regions
     %   plot - plot results and functions in object
     %          
     %
@@ -50,6 +54,11 @@ classdef ampbox
         Q1a_index      % index of quantiles
         Q3a_index      % index of quantiles
         dist           % distances
+        alpha          % quantile level used for Q1a/Q3a
+        k_a            % whisker scale
+        r50            % distance bounding the 50% central region
+        ralpha         % distance bounding the (1-alpha) central region
+        whisker_dis    % whisker (outlier cutoff) distance
     end
     
     methods
@@ -106,6 +115,7 @@ classdef ampbox
             [~, dy_ordering] = sort(dy);
             CR_50 = dy_ordering(1:ceil(N/2));       % 50% Central Region
             m = max(dy(CR_50));                     % Maximal amplitude distance within 50% Central Region
+            obj.r50 = m;
             
             % identify amplitude quartiles
             angle = zeros(length(CR_50), length(CR_50));
@@ -134,6 +144,7 @@ classdef ampbox
             [~, dy_ordering] = sort(dy);
             CR_alpha = dy_ordering(1:round(N*(1-alpha)));       % (1-alpha)% Central Region
             m = max(dy(CR_alpha));                     % Maximal amplitude distance within (1-alpha)% Central Region
+            obj.ralpha = m;
             angle = zeros(length(CR_alpha), length(CR_alpha));
             energy = zeros(length(CR_alpha), length(CR_alpha));
             for i = 1:(length(CR_alpha)-1)
@@ -172,6 +183,9 @@ classdef ampbox
             upper_dis = sqrt(trapz(t,(upper_q - obj.q_median).^2));
             lower_dis = sqrt(trapz(t,(lower_q - obj.q_median).^2));
             whisker_dis = max([lower_dis upper_dis]);
+            obj.whisker_dis = whisker_dis;
+            obj.alpha = alpha;
+            obj.k_a = k_a;
             
             % identify amplitude outliers
             obj.outlier_index = [];
@@ -243,6 +257,58 @@ classdef ampbox
             
         end
         
+        function out = classify(obj, f_new, option)
+            % CLASSIFY place new functions in the amplitude boxplot regions
+            % -------------------------------------------------------------------------
+            % Aligns new functions to the template and compares their
+            % amplitude distance to the median with the boxplot regions
+            %
+            % Usage:  out = obj.classify(f_new)
+            %         out = obj.classify(f_new, spl=false)
+            %
+            % Input:
+            % f_new: matrix (M,K) of K new functions sampled at warp_data.time
+            % option.spl: srvf derivative used for the alignment (default = true)
+            %
+            % Output: structure with fields (one column/entry per function)
+            % dist: amplitude distance to the median srvf
+            % level: 1 = 50% region, 2 = (1-alpha) region, 3 = within
+            %        whiskers, 4 = outlier
+            % region: level as text
+            % side: "Q1" or "Q3", the quartile direction the function lies in
+            % fn, qn, gam: aligned functions, srvfs and warping functions
+            arguments
+                obj
+                f_new
+                option.spl = true;
+            end
+            if (isempty(obj.whisker_dis))
+                error('Please run construct_boxplot first!');
+            end
+            t = obj.warp_data.time(:);
+            [out.fn, out.qn, out.gam] = obj.warp_data.align_new(f_new, spl=option.spl);
+
+            if obj.warp_data.rsamps
+                Q3_q = obj.warp_data.qs(:,obj.Q3_index);
+            else
+                Q3_q = obj.warp_data.qn(:,obj.Q3_index);
+            end
+            v3 = Q3_q(:) - obj.q_median(:);
+
+            K = size(out.qn, 2);
+            out.dist = zeros(1,K);
+            side = zeros(1,K);
+            for k = 1:K
+                v = out.qn(:,k) - obj.q_median(:);
+                out.dist(k) = sqrt(trapz(t, v.^2));
+                side(k) = trapz(t, v.*v3);
+            end
+            [out.level, out.region] = boxplot_region(out.dist, ...
+                [obj.r50, obj.ralpha, obj.whisker_dis], obj.alpha);
+            out.side = repmat("Q1", 1, K);
+            out.side(side >= 0) = "Q3";
+        end
+
         function plot(obj)
             % plot plot box plot and surface plot
             % -------------------------------------------------------------------------

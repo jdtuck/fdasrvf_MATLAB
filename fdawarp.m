@@ -44,6 +44,7 @@ classdef fdawarp
     %   multiple_align_functions - align functions to a specified mean
     %   gauss_model - model functions using a generative gaussian model on
     %       fPCA space
+    %   align_new - align new functions to the fitted template
     %   plot - plot results and functions in object
     %
     %
@@ -1251,6 +1252,54 @@ classdef fdawarp
             obj.ft = f_c;
             obj.qs = q_s(1:M,:);
             obj.rsamps = true;
+        end
+
+        function [fn, qn, gam] = align_new(obj, f_new, option)
+            % ALIGN_NEW align new functions to the fitted template
+            % -------------------------------------------------------------------------
+            % Aligns new functions to the template srvf (mqn) with the same
+            % lambda, method and penalty used to fit the object
+            %
+            % Usage:  [fn, qn, gam] = obj.align_new(f_new)
+            %         [fn, qn, gam] = obj.align_new(f_new, spl=false)
+            %
+            % Input:
+            % f_new: matrix (M,K) of K new functions sampled at obj.time
+            % option.spl: srvf derivative used for the fit (default = true);
+            %             data smoothed for the fit should be smoothed the
+            %             same way before calling
+            %
+            % Output:
+            % fn: (M,K) aligned functions
+            % qn: (M,K) aligned srvfs
+            % gam: (M,K) warping functions
+            arguments
+                obj
+                f_new
+                option.spl = true;
+            end
+            if (isempty(obj.mqn) || strcmpi(obj.method, 'bayesian'))
+                error('Please align fdawarp class with time_warping or time_warping_median first!');
+            end
+            t = obj.time(:);
+            if (isvector(f_new))
+                f_new = f_new(:);
+            end
+            [M, K] = size(f_new);
+            if (M ~= length(t))
+                error('f_new must have length(obj.time) rows');
+            end
+
+            q_new = f_to_srvf(f_new, t, ~option.spl, option.spl);
+            fn = zeros(M,K);
+            qn = zeros(M,K);
+            gam = zeros(M,K);
+            for k = 1:K
+                gam(:,k) = optimum_reparam(obj.mqn(:), q_new(:,k), t, obj.lambda, ...
+                    obj.method, obj.fmean(1), f_new(1,k), 10, obj.penalty);
+                fn(:,k) = warp_f_gamma(f_new(:,k), gam(:,k), t);
+                qn(:,k) = f_to_srvf(fn(:,k), t, ~option.spl, option.spl);
+            end
         end
 
         function plot(obj)
