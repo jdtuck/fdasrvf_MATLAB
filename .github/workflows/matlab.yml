@@ -25,12 +25,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
       - if: runner.os == 'Linux'
+        # build the MEX files with the newest gcc/g++ the runner's Ubuntu packages
         run: |
-          sudo apt install software-properties-common -y
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt install gcc-10 g++-10 -y
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10
-          sudo apt-get install -y libopenblas-dev
+          sudo apt-get update
+          v=$(apt-cache pkgnames g++- | grep -E '^g\+\+-[0-9]+$' | sed 's/^g++-//' | sort -n | tail -1)
+          sudo apt-get install -y gcc-$v g++-$v libopenblas-dev
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$v 100 --slave /usr/bin/g++ g++ /usr/bin/g++-$v
+          gcc --version
       - if: runner.os == 'Windows'
         uses: matlab-actions/setup-matlab@v3
         with:

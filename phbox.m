@@ -22,11 +22,15 @@ classdef phbox
     %   median_x       % median warping function
     %   psi_median     % median srvf of warping function
     %   plt            % surface plot mesh
+    %   r50            % distance bounding the 50% central region
+    %   ralpha         % distance bounding the (1-alpha) central region
+    %   whisker_dis    % whisker (outlier cutoff) distance
     %
     %
     % phbox Methods:
     %   phbox - class constructor
     %   construct_boxplot - construct boxplot
+    %   classify - place new functions in the boxplot regions
     %   plot - plot results and functions in object
     %
     %
@@ -50,6 +54,11 @@ classdef phbox
         Q1a_index      % index of quantiles
         Q3a_index      % index of quantiles
         dist           % distances
+        alpha          % quantile level used for Q1a/Q3a
+        k_p            % whisker scale
+        r50            % distance bounding the 50% central region
+        ralpha         % distance bounding the (1-alpha) central region
+        whisker_dis    % whisker (outlier cutoff) distance
     end
     
     methods
@@ -105,6 +114,7 @@ classdef phbox
             [~, dx_ordering] = sort(dx);
             CR_50 = dx_ordering(1:ceil(N/2));   % 50% Central Region
             m = max(dx(CR_50));                 % Maximal phase distance within 50% Central Region
+            obj.r50 = m;
             
             % identify phase quartiles
             angle = zeros(length(CR_50), length(CR_50));
@@ -130,7 +140,8 @@ classdef phbox
             % identify phase quantiles
             [~, dx_ordering] = sort(dx);
             CR_alpha = dx_ordering(1:round(N*(1-alpha)));   % 50% Central Region
-            m = max(dx(CR_alpha));                 % Maximal phase distance within 50% Central Regionles
+            m = max(dx(CR_alpha));                 % Maximal phase distance within (1-alpha)% Central Region
+            obj.ralpha = m;
             
             angle = zeros(length(CR_alpha), length(CR_alpha));
             energy = zeros(length(CR_alpha), length(CR_alpha));
@@ -170,6 +181,9 @@ classdef phbox
             upper_dis = sqrt(trapz(t,upper_v.^2));
             lower_dis = sqrt(trapz(t,lower_v.^2));
             whisker_dis = max(lower_dis,upper_dis);
+            obj.whisker_dis = whisker_dis;
+            obj.alpha = alpha;
+            obj.k_p = k_p;
             
             % identify phase outliers
             obj.outlier_index = [];
@@ -243,6 +257,57 @@ classdef phbox
             
         end
         
+        function out = classify(obj, f_new, option)
+            % CLASSIFY place new functions in the phase boxplot regions
+            % -------------------------------------------------------------------------
+            % Aligns new functions to the template and compares the phase
+            % distance of their warping functions to the median with the
+            % boxplot regions
+            %
+            % Usage:  out = obj.classify(f_new)
+            %         out = obj.classify(f_new, spl=false)
+            %
+            % Input:
+            % f_new: matrix (M,K) of K new functions sampled at warp_data.time
+            % option.spl: srvf derivative used for the alignment (default = true)
+            %
+            % Output: structure with fields (one column/entry per function)
+            % dist: phase distance to the median warping function
+            % level: 1 = 50% region, 2 = (1-alpha) region, 3 = within
+            %        whiskers, 4 = outlier
+            % region: level as text
+            % side: "Q1" or "Q3", the quartile direction the function lies in
+            % fn, qn, gam: aligned functions, srvfs and warping functions
+            arguments
+                obj
+                f_new
+                option.spl = true;
+            end
+            if (isempty(obj.whisker_dis))
+                error('Please run construct_boxplot first!');
+            end
+            [out.fn, out.qn, out.gam] = obj.warp_data.align_new(f_new, spl=option.spl);
+
+            [M, K] = size(out.gam);
+            t = linspace(0,1,M).';
+            binsize = mean(diff(t));
+            psi_Q3 = sqrt(max(gradient(obj.Q3(:),binsize),0));
+            v3 = inv_exp_map(obj.psi_median, psi_Q3);
+
+            out.dist = zeros(1,K);
+            side = zeros(1,K);
+            for k = 1:K
+                psi = sqrt(max(gradient(out.gam(:,k),binsize),0));
+                v = inv_exp_map(obj.psi_median, psi);
+                out.dist(k) = sqrt(trapz(t, v.^2));
+                side(k) = trapz(t, v.*v3);
+            end
+            [out.level, out.region] = boxplot_region(out.dist, ...
+                [obj.r50, obj.ralpha, obj.whisker_dis], obj.alpha);
+            out.side = repmat("Q1", 1, K);
+            out.side(side >= 0) = "Q3";
+        end
+
         function plot(obj)
             % plot plot box plot and surface plot
             % -------------------------------------------------------------------------
