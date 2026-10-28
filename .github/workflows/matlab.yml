@@ -19,7 +19,9 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         release: [R2026b]
     
-    runs-on: ${{ matrix.os }}
+    # ubuntu-latest moved to 26.04, which no longer packages gcc-10 for the
+    # MEX build; keep the matrix label (artifact names) but run on 24.04
+    runs-on: ${{ matrix.os == 'ubuntu-latest' && 'ubuntu-24.04' || matrix.os }}
 
     steps:
       - name: Check out repository
