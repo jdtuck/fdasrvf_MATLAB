@@ -47,5 +47,6 @@ description = "A MATLAB package for functional data analysis using the square ro
 display-name = "fdasrvf"
 summary = "MATLAB library for elastic functional data analysis"
 package-root = "/"
-version = "3.7.2"
+version = "3.7.3"
 id = "05b5d73d-8697-4c09-b1a6-60d4ca908aa8"
+lastAccessed = "1793200143965"
