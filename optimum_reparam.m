@@ -31,10 +31,11 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty,sc
 % For "DP" and "DP1", "roughness" is the integral of (1-sqrt(gamdot))^2,
 % the same as "l2psi" and the same default the R ("roughness") and Python
 % ("l2psi") packages apply.
-% scl: for "DP1", the SRVFs are resampled scl times finer to evaluate the
-% alignment cost; the warp stays on the grid t (default = 3, 1 turns the
-% resampling off).  "DP" integrates the linearly interpolated SRVFs
-% exactly, so it does not use scl.
+% scl: for "DP1" and "RBFGS", the SRVFs are resampled scl times finer to
+% evaluate the alignment cost; the warp stays on the grid t (default = 3, 1
+% turns the resampling off).  "DP" integrates the linearly interpolated
+% SRVFs exactly, so it does not use scl.  "RBFGS" starts from a "DP" warp
+% on a coarse grid of at most 51 points (using nbhd_dim) and refines it.
 %
 % Output:
 % gam: warping function
@@ -99,9 +100,37 @@ switch upper(method)
         t2 = (t2-tmin)/(tmax-tmin);
         gam0 = simul_gam(u,g1,g2,t2,s1,s2,t2);
     case 'RBFGS'
-        t1 = linspace(0,1,length(t))';
-        gam0 = c_rlbfgs(q1, q2, t1, 30, lambda_rbfgs, pen_rbfgs);
-        gam0 = gam0';
+        % RBFGS descends from where it starts, so start it from a DP warp on
+        % a coarse grid and let it refine that warp on q1 and q2 resampled
+        % scl times finer, where its linearly interpolated cost is accurate
+        M = length(t);
+        t1 = linspace(0,1,M)';
+        nc = min(M, 51);
+        tc = linspace(0,1,nc);
+        [G,T] = DynamicProgrammingQ2(spline(t1,q1(:),tc),tc, ...
+            spline(t1,q2(:),tc),tc,tc,tc,lambda,nbhd_dim,pen_dp);
+        tf = linspace(0,1,(M-1)*scl+1)';
+        gamc = interp1(T,G,tf);
+        if isequal(G,T)
+            % start from the exact identity rather than its interpolation
+            gamc = [];
+        end
+        % lambda is divided by scl to weigh the penalty as it would on t1
+        q1f = spline(t1,q1(:),tf);
+        q2f = spline(t1,q2(:),tf);
+        lamf = lambda_rbfgs/scl;
+        [gamf,info] = c_rlbfgs(q1f, q2f, tf, 30, lamf, pen_rbfgs, gamc);
+        % the DP warp is piecewise linear, which the penalty can make costly
+        % to start from, so with a penalty also start from the identity and
+        % keep the warp of lower cost
+        if lamf > 0
+            [gami,infoi] = c_rlbfgs(q1f, q2f, tf, 30, lamf, pen_rbfgs);
+            if infoi(3) < info(3)
+                gamf = gami;
+            end
+        end
+        % every scl-th point of tf is a point of t1
+        gam0 = gamf(1:scl:end)';
     case 'RBFGSM'
         t1 = linspace(0,1,length(t));
         options.verbosity=0;

@@ -65,6 +65,50 @@ classdef DynamicProgrammingTest < matlab.unittest.TestCase
                 'DP alignment should fit about as well as the true warp');
         end
 
+        function testRBFGSFitsAsWellAsTrueWarp(testCase)
+            % "RBFGS" refines a coarse "DP" warp on SRVFs resampled scl times
+            % finer; started from the identity it stopped half a grid cell off
+            gam = optimum_reparam(testCase.q1, testCase.q2, testCase.t, 0, 'RBFGS');
+            M = length(testCase.t);
+            testCase.verifyLessThan(max(abs(gam(:) - testCase.gamInv)) * (M-1), 0.5, ...
+                'RBFGS warp should be within half a grid cell of the true warp');
+            dy = alignError(testCase, gam(:));
+            dyTrue = alignError(testCase, testCase.gamInv);
+            testCase.verifyLessThan(dy, 1.1 * dyTrue, ...
+                'RBFGS alignment should fit about as well as the true warp');
+        end
+
+        function testRBFGSDistanceMatchesDP(testCase)
+            % On random pairs the identity start stopped in local minima, up
+            % to 3x the "DP" distance
+            t = testCase.t;
+            rng(0);
+            r = zeros(10, 1);
+            for i = 1:10
+                f1 = bumps(t);
+                f2 = bumps(t);
+                r(i) = elastic_distance(f1, f2, t, 0, 'RBFGS') / ...
+                    elastic_distance(f1, f2, t, 0, 'DP');
+            end
+            testCase.verifyLessThan(median(r), 1.0, ...
+                'RBFGS distances should be at most the DP distances on average');
+            testCase.verifyLessThan(max(r), 1.1, ...
+                'RBFGS distances should be within 10% of the DP distances');
+        end
+
+        function testRBFGSSolverOutputs(testCase)
+            % c_rlbfgs starts from gam0 when given one and reports its stop
+            t = testCase.t;
+            q1n = testCase.q1 / norm(testCase.q1);
+            q2n = testCase.q2 / norm(testCase.q2);
+            [g, info] = c_rlbfgs(q1n, q2n, t, 30, 0, 0, testCase.gamInv);
+            testCase.verifyEqual(size(info), [1 4]);
+            testCase.verifyTrue(ismember(info(2), [1 2 3]), 'unknown stop reason');
+            testCase.verifyTrue(all(diff(g) >= 0), 'warp should be monotone');
+            testCase.verifyLessThan(max(abs(g(:) - testCase.gamInv)) * (length(t)-1), 0.5, ...
+                'started at the true warp, RBFGS should stay near it');
+        end
+
         function testSolverArguments(testCase)
             % scl reaches DynamicProgrammingQ, and "DP" defaults to nbhd_dim = 10
             t = testCase.t;
@@ -84,4 +128,12 @@ end
 function d = alignError(testCase, gam)
 qw = warp_q_gamma(testCase.q2, gam, testCase.t);
 d = sqrt(trapz(testCase.t, (testCase.q1 - qw(:)).^2));
+end
+
+function f = bumps(t)
+% three random Gaussian bumps
+f = zeros(size(t));
+for j = 1:3
+    f = f + randn * exp(-(t - rand).^2 / (2*(0.05 + 0.1*rand)^2));
+end
 end

@@ -59,11 +59,12 @@ vec getVectorArg(const mxArray *arr) {
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Check the number of input and output arguments.
-  if (nrhs != 6)
+  if (nrhs != 6 && nrhs != 7)
     mexErrMsgIdAndTxt("fdasrvf:c_rlbfgs:invalidNumInputs",
-                      "usage: gam = c_rlbfgs(q1, q2, time, maxiter, lam, penalty)");
+                      "usage: [gam, info] = c_rlbfgs(q1, q2, time, maxiter, lam, "
+                      "penalty, gam0)");
 
-  if (nlhs > 1)
+  if (nlhs > 2)
     mexErrMsgIdAndTxt("fdasrvf:c_rlbfgs:invalidNumOutputs",
                       "Too many output arguments.");
 
@@ -76,6 +77,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (mxGetNumberOfElements(prhs[1]) != n || mxGetNumberOfElements(prhs[2]) != n)
     mexErrMsgIdAndTxt("fdasrvf:c_rlbfgs:sizeMismatch",
                       "q1, q2 and time must have the same number of elements.");
+
+  // An empty gam0 starts from the identity, as leaving it out does.
+  const bool has_gam0 = nrhs >= 7 && !mxIsEmpty(prhs[6]);
+  if (has_gam0) {
+    checkVectorArg(prhs[6], "gam0");
+    if (mxGetNumberOfElements(prhs[6]) != n)
+      mexErrMsgIdAndTxt("fdasrvf:c_rlbfgs:sizeMismatch",
+                        "gam0 must have as many elements as time.");
+  }
 
   // Check type and range of the scalar inputs.
   const double maxiter_in = getScalarArg(prhs[3], "maxiter");
@@ -102,12 +112,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Armadillo reports conformance failures by throwing, and an exception must
   // not escape mexFunction, so report them as MATLAB errors instead.
   vec gam;
+  vec info;
   try {
     const vec q1 = getVectorArg(prhs[0]);
     const vec q2 = getVectorArg(prhs[1]);
     const vec time = getVectorArg(prhs[2]);
+    const vec gam0 = has_gam0 ? getVectorArg(prhs[6]) : vec();
 
-    gam = rlbfgs_optim(q1, q2, time, maxiter, lam, penalty);
+    gam = rlbfgs_optim(q1, q2, time, maxiter, lam, penalty, gam0, info);
   } catch (const std::exception &e) {
     mexErrMsgIdAndTxt("fdasrvf:c_rlbfgs:solverFailed",
                       "rlbfgs solver failed: %s", e.what());
@@ -121,6 +133,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   // Return the vec gam as plhs[0] in Matlab/Octave
   armaSetPr(plhs[0], gam);
+
+  // info = [iterations, stop reason, cost, gradient norm]; the stop reason is
+  // 1 for a vanishing step, 2 for the gradient norm and 3 for maxiter
+  if (nlhs > 1) {
+    const rowvec info_row = info.t();
+    plhs[1] = armaCreateMxMatrix(info_row.n_rows, info_row.n_cols);
+    armaSetPr(plhs[1], info_row);
+  }
 
   return;
 
