@@ -16,8 +16,9 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty,sc
 % t: sample points of function 2
 % lambda: controls amount of warping (default = 0)
 % method: controls which optimization method (default="DP") options are
-% Dynamic Programming ("DP", "DP1"), and Riemannian BFGS ("RBFGS").  "DP"
-% fits as well as "DP1" and is faster
+% Dynamic Programming ("DP", "DP1"), and Riemannian BFGS ("RBFGS", or
+% "RBFGSM", the same solver written in MATLAB, which is slower).  "DP" fits
+% as well as "DP1" and is faster
 % w: controls LRBFGS (default = 0.01)
 % f1o: initial value of f1, vector or scalar depending on q1, defaults to zero
 % f2o: initial value of f2, vector or scalar depending on q1, defaults to zero
@@ -26,16 +27,17 @@ function gam = optimum_reparam(q1,q2,t,lambda,method,f1o,f2o,nbhd_dim,penalty,sc
 % penalty: penalty term the amount of warping is measured with, options are
 % "none", "roughness", "l2gam", "l2psi" and "geodesic" (default =
 % "roughness").  The penalty is weighted by lambda, so it has no effect when
-% lambda is 0.  It is honored by the "DP", "DP1" and "RBFGS" methods;
-% "SIMUL" and "RBFGSM" do not apply a penalty and ignore both it and lambda.
+% lambda is 0.  It is honored by the "DP", "DP1", "RBFGS" and "RBFGSM"
+% methods; "SIMUL" does not apply a penalty and ignores both it and lambda.
 % For "DP" and "DP1", "roughness" is the integral of (1-sqrt(gamdot))^2,
 % the same as "l2psi" and the same default the R ("roughness") and Python
 % ("l2psi") packages apply.
-% scl: for "DP1" and "RBFGS", the SRVFs are resampled scl times finer to
+% scl: for "DP1", "RBFGS" and "RBFGSM", the SRVFs are resampled scl times finer to
 % evaluate the alignment cost; the warp stays on the grid t (default = 3, 1
 % turns the resampling off).  "DP" integrates the linearly interpolated
-% SRVFs exactly, so it does not use scl.  "RBFGS" starts from a "DP" warp
-% on a coarse grid of at most 51 points (using nbhd_dim) and refines it.
+% SRVFs exactly, so it does not use scl.  "RBFGS" and "RBFGSM" start from a
+% "DP" warp on a coarse grid of at most 51 points (using nbhd_dim) and refine
+% it.
 %
 % Output:
 % gam: warping function
@@ -99,7 +101,7 @@ switch upper(method)
         t2 = t;
         t2 = (t2-tmin)/(tmax-tmin);
         gam0 = simul_gam(u,g1,g2,t2,s1,s2,t2);
-    case 'RBFGS'
+    case {'RBFGS','RBFGSM'}
         % As in Huang et al., "Riemannian optimization for registration of
         % curves in elastic shape analysis": RBFGS descends from where it
         % starts, so start it from a DP warp on a coarse grid of at most 51
@@ -108,6 +110,11 @@ switch upper(method)
         % only at the warped grid points, so where the warp is steep the
         % solver could skip features of q2 and lower its cost without
         % aligning them
+        if strcmpi(method,'RBFGS')
+            solver = @c_rlbfgs;
+        else
+            solver = @matlab_rlbfgs;
+        end
         M = length(t);
         t1 = linspace(0,1,M)';
         nc = min(M, 51);
@@ -125,30 +132,18 @@ switch upper(method)
         % lambda is divided by scl to weigh the penalty as it would on t1
         lamf = lambda_rbfgs/scl;
         maxit = 30;
-        [gamf,info] = c_rlbfgs(q1f, q2f, tf, maxit, lamf, pen_rbfgs, gamc);
+        [gamf,info] = solver(q1f, q2f, tf, maxit, lamf, pen_rbfgs, gamc);
         % the DP warp is piecewise linear, which the penalty can make costly
         % to start from, so with a penalty also start from the identity and
         % keep the warp of lower cost
         if lamf > 0
-            [gami,infoi] = c_rlbfgs(q1f, q2f, tf, maxit, lamf, pen_rbfgs);
+            [gami,infoi] = solver(q1f, q2f, tf, maxit, lamf, pen_rbfgs, []);
             if infoi(3) < info(3)
                 gamf = gami;
             end
         end
         % every scl-th point of tf is a point of t1
         gam0 = gamf(1:scl:end)';
-    case 'RBFGSM'
-        t1 = linspace(0,1,length(t));
-        options.verbosity=0;
-        options.maxiter=30;
-        options.inittype='id';
-        options.Tdp=t1;
-        M = infspherefactory(t1);
-        [q2,~]=initialize(q1,q2,M,options);
-        
-        
-        [~,gam0,~, ~, ~]=rlbfgs(q1.',q2.',M,options);
-        
     otherwise
         error('Invalid Method')
 end
@@ -170,83 +165,14 @@ pen_dp = find(strcmp(penalty, names)) - 1;
 pen_rbfgs = max(pen_dp - 1, 0);
 end
 
-function [q20,gam0] = initialize(q1,q2,M,options)
-
-    t=M.t;
-    T=M.T;
-    
-    switch options.inittype
-        
-        % Initialize as identity
-        case 'id' 
-            gam0=t;
-            q20=q2;
-            
-        % Initialize by randomly warping q2
-        case 'rand' 
-            hid=ones(1,T);
-            [b,~]=basis_tangent_id(1,t);
-            [N,~]=size(b);
-            Ninit=options.Ninit;
-            htry=zeros(Ninit,T);
-            costtry=zeros(Ninit,1);
-            for i=1:Ninit
-                coeffs=0.2*randn(1,N);
-                v=coeffs*b;
-                htry(i,:)=M.exp(hid,v,1);
-                while sum(htry(i,:)<=0)>0
-                    coeffs=0.2*randn(1,N);
-                    v=coeffs*b;
-                    htry(i,:)=M.exp(hid,v,1);
-                end
-                costtry(i)=alignment_cost(htry(i,:),q1,q2,M);
-            end
-            [~,idx]=min(costtry);
-            h0=htry(idx,:);
-            [q20,gam0]=group_action_SRVF(q2,h0,M);
-            
-        % Initialize from dynamic programming solution 
-        case 'dp'
-            
-            Tdp=options.Tdp;
-        
-            % Resample
-            if Tdp~=T
-                tdp=linspace(0,1,Tdp);
-                q1dn=spline(M.t,q1,tdp);
-                q2dn=spline(M.t,q2,tdp);
-                gamdp=DynamicProgrammingQ(q2dn,q1dn,0,1);
-                hdp=sqrt(max(gradient(gamdp,1/(Tdp-1)),0));
-                h0=spline(tdp,hdp,t); % resample 
-                [q20,gam0]=group_action_SRVF(q2,h0,M);
-            else
-                gam0=DynamicProgrammingQ(q2,q1,0,1);
-                [n,~]=size(q2);
-                q20=spline(t,q2,gam0).*repmat(sqrt(max(gradient(gam0,1/(T-1)),0)),n,1);
-            end
-           
-        case 'sgd'
-            
-            options.plotevol=false;
-            options.stepsize=0.001;
-            [q20,gam0,cost]=sgd(q1,q2,M,options);
-            
-    end
-    
-    
-end    
-
-function f = alignment_cost(h,q1,q2k,M)
-
-    % Evaluate the cost function f = ||q1 - ((q2,hk),h)||^2.
-    % h=sqrt{\dot{\gamma}} is a sequential update of cumulative warping hk
-    
-    t=M.t;
-    q2new=group_action_SRVF(q2k,h,M);
-    f=normL2(q1-q2new,t)^2; % Cost
-end
-
-function val = normL2(f,t)
-
-    val=sqrt(innerProdL2(f,f,t));
+% rlbfgs with the inputs and outputs of c_rlbfgs
+function [gam,info] = matlab_rlbfgs(q1,q2,t,maxiter,lam,penalty,gam0)
+options.verbosity = 0;
+options.maxiter = maxiter;
+options.lam = lam;
+options.penalty = penalty;
+options.gam0 = gam0;
+[~,gam,~,stats] = rlbfgs(q1',q2',infspherefactory(t'),options);
+gam = gam(:);
+info = [stats(end).iter, stats(end).stop, stats(end).cost, stats(end).gradnorm];
 end

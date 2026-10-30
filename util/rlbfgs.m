@@ -1,113 +1,79 @@
 function [q2Opt,gammaOpt,cost,info,options] = rlbfgs(q1,q2,M,options)
-% Riemannian limited memory BFGS solver for elastic function registration.
-% The solver is designed to operate on the positive orthant of the unit
-% hypersphere in L^2([0,1],R). The set of all functions
-% h=\sqrt{\dot{\gamma}}, where \gamma is a diffeomorphism, is that
-% manifold.
+% Riemannian limited memory BFGS solver for elastic registration, the MATLAB
+% counterpart of c_rlbfgs (armadillo_cpp/rbfgs.hpp), which also handles curves
+% in R^n.  It follows Huang, Gallivan, Srivastava and Absil, "Riemannian
+% optimization for registration of curves in elastic shape analysis", for the
+% warping alone (no rotation or shift).  The iterate is l = sqrt(gammadot) on
+% the unit sphere of L^2([0,1],R), gamma = cumtrapz(l^2), and the cost is
 %
-% For a description of the algorithm and theorems offering convergence
-% guarantees, see the references below.
+%   ||q1 - q2(gamma) l||^2 + lam*penalty(l) + omega*B(l),
 %
-% function [q2new,gammaOpt,cost,info,options] = alignment_rlbfgs(q1,q2,c,ctilde,M,lambda)
-% function [q2new,gammaOpt,cost,info,options] = alignment_rlbfgs(q1,q2,c,ctilde,M,lambda,options)
+% where B is the paper's barrier, whose weight omega decays each iteration.
+% Steps are taken along the exponential map and the stored BFGS pairs are moved
+% to the new tangent space by parallel translation.
 %
-% The inputs q1 and q2 are the square root velocity functions of curves in
-% R^n to be aligned. Here, q2 will be aligned to q1. M is the manifold
-% factory for the unit hypersphere in L^2([0,1],R).
+% function [q2Opt,gammaOpt,cost,info,options] = rlbfgs(q1,q2,M)
+% function [q2Opt,gammaOpt,cost,info,options] = rlbfgs(q1,q2,M,options)
 %
+% The inputs q1 and q2 are the n-by-T square root velocity functions to be
+% aligned; q2 is aligned to q1. M is the manifold factory for the unit
+% hypersphere in L^2([0,1],R), on a uniform grid.
 %
-% The two outputs 'gammaOpt' and 'cost' are the optimal diffeomorphism
-% and its cost, respectively. q2new is the optimally warped q2 to q1.
+% The outputs 'gammaOpt' and 'cost' are the optimal warping and its cost
+% without the barrier. q2Opt is q2 optimally warped to q1.
 %
-% The output 'info' is a struct-array which contains information about the
-% iterations:
+% The output 'info' is a struct-array with an element per iteration:
 %   iter (integer)
 %       The iteration number. The initial guess is 0.
-%	cost (double)
-%       The corresponding cost value.
-%	gradnorm (double)
+%   cost (double)
+%       The cost value, without the barrier.
+%   gradnorm (double)
 %       The (Riemannian) norm of the gradient.
-%	time (double)
+%   time (double)
 %       The total elapsed time in seconds to reach the corresponding cost.
-%	stepsize (double)
+%   stepsize (double)
 %       The size of the step from the previous to the new iterate.
 %   accepted (Boolean)
-%       true if step is accepted in the cautious update. 0 otherwise.
-%   And possibly additional information logged by options.statsfun.
-% For example, type [info.gradnorm] to obtain a vector of the successive
-% gradient norms reached at each iteration.
+%       true if the step is accepted in the cautious update.
+%   stop (integer)
+%       Why the solver stopped, in the last element and 0 before: 1 no
+%       acceptable step, 2 gradient norm, 3 iterations, 4 relative change of
+%       the cost, 5 time.
 %
-% The options structure is used to overwrite the default values. All
-% options have a default value and are hence optional. To force an option
-% value, pass an options structure with a field options.optionname, where
-% optionname is one of the following and the default value is indicated
-% between parentheses:
+% The options structure overwrites these defaults:
 %
-%   tolgradnorm (1e-3)
-%       The algorithm terminates if the norm of the gradient drops below
-%       this. For well-scaled problems, a rule of thumb is that you can
-%       expect to reduce the gradient norm by 8 orders of magnitude
-%       (sqrt(eps)) compared to the gradient norm at a "typical" point (a
-%       rough initial iterate for example). Further decrease is sometimes
-%       possible, but inexact floating point arithmetic will eventually
-%       limit the final accuracy. If tolgradnorm is set too low, the
-%       algorithm may end up iterating forever (or at least until another
-%       stopping criterion triggers).
+%   gam0 ([])
+%       The warping to start from, sampled on M.t; empty starts from the
+%       identity.
+%   lam (0), penalty (0)
+%       The penalty weight and type: 0 roughness, 1 l2gam, 2 l2psi, 3 geodesic.
 %   maxiter (100)
 %       The algorithm terminates if maxiter iterations were executed.
+%   miniter (10), tolrelcost (1e-3), relcostcount (5)
+%       The algorithm terminates, after at least miniter iterations, once the
+%       relative change of the cost has stayed below tolrelcost for more than
+%       relcostcount iterations.
+%   tolgradnorm (1e-10)
+%       The algorithm terminates if the norm of the gradient drops below this.
+%   omega0 (1/100), omegarate (0.8)
+%       The initial barrier weight and the factor it is cut by each iteration.
 %   maxtime (Inf)
 %       The algorithm terminates if maxtime seconds elapsed.
-%   minstepsize (1e-10)
-%     The minimum norm of the tangent vector that points from the current
-%     point to the next point. If the norm is less than minstepsize, the
-%     program will terminate.
 %   memory (30)
-%     The number of previous iterations the program remembers. This is used
-%     to approximate the inverse Hessian at the current point. Because of
-%     difficulty of maintaining a representation of operators in terms of
-%     coordinates, a recursive method is used. The number of steps in the
-%     recursion is at most options.memory. This parameter can take any
-%     integer value >= 0, or Inf, which is taken to be options.maxiter. If
-%     options.maxiter has value Inf, then it will take value 10000 and a
-%     warning will be displayed.
+%       The number of previous iterations the program remembers.
 %   strict_inc_func (@(t) 1e-4*t)
-%     The Cautious step needs a real function that has value 0 at t = 0,
-%     and  is strictly increasing. See details in Wen Huang's paper
-%     "A Riemannian BFGS Method without Differentiated Retraction for
-%     Nonconvex Optimization Problems"
-%   inittype ('id')
-%     The type of initialization to be input into the function
-%     initialize.m. So far, options are 'id' the identity element, 'rand' a
-%     random initialization generated in some optimal sense, and 'dp' the
-%     solution to a downsampled version of the optimization problem using
-%     dynamic programming.
+%       The Cautious step needs a real function that has value 0 at t = 0,
+%       and is strictly increasing. See details in Wen Huang's paper
+%       "A Riemannian BFGS Method without Differentiated Retraction for
+%       Nonconvex Optimization Problems"
+%   ls_max_steps (25)
+%       The most cost evaluations of a line search.
 %   plotevol (false)
-%     This flag can be set true to plot the cumulative warped q2 at each
-%     iteration along with a fixed q1.
-%   statsfun (none)
-%       Function handle to a function that will be called after each
-%       iteration to provide the opportunity to log additional statistics.
-%       They will be returned in the info struct. See the generic Manopt
-%       documentation about solvers for further information. statsfun is
-%       called with the point x that was reached last.
-%   stopfun (none)
-%       Function handle to a function that will be called at each iteration
-%       to provide the opportunity to specify additional stopping criteria.
-%       See the generic Manopt documentation about solvers for further
-%       information.
-%   verbosity (2)
+%       This flag can be set true to plot the warped q2 at each iteration
+%       along with a fixed q1.
+%   verbosity (3)
 %       Integer number used to tune the amount of output the algorithm
-%       generates during execution (mostly as text in the command window).
-%       The higher, the more output. 0 means silent. 3 and above includes a
-%       display of the options structure at the beginning of the execution.
-%   debug (false)
-%       Set to true to allow the algorithm to perform additional
-%       computations for debugging purposes. If a debugging test fails, you
-%       will be informed of it, usually via the command window. Be aware
-%       that these additional computations appear in the algorithm timings
-%       too, and may interfere with operations such as counting the number
-%       of cost evaluations, etc. (the debug calls get storedb too).
-%
+%       generates. The higher, the more output. 0 means silent.
 %
 % Please cite the Manopt paper as well as the research paper:
 % @InBook{Huang2016,
@@ -121,13 +87,6 @@ function [q2Opt,gammaOpt,cost,info,options] = rlbfgs(q1,q2,M,options)
 %   pages     = {627--634},
 %   doi       = {10.1007/978-3-319-39929-4_60}
 % }
-%
-% We point out that, at the moment, this implementation of RLBFGS can be
-% slower than the implementation in ROPTLIB by Wen Huang et al. referenced
-% above. For the purpose of comparing to their work, please use their
-% implementation.
-%
-
 
 % This file is a modified version of rlbfgs.m in Manopt: www.manopt.org.
 % Original author: Changshuo Liu, July 19, 2017.
@@ -135,343 +94,427 @@ function [q2Opt,gammaOpt,cost,info,options] = rlbfgs(q1,q2,M,options)
 % Modified by: Darshan Bryner, August 1, 2019.
 
 % Local defaults for the program
-localdefaults.minstepsize = 1e-10;
+localdefaults.gam0 = [];
+localdefaults.lam = 0;
+localdefaults.penalty = 0;
 localdefaults.maxiter = 100;
-localdefaults.tolgradnorm = 1e-3;
+localdefaults.miniter = 10;
+localdefaults.tolrelcost = 1e-3;
+localdefaults.relcostcount = 5;
+localdefaults.tolgradnorm = 1e-10;
+localdefaults.omega0 = 1/100;
+localdefaults.omegarate = 0.8;
+localdefaults.maxtime = inf;
 localdefaults.memory = 30;
 localdefaults.strict_inc_func = @(t) 1e-4*t;
 localdefaults.ls_max_steps = 25;
 localdefaults.plotevol = false;
 localdefaults.verbosity = 3;
-localdefaults.maxtime = inf;
 
 % Merge local defaults w/ user specified options, if any.
 if ~exist('options', 'var') || isempty(options)
     options = struct();
 end
 options = mergeOptions(localdefaults, options);
-
-% To make sure memory in range [0, Inf)
 options.memory = max(options.memory, 0);
-if options.memory == Inf
-    if isinf(options.maxiter)
-        options.memory = 10000;
-        warning('rlbfgs:memory', ['options.memory and options.maxiter' ...
-            ' are both Inf; options.memory has been changed to 10000.']);
-    else
-        options.memory = options.maxiter;
-    end
-end
 
 timetic = tic();
 
-% __________Initialization of variables______________
+% The problem: quantities that stay fixed through the iterations.  q1 and q2
+% have unit L2 norm on M.t, so the cost and its gradient do not scale with the
+% grid size, and lam is rescaled so that it weighs the penalty as it does for
+% unit Euclidean norm SRVFs.
+t = M.t;
+T = M.T;
+P.t = t;
+P.T = T;
+P.hb = 1/(T-1);
+P.w = [P.hb/2, P.hb*ones(1,T-2), P.hb/2];
+P.q1 = q1/sqrt(trapz(t,sum(q1.^2,1)));
+P.q2 = q2/sqrt(trapz(t,sum(q2.^2,1)));
+P.q2M = spline_second_derivs(P.q2,P.hb);
+P.lam = options.lam*(norm(q1,'fro')/sqrt(trapz(t,sum(q1.^2,1))))* ...
+    (norm(q2,'fro')/sqrt(trapz(t,sum(q2.^2,1))));
+P.penalty = options.penalty;
 
-% Initialize sequential update variables
-htilde = ones(1,M.T);
-q2tilde = q2;
+l = ones(1,T);
+if ~isempty(options.gam0)
+    % sqrt(gammadot) from central differences; a small floor keeps l inside
+    % the barrier
+    gam = options.gam0(:).';
+    gam = (gam-gam(1))/(gam(T)-gam(1));
+    l = sqrt(max(fd_gradient(gam,P.hb),1e-6));
+end
+l = l/M.norm(l);
 
-% Number of iterations since the last restart
-j = 0;
+sHistory = cell(1,options.memory);
+yHistory = cell(1,options.memory);
+rhoHistory = zeros(1,options.memory);
 
-% Total number of BFGS iterations
-k = 0;
+j = 0;                    % number of stored pairs
+k = 0;                    % total number of BFGS iterations
+scaleFactor = 1;          % scaling of initial matrix, Barzilai-Borwein
+stop = 0;
+smallchange = 0;
+failedsteps = 0;
+omega = options.omega0;
+stepsize = NaN;
+accepted = NaN;
 
-% This cell stores step vectors which point from h_id to h_{k+1} for k
-% indexing the last iterations, capped at options.memory.
-% That is, it stores up to options.memory of the most recent step
-% vectors in the tangent space of identity
-sHistory = cell(1, options.memory);
+cur = costgrad(l,P);
+f = cur.fixedcost + omega*cur.barrier;
+g = riemannian_grad(l,cur,omega,P,M);
+gnorm = M.norm(g);
 
-% This cell stores the differences for latest k's of the gradient at
-% time k+1 and the gradient at time k. The memory is also capped at
-% options.memory.
-yHistory = cell(1, options.memory);
-
-% rhoHistory{k} stores the reciprocal of the inner product between
-% sHistory{k} and yHistory{k}.
-rhoHistory = cell(1, options.memory);
-
-% Scaling of direction given by getDirection for acceptable step
-alpha = 1;
-
-% Scaling of initial matrix, Barzilai-Borwein.
-scaleFactor = 1;
-
-% Norm of the step
-stepsize = 1;
-
-% Stores whether the step is accepted by the cautious update check.
-accepted = true;
-
-% Compute cost function and its gradient
-[hCurCost,hCurGradient] = alignment_costgrad(q1,q2tilde,M);
-hCurGradNorm = M.norm(hCurGradient);
-
-% Line-search statistics for recording in info.
-lsstats = [];
-
-% Flag to control restarting scheme to avoid infinite loops (see below)
-ultimatum = false;
-
-% Save stats in a struct array info, and preallocate.
 stats = savestats();
-info(1) = stats;
-info(min(10000,options.maxiter+1)).iter = [];
+info = stats;
 
 if options.verbosity >= 2
-    fprintf(' iter                   cost val            grad. norm           alpha\n');
+    fprintf(' iter                   cost val            grad. norm\n');
 end
 
-% Plot the evolution of q2 being iteratively warped to optimally
-% match q1.
-if options.plotevol
-    figure(100); clf; plot(M.t,q1,'b',M.t,q2tilde,'r');
-    %         figure(101); clf; plot(M.t,htilde);
-    pause;
-end
-
-% Main iteration
 while true
-    
-    % Display iteration information
+
     if options.verbosity >= 2
-        fprintf('%5d    %+.16e        %.8e      %.4e\n', ...
-            k, hCurCost, hCurGradNorm, alpha);
+        fprintf('%5d    %+.16e        %.8e\n',k,cur.fixedcost,gnorm);
     end
-    
-    % Start timing this iteration
-    timetic = tic();
-    
-    % Run standard stopping criterion checks
-    [stop, reason] = stoppingcriterion(options, info, k+1);
-    
-    % If none triggered, run specific stopping criterion check
-    if ~stop
-        if stats.stepsize < options.minstepsize
-            % To avoid infinite loop and to push the search further
-            % in case BFGS approximation of Hessian is off towards
-            % the end, we erase the memory by setting k = 0;
-            % In this way, it starts off like a steepest descent.
-            % If even steepest descent does not work, then it is
-            % hopeless and we will terminate.
-            if ~ultimatum
-                if options.verbosity >= 2
-                    fprintf(['stepsize is too small, restarting ' ...
-                        'the bfgs procedure at the current point.\n']);
-                end
-                j = 0;
-                ultimatum = true;
-            else
-                stop = true;
-                reason = sprintf(['Last stepsize smaller than '  ...
-                    'minimum allowed; options.minstepsize = %g.'], ...
-                    options.minstepsize);
-            end
-        else
-            % We are not in trouble: lift the ultimatum if it was on.
-            ultimatum = false;
-        end
-    end
-    
-    if stop
-        if options.verbosity >= 1
-            fprintf([reason '\n']);
-        end
+
+    if gnorm <= options.tolgradnorm
+        stop = 2;
         break;
     end
-    
-    % Compute BFGS direction
-    p = getDirection(M,hCurGradient,sHistory,yHistory,rhoHistory,...
-        scaleFactor,min(j,options.memory));
-    
-    % Execute line-search
-    [stepsize,hNext,lsstats] = linesearch_hint(M,p,hCurCost,...
-        M.inner(hCurGradient,p),q1,q2tilde,options);
-    
-    % Iterative update of optimal diffeomorphism and q2 via group action
-    htilde=group_action_SRVF(htilde,hNext,M);
-    q2tilde=group_action_SRVF(q2tilde,hNext,M);
-    
-    % Record the BFGS step-multiplier alpha which was effectively
-    % selected. Toward convergence, we hope to see alpha = 1.
-    alpha = stepsize/M.norm(p);
-    step = alpha*p;
-    
-    % Query cost and gradient at the candidate new point.
-    [hNextCost,hNextGradient] = alignment_costgrad(q1,q2tilde,M);
-    
-    % Compute sk and yk
-    sk = step;
-    yk = hNextGradient-hCurGradient;
-    
-    % Computation of the BFGS step is invariant under scaling of sk and
-    % yk by a common factor. For numerical reasons, we scale sk and yk
-    % so that sk is a unit norm vector.
-    norm_sk = M.norm(sk);
-    sk = sk/norm_sk;
-    yk = yk/norm_sk;
-    
-    inner_sk_yk = M.inner(sk,yk);
-    inner_sk_sk = M.norm(sk)^2;    % ensures nonnegativity
-    
-    
-    % If the cautious step is accepted (which is the intended
-    % behavior), we record sk, yk, and rhok and need to do some
-    % housekeeping. If the cautious step is rejected, these are not
-    % recorded. In all cases, hNext is the next iterate: the notion of
-    % accept/reject here is limited to whether or not we keep track of
-    % sk, yk, rhok to update the BFGS operator.
-    cap = options.strict_inc_func(hCurGradNorm);
-    if inner_sk_sk~=0 && (inner_sk_yk/inner_sk_sk)>=cap
-        
-        accepted = true;
-        
-        rhok = 1/inner_sk_yk;
-        
-        scaleFactor = inner_sk_yk/M.norm(yk)^2;
-        
-        % Time to store the vectors sk, yk and the scalar rhok.
-        
-        % If we are out of memory
-        if j>=options.memory
-            
-            % sk and yk are saved from 1 to the end with the most
-            % current recorded to the rightmost hand side of the cells
-            % that are occupied. When memory is full, do a shift so
-            % that the rightmost is earliest and replace it with the
-            % most recent sk, yk.
-            if options.memory>1
-                sHistory = sHistory([2:end,1]);
-                yHistory = yHistory([2:end,1]);
-                rhoHistory = rhoHistory([2:end,1]);
-            end
-            if options.memory>0
-                sHistory{options.memory} = sk;
-                yHistory{options.memory} = yk;
-                rhoHistory{options.memory} = rhok;
-            end
-            
-            % If we are not out of memory
-        else
-            
-            sHistory{j+1} = sk;
-            yHistory{j+1} = yk;
-            rhoHistory{j+1} = rhok;
-            
-        end
-        
-        j = j+1;
-        
-        % The cautious step is rejected: we do not store sk, yk, rhok.
-    else
-        
-        accepted = false;
-        
+    if k >= options.maxiter
+        stop = 3;
+        break;
     end
-    
-    % Update variables to new iterate.
-    hCurGradient = hNextGradient;
-    hCurGradNorm = M.norm(hNextGradient);
-    hCurCost = hNextCost;
-    
-    % Plot the evolution of q2 being iteratively warped to optimally
-    % match q1.
+    if toc(timetic) >= options.maxtime
+        stop = 5;
+        break;
+    end
+
+    % compute BFGS direction; fall back to steepest descent if the
+    % quasi-Newton direction is not a descent direction
+    p = getDirection(M,g,sHistory,yHistory,rhoHistory,scaleFactor,j);
+    df0 = M.inner(g,p);
+    if df0 >= 0
+        j = 0;
+        scaleFactor = 1;
+        p = -g;
+        df0 = -gnorm^2;
+    end
+
+    % Armijo backtracking along the exponential map
+    alpha = 1;
+    lnew = M.exp(l,p,alpha);
+    nxt = costgrad(lnew,P);
+    fnew = nxt.fixedcost + omega*nxt.barrier;
+    evals = 1;
+    while any(lnew <= 0) || ~isfinite(fnew) || fnew > f + 1e-4*alpha*df0
+        alpha = alpha*0.5;
+        lnew = M.exp(l,p,alpha);
+        nxt = costgrad(lnew,P);
+        fnew = nxt.fixedcost + omega*nxt.barrier;
+        evals = evals + 1;
+        if evals >= options.ls_max_steps
+            break;
+        end
+    end
+    if any(lnew <= 0) || ~isfinite(fnew) || fnew > f
+        % no acceptable step: restart the memory once, then stop
+        failedsteps = failedsteps + 1;
+        if failedsteps >= 2 || j == 0
+            stop = 1;
+            break;
+        end
+        j = 0;
+        scaleFactor = 1;
+        continue;
+    end
+    failedsteps = 0;
+    stepsize = alpha*M.norm(p);
+
+    % the gradient at the new point with this iteration's omega, so that the
+    % BFGS pair is that of one cost function
+    gnew = riemannian_grad(lnew,nxt,omega,P,M);
+
+    % parallel translation of tangent vectors from l to lnew
+    lsum = l + lnew;
+    nsum = M.inner(lsum,lsum);
+    transp = @(v) v - (2*M.inner(v,lnew)/nsum)*lsum;
+    sk = transp(alpha*p);
+    yk = gnew - transp(g);
+    for i = 1:j
+        sHistory{i} = transp(sHistory{i});
+        yHistory{i} = transp(yHistory{i});
+    end
+
+    % cautious update
+    inner_sk_yk = M.inner(sk,yk);
+    inner_sk_sk = M.inner(sk,sk);
+    accepted = inner_sk_sk > 0 && ...
+        inner_sk_yk/inner_sk_sk >= options.strict_inc_func(gnorm);
+    if accepted && options.memory > 0
+        if j >= options.memory
+            sHistory = sHistory([2:end,1]);
+            yHistory = yHistory([2:end,1]);
+            rhoHistory = rhoHistory([2:end,1]);
+            j = options.memory - 1;
+        end
+        sHistory{j+1} = sk;
+        yHistory{j+1} = yk;
+        rhoHistory(j+1) = 1/inner_sk_yk;
+        scaleFactor = inner_sk_yk/M.inner(yk,yk);
+        j = j + 1;
+    end
+
+    % relative change of the cost, both values at this omega
+    relchange = abs(f-fnew)/max(abs(f),1e-300);
+    if relchange < options.tolrelcost
+        smallchange = smallchange + 1;
+    else
+        smallchange = 0;
+    end
+
+    l = lnew;
+    cur = nxt;
+    k = k + 1;
+
+    % the barrier fades as the iterations proceed
+    omega = omega*options.omegarate;
+    f = cur.fixedcost + omega*cur.barrier;
+    g = riemannian_grad(l,cur,omega,P,M);
+    gnorm = M.norm(g);
+
     if options.plotevol
-        figure(100); clf; plot(M.t,q1,'b',M.t,q2tilde,'r');
-        %         figure(101); clf; plot(M.t,hk);
+        figure(100); clf; plot(t,P.q1,'b',t,warp_q(l,P),'r');
         pause;
     end
-    
-    % iter is the number of iterations we have accomplished.
-    k = k+1;
-    
-    % Log statistics for freshly executed iteration
+
     stats = savestats();
     info(k+1) = stats;
-    
+
+    if k >= options.miniter && smallchange > options.relcostcount
+        stop = 4;
+        break;
+    end
 end
 
 % Housekeeping before we return
-info = info(1:k+1);
-gammaOpt = cumtrapz(M.t,htilde.^2);
-gammaOpt = gammaOpt/gammaOpt(end);
-q2Opt = q2tilde;
-cost = hCurCost;
+info(end).stop = stop;
+gam = cumtrapz(t,l.^2);
+gammaOpt = (gam-min(gam))/(max(gam)-min(gam));
+q2Opt = warp_q(l,P);
+cost = cur.fixedcost;
 
 if options.verbosity >= 1
-    fprintf('Total time is %f [s] (excludes statsfun)\n', ...
-        info(end).time);
+    fprintf('Stopped with reason %d after %d iterations in %f [s]\n', ...
+        stop,k,toc(timetic));
 end
-
 
 % Routine in charge of collecting the current iteration stats
     function stats = savestats()
         stats.iter = k;
-        stats.cost = hCurCost;
-        stats.gradnorm = hCurGradNorm;
-        if k==0
-            stats.stepsize = NaN;
-            stats.time = toc(timetic);
-            stats.accepted = NaN;
-        else
-            stats.stepsize = stepsize;
-            stats.time = info(k).time + toc(timetic);
-            stats.accepted = accepted;
-        end
-        stats.linesearch = lsstats;
-        %         stats = applyStatsfun(problem, xCur, storedb, key, options, stats);
+        stats.cost = cur.fixedcost;
+        stats.gradnorm = gnorm;
+        stats.time = toc(timetic);
+        stats.stepsize = stepsize;
+        stats.accepted = accepted;
+        stats.stop = 0;
     end
 
 end
 
 
-% BFGS step, see Wen's paper for details. This functon takes in a tangent
-% vector g, and applies an approximate inverse Hessian P to it to get Pg.
-% Then, -Pg is returned. Parallel transport is not needed for this problem
-% since we always work in the tangent space of identity.
-function dir = getDirection(M,hCurGradient,sHistory,yHistory,rhoHistory,...
-    scaleFactor,j)
+function dir = getDirection(M,g,sHistory,yHistory,rhoHistory,scaleFactor,j)
+% BFGS step, see Wen's paper for details. This function takes in a tangent
+% vector g, and applies an approximate inverse Hessian to it to get Pg.  Then,
+% -Pg is returned.
 
-q=hCurGradient;
-inner_s_q=zeros(1,j);
+q = g;
+inner_s_q = zeros(1,j);
 
-for i=j:-1:1
-    inner_s_q(1,i)=rhoHistory{i}*M.inner(sHistory{i},q);
-    q=q-inner_s_q(1,i)*yHistory{i};
+for i = j:-1:1
+    inner_s_q(i) = rhoHistory(i)*M.inner(sHistory{i},q);
+    q = q - inner_s_q(i)*yHistory{i};
 end
 
-r=scaleFactor*q;
+r = scaleFactor*q;
 
-for i=1:j
-    omega=rhoHistory{i}*M.inner(yHistory{i},r);
-    r=r+(inner_s_q(1,i)-omega)*sHistory{i};
+for i = 1:j
+    om = rhoHistory(i)*M.inner(yHistory{i},r);
+    r = r + (inner_s_q(i)-om)*sHistory{i};
 end
 
-dir=-r;
+dir = -r;
+
+end
+
+function c = costgrad(l,P)
+% Cost parts and their partial derivatives with respect to each sample of l,
+% differentiating the discretised cost exactly: gamma is cumtrapz(l^2), q2 is
+% evaluated on its cubic spline and the integrals are trapezoidal sums.  The
+% part that stays fixed (data and penalty) is split from the barrier, whose
+% weight changes each iteration.
+
+w = P.w;
+gam = cumtrapz(P.t,l.^2);
+[Q,Qdot] = spline_eval(P.q2,P.q2M,gam,P.hb);
+r = P.q1 - Q.*l;
+c.fixedcost = sum(w.*sum(r.^2,1));
+% r depends on l directly and through gamma
+a = -2*(w.*sum(r.*Qdot,1).*l);
+c.fixedgrad = -2*(w.*sum(r.*Q,1)) + 2*(l.*cumtrapz_adjoint(a,P.hb));
+
+if P.lam ~= 0
+    c.fixedcost = c.fixedcost + P.lam*penalty_cost(l,P);
+    c.fixedgrad = c.fixedgrad + P.lam*penalty_grad(l,P);
+end
+
+% B = trapz((l^2 + 1/l^2) sqrt(1 + l^4)), eq. (15) of the paper; it grows where
+% gamma is nearly flat or vertical and is symmetric under inverting gamma
+l2 = l.^2;
+rt = sqrt(1 + l.^4);
+u = l2 + 1./l2;
+c.barrier = sum(w.*(u.*rt));
+c.barriergrad = w.*((2*l - 2./l.^3).*rt + u.*(2*l.^3./rt));
+
+end
+
+function g = riemannian_grad(l,c,omega,P,M)
+% Riemannian gradient under the L2 metric M.inner uses: the partial derivatives
+% divided by the quadrature weights, projected onto the tangent space at l
+
+v = (c.fixedgrad + omega*c.barriergrad)./P.w;
+g = v - M.inner(v,l)*l;
+
+end
+
+function qw = warp_q(l,P)
+% q2 warped by the warping whose SRVF is l
+
+Q = spline_eval(P.q2,P.q2M,cumtrapz(P.t,l.^2),P.hb);
+qw = Q.*l;
+
+end
+
+function pen = penalty_cost(h,P)
+% The penalty at the warping whose SRVF is h: 0 roughness, 1 l2gam, 2 l2psi,
+% 3 geodesic
+
+w = P.w;
+switch P.penalty
+    case 0
+        pen = sum(w.*fd_gradient(h.^2,P.hb).^2);
+    case 1
+        pen = sum(w.*(h.^2-1).^2);
+    case 2
+        pen = sum(w.*(h-1).^2);
+    case 3
+        pen = acos(min(max(sum(w.*h),-1),1))^2;
+end
+
+end
+
+function dP = penalty_grad(h,P)
+% Partial derivatives of penalty_cost with respect to each sample of h
+
+w = P.w;
+switch P.penalty
+    case 0
+        hdot = fd_gradient(h.^2,P.hb);
+        dP = 2*(h.*gradient_adjoint(2*(w.*hdot),P.hb));
+    case 1
+        dP = 4*(h.*(h.^2-1)).*w;
+    case 2
+        dP = 2*(h-1).*w;
+    case 3
+        c = min(max(sum(w.*h),-1),1);
+        % acos(c)/sqrt(1-c^2) tends to 1 as c tends to 1, where both factors
+        % vanish
+        scale = 1;
+        if 1 - c^2 > 1e-12
+            scale = acos(c)/sqrt(1-c^2);
+        end
+        dP = -2*scale*w;
+end
+
+end
+
+function g = fd_gradient(f,hb)
+% central differences inside, one sided at the ends
+
+g = [f(2)-f(1), (f(3:end)-f(1:end-2))/2, f(end)-f(end-1)]/hb;
+
+end
+
+function out = gradient_adjoint(y,hb)
+% the transpose of the finite difference operator fd_gradient applies
+
+T = numel(y);
+out = zeros(1,T);
+out(2) = out(2) + y(1)/hb;
+out(1) = out(1) - y(1)/hb;
+out(T) = out(T) + y(T)/hb;
+out(T-1) = out(T-1) - y(T)/hb;
+out(3:T) = out(3:T) + y(2:T-1)/(2*hb);
+out(1:T-2) = out(1:T-2) - y(2:T-1)/(2*hb);
+
+end
+
+function out = cumtrapz_adjoint(b,hb)
+% the transpose of the running trapezoidal sum on a uniform grid
+
+T = numel(b);
+acc = cumsum(b(T:-1:2));
+acc = acc(end:-1:1)*hb/2;
+out = zeros(1,T);
+out(2:T) = acc;
+out(1:T-1) = out(1:T-1) + acc;
+
+end
+
+function Mq = spline_second_derivs(y,hb)
+% second derivatives of the natural cubic spline interpolating the rows of y
+
+[n,T] = size(y);
+Mq = zeros(n,T);
+if T < 3
+    return
+end
+e = ones(T-2,1);
+A = spdiags([e 4*e e],-1:1,T-2,T-2);
+rhs = 6*(y(:,3:T)-2*y(:,2:T-1)+y(:,1:T-2))/hb^2;
+Mq(:,2:T-1) = (A\rhs.').';
+
+end
+
+function [val,dval] = spline_eval(y,Mq,x,hb)
+% value and derivative at x of the natural cubic spline of y, whose second
+% derivatives are Mq
+
+T = size(y,2);
+xi = min(max(x,0),1);
+k = min(floor(xi/hb),T-2);
+A = (k+1)*hb - xi;   % distance to the right node
+B = xi - k*hb;       % distance to the left node
+yk = y(:,k+1);
+yk1 = y(:,k+2);
+Mk = Mq(:,k+1);
+Mk1 = Mq(:,k+2);
+cA = yk/hb - Mk*hb/6;
+cB = yk1/hb - Mk1*hb/6;
+val = Mk.*A.^3/(6*hb) + Mk1.*B.^3/(6*hb) + cA.*A + cB.*B;
+dval = -Mk.*A.^2/(2*hb) + Mk1.*B.^2/(2*hb) - cA + cB;
 
 end
 
 function opts = mergeOptions(opts_sub, opts_master)
-% Merges two options structures with one having precedence over the other.
-%
-% function opts = mergeOptions(opts1, opts2)
-%
-% input: opts1 and opts2 are two structures.
-% output: opts is a structure containing all fields of opts1 and opts2.
-% Whenever a field is present in both opts1 and opts2, it is the value in
-% opts2 that is kept.
-%
-% The typical usage is to have opts1 contain default options and opts2
-% contain user-specified options that overwrite the defaults.
-%
-% See also: getGlobalDefaults
+% Merges two options structures with one having precedence over the other:
+% whenever a field is present in both, it is the value in opts_master that is
+% kept.
 
 % This file is part of Manopt: www.manopt.org.
 % Original author: Nicolas Boumal, Dec. 30, 2012.
-% Contributors:
-% Change log:
-
 
 if isempty(opts_sub)
     opts_sub = struct();
@@ -486,253 +529,4 @@ for i = 1 : length(fields)
     opts.(fields{i}) = opts_master.(fields{i});
 end
 
-end
-
-function f = alignment_cost(h,q1,q2k,M)
-
-% Evaluate the cost function f = ||q1 - ((q2,hk),h)||^2.
-% h=sqrt{\dot{\gamma}} is a sequential update of cumulative warping hk
-
-t=M.t;
-q2new=group_action_SRVF(q2k,h,M);
-f=normL2(q1-q2new,t)^2; % Cost
-
-end
-
-function [f,g] = alignment_costgrad(q1,q2k,M)
-
-% Evaluate the cost function f = ||q1 - (q2,hk)||^2, and
-% evaluate the gradient g = grad f in the tangent space of identity.
-% hk=sqrt{\dot{\gamma_k}} is the cumulative warping of q2 produced by an
-% iterative sequential optimization algorithm.
-
-t=M.t;
-T=M.T;
-
-% Compute cost
-f=normL2(q1-q2k,t)^2;
-
-% Compute cost gradient
-q2kdot=gradient(q2k,1/(T-1));
-dq=q1-q2k;
-v=2*cumtrapz(t,sum(dq.*q2kdot,1))-sum(dq.*q2k,1);
-g=v-trapz(t,v);
-end
-
-function val = normL2(f,t)
-
-val=sqrt(innerProdL2(f,f,t));
-end
-
-function [stop, reason] = stoppingcriterion(options, info, last)
-% Checks for standard stopping criteria, as a helper to solvers.
-%
-% function [stop, reason] = stoppingcriterion(problem, x, options, info, last)
-%
-% Executes standard stopping criterion checks, based on what is defined in
-% the info(last) stats structure and in the options structure.
-%
-% The returned number 'stop' is 0 if none of the stopping criteria
-% triggered, and a (strictly) positive integer otherwise. The integer
-% identifies which criterion triggered:
-%  0 : Nothing triggered;
-%  1 : Cost tolerance reached;
-%  2 : Gradient norm tolerance reached;
-%  3 : Max time exceeded;
-%  4 : Max iteration count reached;
-%  6 : User defined stopfun criterion triggered.
-%
-% The output 'reason' is a string describing the triggered event.
-
-% This file is part of Manopt: www.manopt.org.
-% Original author: Nicolas Boumal, Dec. 30, 2012.
-% Contributors:
-% Change log:
-%
-%   Apr. 2, 2015 (NB):
-%       'reason' now contains the option (name and value) that triggered.
-%
-%   Aug. 3, 2018 (NB):
-%       Removed check for costevals, as it was never used, and the new
-%       manopt counters allow to do this in a more transparent way.
-%       Furthermore, now, options.stopfun can have 1 or 2 outputs: the
-%       first is a boolean indicating whether or not to stop, and the
-%       (optional) second output is a string indicating the reason.
-
-
-stop = 0;
-reason = '';
-
-stats = info(last);
-
-% Target cost attained
-if isfield(stats, 'cost') && isfield(options, 'tolcost') && ...
-        stats.cost <= options.tolcost
-    reason = sprintf('Cost tolerance reached; options.tolcost = %g.', options.tolcost);
-    stop = 1;
-    return;
-end
-
-% Target gradient norm attained
-if isfield(stats, 'gradnorm') && isfield(options, 'tolgradnorm') && ...
-        stats.gradnorm < options.tolgradnorm
-    reason = sprintf('Gradient norm tolerance reached; options.tolgradnorm = %g.', options.tolgradnorm);
-    stop = 2;
-    return;
-end
-
-% Allotted time exceeded
-if isfield(stats, 'time') && isfield(options, 'maxtime') && ...
-        stats.time >= options.maxtime
-    reason = sprintf('Max time exceeded; options.maxtime = %g.', options.maxtime);
-    stop = 3;
-    return;
-end
-
-% Allotted iteration count exceeded
-if isfield(stats, 'iter') && isfield(options, 'maxiter') && ...
-        stats.iter >= options.maxiter
-    reason = sprintf('Max iteration count reached; options.maxiter = %g.', options.maxiter);
-    stop = 4;
-    return;
-end
-
-%     % Check whether the possibly user defined stopping criterion
-%     % triggers or not.
-%     if isfield(options, 'stopfun')
-%         % options.stopfun can have 1 or 2 outputs, but checking this with
-%         % nargout does not always work because it is technical to determine
-%         % for anonymous functions. Thus, we use our best guess. Nargout
-%         % returns -1 when it cannot determine the number of outputs, in
-%         % which case we take the safer approach of assuming 1 output.
-%         switch nargout(options.stopfun)
-%             case 2
-%                 [userstop, reason] = options.stopfun(problem, x, info, last);
-%             case {1, -1}
-%                 userstop = options.stopfun(problem, x, info, last);
-%                 reason = ['User defined stopfun criterion triggered; ' ...
-%                           'see options.stopfun.'];
-%             otherwise
-%                 error('manopt:stoppingcriterion:stopfunoutputs', ...
-%                       'options.stopfun must have one or two outputs.');
-%         end
-%         if userstop
-%             stop = 6;
-%             if nargout(options.stopfun) == -1
-%                 reason = [reason, '\n(A reason may have been ' ...
-%                           'provided, but stoppingcriterion was ' ...
-%                           'unable to determine\nthe number of ' ...
-%                           'output arguments of options.stopfun.)'];
-%             end
-%             return;
-%         end
-%     end
-
-end
-
-function [stepsize,newh,lsstats] = linesearch_hint(M,d,f0,df0,q1,q2k,options)
-
-% Armijo line-search based on the line-search hint in the problem structure.
-%
-% Base line-search algorithm for descent methods, based on a simple
-% backtracking method. The search direction provided has to be a descent
-% direction, as indicated by a negative df0 = directional derivative of f
-% at the identity element along d.
-%
-% The algorithm selects a hardcoded initial step size. If that
-% step does not fulfill the Armijo sufficient decrease criterion, that step
-% size is reduced geometrically until a satisfactory step size is obtained
-% or until a failure criterion triggers.
-%
-% Below, the step is constructed as alpha*d, and the step size is the norm
-% of that vector, thus: stepsize = alpha*norm_d. The step is executed by
-% computing the exponential mapping exp_{hid}(alpha*d), giving newh.
-%
-% Inputs/Outputs : see help for linesearch
-%
-% See also: steepestdescent conjugategradients linesearch
-
-% This file is a modified version of linesearch_hint.m in Manopt: www.manopt.org.
-% Original author: Nicolas Boumal, July 17, 2014.
-% Modified by: Darshan Bryner, August 1, 2019.
-
-
-% Backtracking default parameters. These can be overwritten in the
-% options structure which is passed to the solver.
-default_options.ls_contraction_factor = .5;
-default_options.ls_suff_decr = 1e-6;
-default_options.ls_max_steps = 25;
-default_options.ls_backtrack = true;
-default_options.ls_force_decrease = true;
-
-if ~exist('options', 'var') || isempty(options)
-    options = struct();
-end
-options = mergeOptions(default_options, options);
-
-contraction_factor = options.ls_contraction_factor;
-suff_decr = options.ls_suff_decr;
-max_ls_steps = options.ls_max_steps;
-
-% Initialize alpha.
-alpha=1;
-
-% Identity element, i.e. where we are located on the manifold.
-hid=ones(1,M.T);
-
-% Make the chosen step and compute the cost there.
-newh = M.exp(hid, d, alpha);
-newf = alignment_cost(newh,q1,q2k,M);
-cost_evaluations = 1;
-
-% Backtrack while the Armijo criterion is not satisfied or if newh goes outside positive orthant.
-while options.ls_backtrack && (newf > f0 + suff_decr*alpha*df0 || sum(newh<=0)>0)
-    
-    % Reduce the step size,
-    alpha = contraction_factor * alpha;
-    
-    % and look closer down the line.
-    newh = M.exp(hid, d, alpha);
-    newf = alignment_cost(newh,q1,q2k,M);
-    cost_evaluations = cost_evaluations + 1;
-    
-    % Make sure we don't run out of budget.
-    if cost_evaluations >= max_ls_steps
-        break;
-    end
-    
-end
-
-% If we got here without obtaining a decrease, we reject the step.
-if options.ls_force_decrease && newf > f0
-    alpha = 0;
-    newh = hid;
-    newf = f0; %#ok<NASGU>
-end
-
-% As seen outside this function, stepsize is the size of the vector we
-% retract to make the step from h to newh. Since the step is alpha*d:
-norm_d = M.norm(d);
-stepsize = alpha * norm_d;
-
-% Return some statistics also, for possible analysis.
-lsstats.costevals = cost_evaluations;
-lsstats.stepsize = stepsize;
-lsstats.alpha = alpha;
-
-end
-
-function [qnew,gamma] = group_action_SRVF(q,h,M)
-
-    % Computes the diffeomorphis group action on an SRVF given by 
-    % (q,\gamma) = q(\gamma(t))h(t), where h=\sqrt{\dot{\gamma}}. 
-    
-    [p,~]=size(q);
-    gamma=cumtrapz(M.t,h.^2);
-    gamma=gamma/gamma(end);
-    h=sqrt(max(gradient(gamma,M.t),0));
-    if p>1
-        h=repmat(h,p,1);
-    end
-    qnew=spline(M.t,q,gamma).*h;
 end

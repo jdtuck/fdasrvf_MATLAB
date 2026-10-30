@@ -153,6 +153,39 @@ classdef DynamicProgrammingTest < matlab.unittest.TestCase
                 'RBFGS should fit within 25% of DP on every pair');
         end
 
+        function testRBFGSMMatchesRBFGS(testCase)
+            % "RBFGSM" is the solver of "RBFGS" written in MATLAB
+            [q1, q2, t] = growthPair();
+            M = length(t);
+            g = optimum_reparam(q1, q2, t, 0, 'RBFGS');
+            gm = optimum_reparam(q1, q2, t, 0, 'RBFGSM');
+            testCase.verifyLessThan(max(abs(g(:) - gm(:))) * (M-1), 1e-3, ...
+                'RBFGSM and RBFGS should give the same warp');
+            for penalty = {'roughness', 'l2gam', 'l2psi', 'geodesic'}
+                g = optimum_reparam(q1, q2, t, 0.01, 'RBFGS', 0, 0, 10, penalty{1});
+                gm = optimum_reparam(q1, q2, t, 0.01, 'RBFGSM', 0, 0, 10, penalty{1});
+                testCase.verifyLessThan(max(abs(g(:) - gm(:))) * (M-1), 1e-3, ...
+                    ['RBFGSM and RBFGS should agree with penalty ' penalty{1}]);
+            end
+        end
+
+        function testRBFGSMCurveMatchesDP(testCase)
+            % From a coarse DP start RBFGSM fits curves at least as well as DP
+            % in the median; from the identity it reached up to 2x DP's cost
+            S = load(fullfile(fileparts(which('optimum_reparam')), 'data', 'MPEG7.mat'));
+            r = zeros(8, 1);
+            for i = 1:8
+                q1 = curve_to_q(ReSampleCurve(S.Xdata{1+5*(i-1), 1}, 100));
+                q2 = curve_to_q(ReSampleCurve(S.Xdata{1+5*(i-1), 2}, 100));
+                r(i) = curveCost(q1, q2, optimum_reparam_curve(q1, q2, 0, 'RBFGSM')) / ...
+                    curveCost(q1, q2, optimum_reparam_curve(q1, q2, 0, 'DP'));
+            end
+            testCase.verifyLessThan(median(r), 1.0, ...
+                'RBFGSM should fit curves at least as well as DP on average');
+            testCase.verifyLessThan(max(r), 1.15, ...
+                'RBFGSM should fit curves within 15% of DP on every pair');
+        end
+
         function testSolverArguments(testCase)
             % scl reaches DynamicProgrammingQ, and "DP" defaults to nbhd_dim = 10
             t = testCase.t;
@@ -183,6 +216,18 @@ tf = linspace(0, 1, (M-1)*20 + 1)';
 a = interp1(t1, q1(:), tf); a = a / sqrt(trapz(tf, a.^2));
 b = interp1(t1, q2(:), tf); b = b / sqrt(trapz(tf, b.^2));
 E = trapz(tf, (a - warp_q_gamma(b, interp1(t1, gam(:), tf), tf)').^2);
+end
+
+function E = curveCost(q1, q2, gam)
+% dpCost for curves in R^n
+M = size(q1, 2);
+t1 = linspace(0, 1, M);
+tf = linspace(0, 1, (M-1)*20 + 1);
+a = interp1(t1, q1', tf')'; a = a / sqrt(trapz(tf, sum(a.^2, 1)));
+b = interp1(t1, q2', tf')'; b = b / sqrt(trapz(tf, sum(b.^2, 1)));
+gf = interp1(t1, gam(:)', tf);
+bw = interp1(tf, b', gf')' .* sqrt(max(gradient(gf, tf), 0));
+E = trapz(tf, sum((a - bw).^2, 1));
 end
 
 function [q1, q2, t] = growthPair()
