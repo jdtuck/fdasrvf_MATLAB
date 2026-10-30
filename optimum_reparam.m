@@ -100,9 +100,14 @@ switch upper(method)
         t2 = (t2-tmin)/(tmax-tmin);
         gam0 = simul_gam(u,g1,g2,t2,s1,s2,t2);
     case 'RBFGS'
-        % RBFGS descends from where it starts, so start it from a DP warp on
-        % a coarse grid and let it refine that warp on q1 and q2 resampled
-        % scl times finer, where its linearly interpolated cost is accurate
+        % As in Huang et al., "Riemannian optimization for registration of
+        % curves in elastic shape analysis": RBFGS descends from where it
+        % starts, so start it from a DP warp on a coarse grid of at most 51
+        % points, which is cheap, and refine it on q1 and q2 resampled
+        % linearly scl times finer.  On t itself the trapezoid rule samples q2
+        % only at the warped grid points, so where the warp is steep the
+        % solver could skip features of q2 and lower its cost without
+        % aligning them
         M = length(t);
         t1 = linspace(0,1,M)';
         nc = min(M, 51);
@@ -115,16 +120,17 @@ switch upper(method)
             % start from the exact identity rather than its interpolation
             gamc = [];
         end
+        q1f = interp1(t1,q1(:),tf);
+        q2f = interp1(t1,q2(:),tf);
         % lambda is divided by scl to weigh the penalty as it would on t1
-        q1f = spline(t1,q1(:),tf);
-        q2f = spline(t1,q2(:),tf);
         lamf = lambda_rbfgs/scl;
-        [gamf,info] = c_rlbfgs(q1f, q2f, tf, 30, lamf, pen_rbfgs, gamc);
+        maxit = 30;
+        [gamf,info] = c_rlbfgs(q1f, q2f, tf, maxit, lamf, pen_rbfgs, gamc);
         % the DP warp is piecewise linear, which the penalty can make costly
         % to start from, so with a penalty also start from the identity and
         % keep the warp of lower cost
         if lamf > 0
-            [gami,infoi] = c_rlbfgs(q1f, q2f, tf, 30, lamf, pen_rbfgs);
+            [gami,infoi] = c_rlbfgs(q1f, q2f, tf, maxit, lamf, pen_rbfgs);
             if infoi(3) < info(3)
                 gamf = gami;
             end
