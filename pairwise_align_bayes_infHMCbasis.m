@@ -32,6 +32,8 @@ function [out, chains] = pairwise_align_bayes_infHMCbasis(y1i, y2i, time, mcmcop
 % mcmcopts.initcoef = repelem(0, 20).'; % init coef
 % mcmcopts.basis = 'fourier';  %'fourier' 'legendre'
 % mcmcopts.warp_rep = 'shooting'; % 'shooting' (v-transform) or 'clr' (h-transform)
+% mcmcopts.init = 'dp'; % start chain 1 at the DP warp ('dp') or at initcoef ('coef');
+%                       % further chains start at random coefficients
 % mcmcopts.extrainfo = true;
 % mcmcopts.parallel = true; % run chains in parallel when nchains > 1
 % mcmcopts.nworkers = 0; % number of workers for parallel pool (0: min(numcores, nchains))
@@ -93,6 +95,7 @@ arguments
     mcmcopts.nbasis = 10; %#ok<*INUSA> unused, kept for backward compatibility
     mcmcopts.basis = 'fourier';  %'fourier' 'legendre'
     mcmcopts.warp_rep {mustBeMember(mcmcopts.warp_rep,{'shooting','clr'})} = 'shooting';
+    mcmcopts.init {mustBeMember(mcmcopts.init,{'dp','coef'})} = 'dp';
     mcmcopts.sampfreq = 5; %controls smoothness of fitrgp
     mcmcopts.seed = randi(floor(intmax/10));
     mcmcopts.extrainfo = true;
@@ -129,6 +132,9 @@ if mcmcopts.nchains > 1
         random_starts(:,i) = randcoef;
     end
 end
+% chain 1 starts at initcoef, or at the DP warp when init = 'dp': chains
+% started at the identity can settle in a poor local mode
+random_starts(:,1) = mcmcopts.initcoef(:);
 
 isparallel = mcmcopts.parallel;
 try
@@ -150,6 +156,7 @@ if isparallel
     mcmcopts_p = cell(1,mcmcopts.nchains);
     for i = 1:mcmcopts.nchains
         mcmcopts.initcoef = random_starts(:,i);
+        mcmcopts.dp_start = (i == 1) && strcmpi(mcmcopts.init, 'dp');
         mcmcopts_p{i} = mcmcopts;
     end
 end
@@ -182,6 +189,7 @@ else
     for i = 1:mcmcopts.nchains
         rng(mcmcopts.seed+i)
         mcmcopts.initcoef = random_starts(:,i);
+        mcmcopts.dp_start = (i == 1) && strcmpi(mcmcopts.init, 'dp');
         chains{i} = run_mcmc(y1i, y2i, time, mcmcopts);
         obj([], [], []);
     end
@@ -347,6 +355,7 @@ rep = double(strcmpi(mcmcopts.warp_rep,'clr'));
 Phi = bayes_warp_basis(t01, ncoef, mcmcopts.basis);
 C = (mcmcopts.vpriorvar ./ repelem(1:ncoef/2,2).^mcmcopts.vpriordecay).';
 epsilon = sqrt(mcmcopts.h);
+da = dual_avg_step(epsilon);
 L = mcmcopts.L;
 
 % f1, f2 GP priors, initialized from a GP fit
@@ -401,6 +410,11 @@ f1_curr = predict(model1,time').';
 f2_curr = predict(model2,time').';
 q1_curr = to_srvf(f1_curr);
 q2_curr = to_srvf(f2_curr);
+if mcmcopts.dp_start
+    % start at the elastic (DP) alignment of the GP-smoothed functions
+    [~, gam_dp] = pairwise_align(f1_curr.', f2_curr.', t01.');
+    v_coef_curr = bayes_gam_to_coef(gam_dp(:), Phi, rep);
+end
 
 [nll, ~, SSE_curr] = bayes_warp_geom(v_coef_curr, Phi, rep, q1_curr, q2_curr, sigma_curr);
 if ~isfinite(nll)
@@ -443,14 +457,17 @@ for m = 2:iter
     % current f1, f2 and sigma
     geom = @(c) bayes_warp_geom(c, Phi, rep, q1_curr, q2_curr, sigma_curr);
     [nll, g] = geom(v_coef_curr);
-    [v_coef_curr, nll, ~, ~, theta_accept] = infhmc_step(v_coef_curr, nll, g, [], ...
+    [v_coef_curr, nll, ~, ~, theta_accept, ~, alpha] = infhmc_step(v_coef_curr, nll, g, [], ...
         @(c) geom_aux(geom, c), C, epsilon, L);
     SSE_curr = 2 * sigma_curr * (nll - T/2*log(sigma_curr));
 
-    % adapt step size during burn-in (Robbins-Monro on log step size)
+    % adapt step size during burn-in (dual averaging); keep the averaged
+    % step size afterwards
     if mcmcopts.adapt && m <= mcmcopts.burnin
-        gain = 1 / m^0.6;
-        epsilon = min(exp(log(epsilon) + gain*(theta_accept - mcmcopts.target_accept)), pi/2);
+        [epsilon, da] = dual_avg_step(da, alpha, mcmcopts.target_accept);
+        if m == mcmcopts.burnin
+            epsilon = exp(da.log_eps_bar);
+        end
     end
 
     % update sigma^2 (SRVF model variance)

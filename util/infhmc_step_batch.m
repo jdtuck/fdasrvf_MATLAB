@@ -1,4 +1,4 @@
-function [c, nll, g, aux, accept] = infhmc_step_batch(c, nll, g, aux, geom, C, epsilon, L)
+function [c, nll, g, aux, accept, alpha] = infhmc_step_batch(c, nll, g, aux, geom, C, epsilon, L)
 % INFHMC_STEP_BATCH Preconditioned HMC transitions for independent blocks
 % -------------------------------------------------------------------------
 % Runs infhmc_step on N conditionally independent blocks at once (one
@@ -26,6 +26,8 @@ function [c, nll, g, aux, accept] = infhmc_step_batch(c, nll, g, aux, geom, C, e
 % Output:
 % c, nll, g, aux: new states and their geometry
 % accept: (N,1) logical, true where the proposal was accepted
+% alpha: (N,1) acceptance probabilities min(1, exp(-dH)) (0 where the
+%        trajectory left the support), for step-size adaptation
 
 C = C(:);
 [D, N] = size(c);
@@ -57,7 +59,10 @@ end
 
 H1 = nll_q + 0.5 * sum(q.^2 ./ C, 1) + 0.5 * sum(v.^2 ./ C, 1);
 logRatio = H0 - H1;
-accept = (~failed & isfinite(logRatio) & (log(rand(1, N)) < logRatio)).';
+ok = ~failed & isfinite(logRatio);
+alpha = zeros(N, 1);
+alpha(ok) = min(1, exp(logRatio(ok)));
+accept = (ok & (log(rand(1, N)) < logRatio)).';
 c(:, accept) = q(:, accept);
 nll(accept) = nll_q(accept);
 g(:, accept) = gq(:, accept);

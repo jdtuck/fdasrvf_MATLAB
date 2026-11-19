@@ -923,6 +923,7 @@ classdef fdawarp
             accept = zeros(N, iter);
             eps_tr = zeros(N, iter);
             epsilon = sqrt(mcmcopts.h) * ones(N,1);
+            da = dual_avg_step(epsilon);
             sigma_tr(1) = sqrt(sigma2);
             eps_tr(:,1) = epsilon;
             ks = 1;
@@ -932,13 +933,17 @@ classdef fdawarp
                 % update warping coefficients: the curves are conditionally
                 % independent given q* and sigma^2, so all are updated in
                 % one batched HMC step (one MEX call per leapfrog step)
-                [c_curr, aux, accept(:,m)] = group_hmc_update(c_curr, Phi, rep, ...
+                [c_curr, aux, accept(:,m), alpha] = group_hmc_update(c_curr, Phi, rep, ...
                     qstar, q, sigma2, C, epsilon, mcmcopts.L);
                 qtil = aux(2:end,:);
 
+                % dual-averaging step-size adaptation during burn-in; keep
+                % the averaged step sizes afterwards
                 if mcmcopts.adapt && m <= burnin
-                    gain = 1 / m^0.6;
-                    epsilon = min(exp(log(epsilon) + gain*(accept(:,m) - mcmcopts.target_accept)), pi/2);
+                    [epsilon, da] = dual_avg_step(da, alpha, mcmcopts.target_accept);
+                    if m == burnin
+                        epsilon = exp(da.log_eps_bar);
+                    end
                 end
 
                 % template: conjugate Gaussian draw
@@ -1934,10 +1939,10 @@ aux = [SSE; q2w];
 end
 
 % one batched infinite-dimensional HMC update of the warps of curves Q
-function [c, aux, accept] = group_hmc_update(c, Phi, rep, qstar, Q, sigma2, C, epsilon, L)
+function [c, aux, accept, alpha] = group_hmc_update(c, Phi, rep, qstar, Q, sigma2, C, epsilon, L)
 geom = @(x) group_geom(x, Phi, rep, qstar, Q, sigma2);
 [nll, g, aux] = geom(c);
-[c, ~, ~, aux, accept] = infhmc_step_batch(c, nll, g, aux, geom, C, epsilon, L);
+[c, ~, ~, aux, accept, alpha] = infhmc_step_batch(c, nll, g, aux, geom, C, epsilon, L);
 end
 
 % Inverse of the Karcher mean of warping functions gam (T,N) on the uniform

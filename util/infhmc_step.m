@@ -1,4 +1,4 @@
-function [c, nll, g, aux, accept, nsteps] = infhmc_step(c, nll, g, aux, geom, C, epsilon, L)
+function [c, nll, g, aux, accept, nsteps, alpha] = infhmc_step(c, nll, g, aux, geom, C, epsilon, L)
 % INFHMC_STEP One preconditioned (infinite-dimensional) HMC transition
 % -------------------------------------------------------------------------
 % Samples pi(c) ~ exp(-nll(c)) N(c; 0, diag(C)) with the splitting
@@ -23,6 +23,8 @@ function [c, nll, g, aux, accept, nsteps] = infhmc_step(c, nll, g, aux, geom, C,
 % c, nll, g, aux: new state and its geometry
 % accept: true if the proposal was accepted
 % nsteps: number of leapfrog steps used
+% alpha: acceptance probability min(1, exp(-dH)) (0 if the trajectory
+%        left the support), for step-size adaptation
 
 C = C(:);
 v = sqrt(C) .* randn(size(c));
@@ -49,6 +51,11 @@ end
 
 H1 = nll_q + 0.5 * sum(q.^2 ./ C) + 0.5 * sum(v.^2 ./ C);
 logRatio = H0 - H1;
+if isfinite(logRatio)
+    alpha = min(1, exp(logRatio));
+else
+    alpha = 0;
+end
 accept = isfinite(logRatio) && (log(rand) < logRatio);
 if accept
     c = q;
