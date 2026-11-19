@@ -135,7 +135,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   armaSetPr(plhs[0], gam);
 
   // info = [iterations, stop reason, cost, gradient norm]; the stop reason is
-  // 1 for a vanishing step, 2 for the gradient norm and 3 for maxiter
+  // 1 for no acceptable step, 2 for the gradient norm, 3 for maxiter and 4
+  // for the relative change of the cost
   if (nlhs > 1) {
     const rowvec info_row = info.t();
     plhs[1] = armaCreateMxMatrix(info_row.n_rows, info_row.n_cols);

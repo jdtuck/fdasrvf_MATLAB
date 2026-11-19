@@ -55,7 +55,7 @@ q1 = sin(linspace(0,2*pi,M));
 timet = linspace(0,1,M);
 penalties = {'none','roughness','l2gam','l2psi','geodesic'};
 for i = 1:numel(penalties)
-    for method = {'DP','DP1','RBFGS'}
+    for method = {'DP','DP1','RBFGS','RBFGSM'}
         gam = optimum_reparam(q1', q1', timet', 1.0, method{1}, 0.0, 0.0, 7, ...
             penalties{i});
         assert(max(abs(gam(:).'-timet)) <= 1e-6, ...
