@@ -19,17 +19,19 @@ function [out, chains] = pairwise_align_bayes_infHMCbasis(y1i, y2i, time, mcmcop
 % mcmcopts.beta0 = 0.1;
 % mcmcopts.alpha = 1;
 % mcmcopts.beta = 1;
-% mcmcopts.h = .01; % stepsize
-% mcmcopts.L = 4;  % number of leapfrog steps
+% mcmcopts.h = .01; % HMC step size is sqrt(h) (rotation angle)
+% mcmcopts.L = 4;  % maximum number of leapfrog steps
+% mcmcopts.adapt = true; % adapt the step size during burn-in
+% mcmcopts.target_accept = 0.65; % target HMC acceptance rate when adapting
 % mcmcopts.f1propvar = 0.0001;
 % mcmcopts.f2propvar = 0.0001; % proposal variance for f2
 % mcmcopts.L1propvar = 0.3; %controls L1 (in f1 cov) acceptance rate
 % mcmcopts.L2propvar = 0.3;  %controls L2 (in f2 cov) acceptance rate
-% mcmcopts.npoints = 200;
-% mcmcopts.vpriorvar = 1; % proposal variance for theta
+% mcmcopts.vpriorvar = 1; % prior variance scale of the warping coefficients
+% mcmcopts.vpriordecay = 1; % prior variance of pair j is vpriorvar/j^vpriordecay
 % mcmcopts.initcoef = repelem(0, 20).'; % init coef
-% mcmcopts.nbasis = 10; %number of basis of gradient g
 % mcmcopts.basis = 'fourier';  %'fourier' 'legendre'
+% mcmcopts.warp_rep = 'shooting'; % 'shooting' (v-transform) or 'clr' (h-transform)
 % mcmcopts.extrainfo = true;
 % mcmcopts.parallel = true; % run chains in parallel when nchains > 1
 % mcmcopts.nworkers = 0; % number of workers for parallel pool (0: min(numcores, nchains))
@@ -51,6 +53,15 @@ function [out, chains] = pairwise_align_bayes_infHMCbasis(y1i, y2i, time, mcmcop
 % out.phasedist: phase distance posterior
 % out.ampdist: amplitude distance posterior
 % out.f2_warped: f2 aligned functions
+% out.epsilon: HMC step size (rotation angle) at each iteration
+%
+% Warping functions: with warp_rep = 'shooting', v = Phi*c is a shooting
+% vector at the identity of the Hilbert sphere of SRSFs of warps and must
+% satisfy |v| < pi (draws outside are rejected); with warp_rep = 'clr',
+% h = Phi*c is the centered log-derivative, gam' = exp(h)/int exp(h), which
+% is unconstrained. The likelihood gradient with respect to c is exact (see
+% bayes_warp_geom) and v is updated with the preconditioned HMC of Beskos et
+% al. (2011) (see infhmc_step). time is assumed to be uniformly sampled.
 %
 % J. D. Tucker, L. Shand, and K. Chowdhary. “Multimodal Bayesian Registration of Noisy Functions using 
 %       Hamiltonian Monte Carlo”, Computational Statistics and Data Analysis, accepted, 2021.
@@ -61,24 +72,27 @@ arguments
     y2i
     time
     mcmcopts.iter = 1e4;
-    mcmcopts.burnin = min(5e3,1e4/2); %must be >1
+    mcmcopts.burnin = []; % default min(5e3, iter/2)
     mcmcopts.thin = 50;
     mcmcopts.nchains = 1;
     mcmcopts.alpha0 = 0.1;
     mcmcopts.beta0 = 0.1;
     mcmcopts.alpha = 1;
     mcmcopts.beta = 1;
-    mcmcopts.h = .01; % stepsize
-    mcmcopts.L = 4;  % number of leapfrog steps
+    mcmcopts.h = .01; % step size is sqrt(h)
+    mcmcopts.L = 4;  % maximum number of leapfrog steps
+    mcmcopts.adapt = true;
+    mcmcopts.target_accept = 0.65;
     mcmcopts.f1propvar = 0.0001;
     mcmcopts.f2propvar = 0.0001; % proposal variance for f2
     mcmcopts.L1propvar = 0.3; %controls L1 (in f1 cov) acceptance rate
     mcmcopts.L2propvar = 0.3;  %controls L2 (in f2 cov) acceptance rate
-    %mcmcopts.npoints = 200;
-    mcmcopts.vpriorvar = 1; % proposal variance for theta
+    mcmcopts.vpriorvar = 1; % prior variance scale of theta
+    mcmcopts.vpriordecay = 1; % prior variance decays as 1/j^vpriordecay
     mcmcopts.initcoef = repelem(0, 20).'; % init coef
-    mcmcopts.nbasis = 10; %number of basis of gradient g
+    mcmcopts.nbasis = 10; %#ok<*INUSA> unused, kept for backward compatibility
     mcmcopts.basis = 'fourier';  %'fourier' 'legendre'
+    mcmcopts.warp_rep {mustBeMember(mcmcopts.warp_rep,{'shooting','clr'})} = 'shooting';
     mcmcopts.sampfreq = 5; %controls smoothness of fitrgp
     mcmcopts.seed = randi(floor(intmax/10));
     mcmcopts.extrainfo = true;
@@ -95,8 +109,11 @@ end
 if (mod(length(mcmcopts.initcoef), 2) ~= 0)
     error('Length of mcmcopts.initcoef must be even')
 end
-if (mod(mcmcopts.nbasis, 2) ~= 0)
-    error('Length of mcmcopts.nbasis must be even')
+if isempty(mcmcopts.burnin)
+    mcmcopts.burnin = min(5e3, floor(mcmcopts.iter/2));
+end
+if mcmcopts.burnin < 1 || mcmcopts.burnin >= mcmcopts.iter
+    error('mcmcopts.burnin must be between 1 and mcmcopts.iter-1')
 end
 
 % setup random start points for more than 1 chain
@@ -105,6 +122,10 @@ if mcmcopts.nchains > 1
     rng(mcmcopts.seed)
     for i = 1:mcmcopts.nchains
         randcoef = -1 + (2)*rand(length(mcmcopts.initcoef),1); %.1*(2*rand(length(mcmcopts.initcoef),1) - 1.0);
+        if strcmpi(mcmcopts.warp_rep,'shooting') && norm(randcoef) >= 0.9*pi
+            % keep the shooting vector inside the injectivity radius
+            randcoef = randcoef * (0.9*pi/norm(randcoef)) * rand;
+        end
         random_starts(:,i) = randcoef;
     end
 end
@@ -183,6 +204,7 @@ out.s2 = zeros(1,Nsamples*mcmcopts.nchains);
 out.L1 = zeros(1,Nsamples*mcmcopts.nchains);
 out.L2 = zeros(1,Nsamples*mcmcopts.nchains);
 out.f2_warped_mu = zeros(M,mcmcopts.nchains);
+out.epsilon = zeros(mcmcopts.nchains, length(chains{1}.epsilon));
 
 if (mcmcopts.extrainfo)
     Nsamplesa = length(chains{1}.theta_accept);
@@ -216,7 +238,8 @@ for i = 1:mcmcopts.nchains
     out.L1(a:b) = chains{i}.L1;
     out.L2(a:b) = chains{i}.L2;
     out.f2_warped_mu(:,i) = chains{i}.f2_warped_mu;
-    
+    out.epsilon(i,:) = chains{i}.epsilon;
+
     if (mcmcopts.extrainfo)
         a1 = (i-1)*Nsamplesa + 1;
         b1 = (i)*Nsamplesa;
@@ -268,7 +291,7 @@ if mcmcopts.nchains > 1
             b = (j)*Nsamples;
             tmp(:,a:b) = chains{idx(j)}.gamma_mat;
         end
-        [~,gam_mu,~,~] = SqrtMean(tmp.');
+        [~,gam_mu,~,~] = SqrtMean(tmp);
         out.posterior_gamma_modes(:,i) = gam_mu;
         out.posterior_gamma_modes_cr(:,:,i) = statsFun(tmp).';
     end
@@ -309,90 +332,53 @@ function out = run_mcmc(y1i, y2i, time, mcmcopts)
 SIG_GAM = 13;
 iter = mcmcopts.iter;
 
-% for now, back to struct format of Yi's software
-y1.x = time;
-y1.y = y1i;
-y2.x = time;
-y2.y = y2i;
+y1 = y1i(:).';
+y2 = y2i(:).';
+time = time(:).';
 T = length(time);
 
-% normalize timet to [0,1]
-% ([a,b] - a) / (b-a) = [0,1]
-y1.x = (y1.x-min(y1.x))./(max(y1.x)-min(y1.x));
-y2.x = (y2.x-min(y2.x))./(max(y2.x)-min(y2.x));
+% normalize time to [0,1] (uniform sampling assumed)
+t01 = (time-min(time))./(max(time)-min(time));
 
 % warping function parameter settings
-pw_sim_global_burnin = mcmcopts.burnin;
-valid_index = pw_sim_global_burnin:iter;
-ncoef = length(mcmcopts.initcoef); %number of basis functions for warping function v
-nbasis = mcmcopts.nbasis; %number of basis functions for d_basis in HMC
-pw_sim_global_Mv = ncoef/2;
-numSimPoints = T;
-pw_sim_global_domain_par = linspace(0,1,numSimPoints).';
-d_basis = basis_fourierd(pw_sim_global_domain_par, nbasis);
-if strcmpi(mcmcopts.basis,'fourier')
-    v_basis = basis_fourier(pw_sim_global_domain_par, pw_sim_global_Mv, 1);
-elseif strcmpi(mcmcopts.basis,'legendre')
-    v_basis = basis_legendre(pw_sim_global_domain_par, pw_sim_global_Mv, 1);
-else
-    error('Incorrect Basis Specified')
-end
-sigma_ini = 1;
-v_priorvar = mcmcopts.vpriorvar;
-v_coef_ini = mcmcopts.initcoef;
-D = pdist(time');
-Dmat = squareform(D);
-C = v_priorvar ./ repelem(1:pw_sim_global_Mv,2);
-cholC = chol(diag(C));
-h = mcmcopts.h;
+valid_index = mcmcopts.burnin:iter;
+ncoef = length(mcmcopts.initcoef);
+rep = double(strcmpi(mcmcopts.warp_rep,'clr'));
+Phi = bayes_warp_basis(t01, ncoef, mcmcopts.basis);
+C = (mcmcopts.vpriorvar ./ repelem(1:ncoef/2,2).^mcmcopts.vpriordecay).';
+epsilon = sqrt(mcmcopts.h);
 L = mcmcopts.L;
 
-    function result = propose_v_coef(v_coef_curr)
-        v_coef_new = normrnd(v_coef_curr, C', ncoef, 1);
-        result = v_coef_new;
-    end
+% f1, f2 GP priors, initialized from a GP fit
+Dmat = squareform(pdist(time'));
+model1 = fitrgp(time(1:mcmcopts.sampfreq:end)', y1(1:mcmcopts.sampfreq:end)');
+model2 = fitrgp(time(1:mcmcopts.sampfreq:end)', y2(1:mcmcopts.sampfreq:end)');
 
-% f1,f2 prior, propoposal params
-sigma1_ini = 0.01;
-sigma2_ini = 0.01;
-f1_propvar = mcmcopts.f1propvar;
-f2_propvar = mcmcopts.f2propvar;
-%model1 = fitrgp(time', y1.y');
-%model2 = fitrgp(time', y2.y');
-model1 = fitrgp(time(:,1:mcmcopts.sampfreq:end)', y1.y(1:mcmcopts.sampfreq:end)');
-model2 = fitrgp(time(:,1:mcmcopts.sampfreq:end)', y2.y(1:mcmcopts.sampfreq:end)');
+s1_curr = model1.KernelInformation.KernelParameters(2)^2;
+s2_curr = model2.KernelInformation.KernelParameters(2)^2;
+L1_curr = model1.KernelInformation.KernelParameters(1);
+L2_curr = model2.KernelInformation.KernelParameters(1);
+gp1 = gp_prior(s1_curr, L1_curr, Dmat);
+gp2 = gp_prior(s2_curr, L2_curr, Dmat);
 
-s1_ini = model1.KernelInformation.KernelParameters(2)^2; %variance of f1, s_1^2, shouldn we initialize randomly?
-s2_ini = model2.KernelInformation.KernelParameters(2)^2; %variance of f1, s_2^2
-L1_propvar = mcmcopts.L1propvar;
-L2_propvar = mcmcopts.L2propvar;
-L1_ini = model1.KernelInformation.KernelParameters(1);
-L2_ini = model2.KernelInformation.KernelParameters(1);
-
-K_f1_corr = exp2corr2(L1_ini,Dmat)+0.1 * eye(length(y1.y));
-K_f1 = s1_ini * K_f1_corr;
-K_f1 = inv(K_f1);
-K_f2_corr = exp2corr2(L2_ini,Dmat)+ 0.1 * eye(length(y2.y));
-K_f2 = s2_ini * K_f2_corr;
-K_f2 = inv(K_f2);
-K_f1prop= exp2corr(f1_propvar,L1_ini,Dmat);
-K_f2prop= exp2corr(f2_propvar,L2_ini,Dmat);
+% random-walk proposals for f1, f2 (fixed covariance, factor once)
+R_f1prop = chol_jitter(exp2corr(mcmcopts.f1propvar, L1_curr, Dmat));
+R_f2prop = chol_jitter(exp2corr(mcmcopts.f2propvar, L2_curr, Dmat));
 
 % result objects
-result.v_coef = zeros(iter,length(v_coef_ini));
+result.v_coef = zeros(iter,ncoef);
 result.sigma = zeros(1,iter);
 result.sigma1 = zeros(1,iter);
 result.sigma2 = zeros(1,iter);
-result.f1 = zeros(iter,length(time));
-result.f2_warped = result.f1;
-result.f2 = zeros(iter,length(time));
+result.f1 = zeros(iter,T);
+result.f2 = zeros(iter,T);
 result.s1 = zeros(1,iter);
 result.s2 = zeros(1,iter);
 result.L1 = zeros(1,iter);
 result.L2 = zeros(1,iter);
-
 result.logl = zeros(1,iter);
 result.SSE = zeros(1,iter);
+result.epsilon = zeros(1,iter);
 result.theta_accept = zeros(1,iter);
 result.f2_accept = zeros(1,iter);
 result.f1_accept = zeros(1,iter);
@@ -400,109 +386,86 @@ result.L2_accept = zeros(1,iter);
 result.L1_accept = zeros(1,iter);
 
 % init
-v_coef_curr = v_coef_ini;
-v_curr =  f_basistofunction(v_basis.x,0 , v_coef_curr, v_basis, false);
-sigma_curr = sigma_ini;
-sigma1_curr = sigma1_ini;
-sigma2_curr = sigma2_ini;
-L1_curr = L1_ini;
-L2_curr = L2_ini;
-
-%f1_curr = resubPredict(model1)'; %these serve as proposal means so must be smooth
-%f2_curr = resubPredict(model2)';
+v_coef_curr = mcmcopts.initcoef(:);
+sigma_curr = 1;
+sigma1_curr = 0.01;
+sigma2_curr = 0.01;
 f1_curr = predict(model1,time').';
 f2_curr = predict(model2,time').';
+q1_curr = f_to_srvf(f1_curr.',t01,0);
+q2_curr = f_to_srvf(f2_curr.',t01,0);
 
+[nll, ~, SSE_curr] = bayes_warp_geom(v_coef_curr, Phi, rep, q1_curr, q2_curr, sigma_curr);
+if ~isfinite(nll)
+    error('Initial warping coefficients are outside the injectivity radius (|v| >= pi)')
+end
 
-% SRVF transformation setup
-q1_curr.x = y1.x;
-q2_curr.x = y2.x;
-q1_curr.y = f_to_srvf(f1_curr.',time,0);
-q2_curr.y = f_to_srvf(f2_curr.',time,0);
-
-SSE_curr = f_SSEv_pw(v_curr,q1_curr,q2_curr);
-logl_curr = f_vpostlogl_pw(v_curr, q1_curr, q2_curr, sigma_curr, SSE_curr);
-
-result.v_coef(1,:) = v_coef_ini;
+result.v_coef(1,:) = v_coef_curr;
 result.f1(1,:) = f1_curr;
 result.f2(1,:) = f2_curr;
-result.f2_warped(1,:) = f2_curr;
-result.sigma(1) = sigma_ini;
-result.sigma1(1) = sigma1_ini;
-result.sigma2(1) = sigma2_ini;
-result.s1(1) = s1_ini;
-result.s2(1) = s2_ini;
-result.L1(1) = L1_ini;
-result.L2(1) = L2_ini;
+result.sigma(1) = sigma_curr;
+result.sigma1(1) = sigma1_curr;
+result.sigma2(1) = sigma2_curr;
+result.s1(1) = s1_curr;
+result.s2(1) = s2_curr;
+result.L1(1) = L1_curr;
+result.L2(1) = L2_curr;
 result.SSE(1) = SSE_curr;
-result.SSEprop(1) = SSE_curr;
-result.logl(1) = logl_curr;
+result.logl(1) = -nll;
+result.epsilon(1) = epsilon;
 
 if mcmcopts.nchains == 1
-    % update the chain for iter-1 times
     obj = ProgressBar(iter-1, ...
         'Title', 'Running MCMC' ...
         );
 end
-[M,N] = size(f1_curr);
-n = M*N;
 
-[nll, g, SSE_curr] = f_dlogl_pw(v_coef_curr, v_basis, d_basis, sigma_curr, q1_curr, q2_curr);
 for m = 2:iter
-    
-    % update f1
-    [f1_curr,q1_curr, f1_accept] = f_updatef1_pw(f1_curr,q1_curr, y1,q2_curr,v_coef_curr, v_basis,SSE_curr,K_f1,K_f1prop,sigma_curr,sqrt(sigma1_curr));
-    
-    % update f2
-    [f2_curr,q2_curr, f2_accept] = f_updatef2_pw(f2_curr,q2_curr, y2,q1_curr,v_coef_curr, v_basis,SSE_curr,K_f2,K_f2prop,sigma_curr,sqrt(sigma2_curr));
-    
-    % update v
-    [v_coef_curr, nll, g, SSE_curr, theta_accept] = f_updatev_pw(v_coef_curr, v_basis, sqrt(sigma_curr), q1_curr, q2_curr,nll, g,SSE_curr,@propose_v_coef,d_basis,cholC,h,L);
-    
-    % update sigma^2
-    newshape = length(q1_curr.x)/2 + mcmcopts.alpha;
+
+    % update f1 | v, f2
+    [f1_curr, q1_curr, SSE_curr, f1_accept] = update_f(f1_curr, q1_curr, SSE_curr, y1, ...
+        @(q) warp_sse(v_coef_curr, Phi, rep, q, q2_curr, sigma_curr), ...
+        gp1, R_f1prop, t01, sigma_curr, sigma1_curr);
+
+    % update f2 | v, f1
+    [f2_curr, q2_curr, ~, f2_accept] = update_f(f2_curr, q2_curr, SSE_curr, y2, ...
+        @(q) warp_sse(v_coef_curr, Phi, rep, q1_curr, q, sigma_curr), ...
+        gp2, R_f2prop, t01, sigma_curr, sigma2_curr);
+
+    % update v by infinite-dimensional HMC; geometry evaluated at the
+    % current f1, f2 and sigma
+    geom = @(c) bayes_warp_geom(c, Phi, rep, q1_curr, q2_curr, sigma_curr);
+    [nll, g] = geom(v_coef_curr);
+    [v_coef_curr, nll, ~, ~, theta_accept] = infhmc_step(v_coef_curr, nll, g, [], ...
+        @(c) geom_aux(geom, c), C, epsilon, L);
+    SSE_curr = 2 * sigma_curr * (nll - T/2*log(sigma_curr));
+
+    % adapt step size during burn-in (Robbins-Monro on log step size)
+    if mcmcopts.adapt && m <= mcmcopts.burnin
+        gain = 1 / m^0.6;
+        epsilon = min(exp(log(epsilon) + gain*(theta_accept - mcmcopts.target_accept)), pi/2);
+    end
+
+    % update sigma^2 (SRVF model variance)
+    newshape = T/2 + mcmcopts.alpha;
     newscale = 1/2 * SSE_curr + mcmcopts.beta;
-    sigma_curr = 1/gamrnd(newshape,1/newscale);  % @todo should we paramatize as precision?
-    
-    % update sigma1^2
-    newshape = n/2 + mcmcopts.alpha0;
-    newscale = sum((y1.y - f1_curr).^2)/2 + mcmcopts.beta0;
-    sigma1_curr = 1/gamrnd(newshape,1/newscale);
-    
-    % update sigma2^2
-    newshape = n/2 + mcmcopts.alpha0;
-    newscale = sum((y2.y - f2_curr).^2)/2 + mcmcopts.beta0;
-    sigma2_curr = 1/gamrnd(newshape,1/newscale);
-    
-    %update hyerparameters
-    
-    % update s1^2
-    newshape = n/2 + mcmcopts.alpha0;
-    newscale = (f1_curr/K_f1_corr * f1_curr.')/2 + mcmcopts.beta0;
-    s1_curr = 1/gamrnd(newshape,1/newscale);
-    
-    % update s2^2
-    newshape = n/2 + mcmcopts.alpha0;
-    newscale = (f2_curr/K_f2_corr * f2_curr.')/2 + mcmcopts.beta0;
-    s2_curr = 1/gamrnd(newshape,1/newscale);
-    
-    % update L1
-    [L1_curr, L1_accept] = f_updatephi_pw(f1_curr,K_f1,s1_curr, L1_curr, L1_propvar, Dmat);
-    
-    % update L2
-    [L2_curr, L2_accept] = f_updatephi_pw(f2_curr,K_f2,s2_curr, L2_curr, L2_propvar, Dmat);
-    
-    
-    K_f1_corr = exp2corr2(L1_curr,Dmat) + 0.1 * eye(length(y1.y));
-    K_f1 = s1_curr * K_f1_corr;
-    K_f1 = inv(K_f1);
-    K_f2_corr = exp2corr2(L2_curr,Dmat)+ 0.1 * eye(length(y2.y));
-    K_f2 = s2_curr * K_f2_corr;
-    K_f2 = inv(K_f2);
-    
-    v_curr =  f_basistofunction(v_basis.x,0 , v_coef_curr, v_basis, false);
-    logl_curr = f_vpostlogl_pw(v_curr, q1_curr, q2_curr, sigma_curr, SSE_curr);
-    
+    sigma_curr = 1/gamrnd(newshape,1/newscale);
+
+    % update sigma1^2, sigma2^2 (measurement error variances)
+    newshape = T/2 + mcmcopts.alpha0;
+    sigma1_curr = 1/gamrnd(newshape,1/(sum((y1 - f1_curr).^2)/2 + mcmcopts.beta0));
+    sigma2_curr = 1/gamrnd(newshape,1/(sum((y2 - f2_curr).^2)/2 + mcmcopts.beta0));
+
+    % update GP variances s1^2, s2^2
+    s1_curr = 1/gamrnd(newshape,1/(quad_form(gp1.Rcorr, f1_curr)/2 + mcmcopts.beta0));
+    s2_curr = 1/gamrnd(newshape,1/(quad_form(gp2.Rcorr, f2_curr)/2 + mcmcopts.beta0));
+    gp1 = gp_prior(s1_curr, L1_curr, Dmat, gp1.Rcorr);
+    gp2 = gp_prior(s2_curr, L2_curr, Dmat, gp2.Rcorr);
+
+    % update GP length scales L1, L2
+    [L1_curr, gp1, L1_accept] = update_length(f1_curr, gp1, s1_curr, L1_curr, mcmcopts.L1propvar, Dmat);
+    [L2_curr, gp2, L2_accept] = update_length(f2_curr, gp2, s2_curr, L2_curr, mcmcopts.L2propvar, Dmat);
+
     % save update to results
     result.v_coef(m,:) = v_coef_curr;
     result.f1(m,:) = f1_curr;
@@ -515,14 +478,13 @@ for m = 2:iter
     result.L1(m) = L1_curr;
     result.L2(m) = L2_curr;
     result.SSE(m) = SSE_curr;
-    result.logl(m) = logl_curr;
-    if (mcmcopts.extrainfo)
-        result.theta_accept(m) = theta_accept;
-        result.f1_accept(m) = f1_accept;
-        result.f2_accept(m) = f2_accept;
-        result.L1_accept(m) = L1_accept;
-        result.L2_accept(m) = L2_accept;
-    end
+    result.logl(m) = -(SSE_curr/(2*sigma_curr) + T/2*log(sigma_curr));
+    result.epsilon(m) = epsilon;
+    result.theta_accept(m) = theta_accept;
+    result.f1_accept(m) = f1_accept;
+    result.f2_accept(m) = f2_accept;
+    result.L1_accept(m) = L1_accept;
+    result.L2_accept(m) = L2_accept;
     if mcmcopts.nchains == 1
         obj.step([], [], []);
     end
@@ -531,53 +493,22 @@ if mcmcopts.nchains == 1
     obj.release();
 end
 
-% calculate posterior mean of psi
-pw_sim_est_psi_matrix = zeros(length(pw_sim_global_domain_par), length(valid_index));
-for k = 1:length(valid_index)
-    v_temp = f_basistofunction(pw_sim_global_domain_par, 0, result.v_coef(valid_index(k),:).', v_basis, false);
-    psi_temp = f_exp1(v_temp);
-    pw_sim_est_psi_matrix(:,k) = psi_temp.y;
-end
+% posterior warping functions
+[gamma_mat, psi_mat] = bayes_coef_to_gam(result.v_coef(valid_index,:).', Phi, rep);
+gamma_mat = round(gamma_mat, SIG_GAM);
 
-result_posterior_psi_simDomain = f_psimean(pw_sim_global_domain_par, pw_sim_est_psi_matrix);
-
-% resample to same number of points as the input f1 and f2
-result_i = interp1(result_posterior_psi_simDomain.x, result_posterior_psi_simDomain.y, y1.x, 'linear', 'extrap');
-result_posterior_psi.x=y1.x.';
-result_posterior_psi.y=result_i.';
-
-% transform posterior mean of psi to gamma
-result_posterior_gamma = f_phiinv(result_posterior_psi); %fix this
-gam0 = result_posterior_gamma.y;
-result_posterior_gamma.y = norm_gam(gam0);
-
-if (mcmcopts.extrainfo)
-    % matrix of posterior draws from gamma
-    gamma_mat = zeros(length(y1.x),size(pw_sim_est_psi_matrix,2));
-    one_v = ones(1,size(pw_sim_est_psi_matrix,1));
-    Dx = zeros(1,size(pw_sim_est_psi_matrix,2));
-    Dy = Dx;
-    for ii = 1:size(pw_sim_est_psi_matrix,2)
-        result_i = interp1(psi_temp.x, pw_sim_est_psi_matrix(:,ii), y1.x, 'linear', 'extrap');
-        result_i2.y=result_i.';
-        result_i2.x=y1.x.';
-        tmp = f_phiinv(result_i2);
-        gamma_mat(:,ii) = round(norm_gam(tmp.y),SIG_GAM);
-        v = inv_exp_map(one_v, pw_sim_est_psi_matrix(:,ii));
-        Dx(ii) = sqrt(trapz(pw_sim_global_domain_par, v.^2));
-        q2warp = warp_q_gamma(q2_curr.y, gamma_mat(:,ii), y2.x).';
-        Dy(ii) = sqrt(trapz(y2.x,(q1_curr.y-q2warp).^2));
-    end
-    gamma_stats = statsFun(gamma_mat);
-end
-
+% posterior mean of psi (extrinsic mean, projected back to the sphere)
+psi_mean = mean(psi_mat,2);
+psi_mean = psi_mean / sqrt(trapz(t01, psi_mean.^2));
+gam_mean = [0; cumsum(diff(t01(:)) .* (psi_mean(1:end-1).^2 + psi_mean(2:end).^2)/2)];
+gam_mean = norm_gam(gam_mean);
 
 % return object
 out.f1 = result.f1(valid_index,:);
 out.f2 = result.f2(valid_index,:);
-out.gamma = result_posterior_gamma.y;
+out.gamma = gam_mean;
 out.v_coef = result.v_coef(valid_index,:);
-out.psi = result_posterior_psi.y;
+out.psi = psi_mean;
 out.sigma = result.sigma(valid_index);
 out.sigma1 = result.sigma1(valid_index);
 out.sigma2 = result.sigma2(valid_index);
@@ -585,414 +516,109 @@ out.s1 = result.s1(valid_index);
 out.s2 = result.s2(valid_index);
 out.L1 = result.L1(valid_index);
 out.L2 = result.L2(valid_index);
-out.f2_warped_mu = warp_f_gamma(mean(out.f2,1), result_posterior_gamma.y, result_posterior_gamma.x);
-
+out.epsilon = result.epsilon;
+out.f2_warped_mu = warp_f_gamma(mean(out.f2,1), gam_mean, t01);
 
 if (mcmcopts.extrainfo)
+    nv = length(valid_index);
+    Dx = real(acos(min(max(trapz(t01, psi_mat, 1), -1), 1)));
+    Dy = zeros(1,nv);
+    f2_warped = zeros(nv,T);
+    for ii = 1:nv
+        q1s = f_to_srvf(out.f1(ii,:).', t01, 0);
+        q2s = f_to_srvf(out.f2(ii,:).', t01, 0);
+        q2warp = warp_q_gamma(q2s, gamma_mat(:,ii), t01);
+        Dy(ii) = sqrt(trapz(t01,(q1s(:)-q2warp(:)).^2));
+        f2_warped(ii,:) = warp_f_gamma(out.f2(ii,:)', gamma_mat(:,ii), t01);
+    end
     out.theta_accept = result.theta_accept(2:end);
     out.f1_accept = result.f1_accept(2:end);
     out.f2_accept = result.f2_accept(2:end);
     out.L1_accept = result.L1_accept(2:end);
     out.L2_accept = result.L2_accept(2:end);
     out.gamma_mat = gamma_mat;
-    out.gamma_stats = gamma_stats.';
+    out.gamma_stats = statsFun(gamma_mat).';
     out.SSE = result.SSE;
     out.logl = result.logl;
     out.phasedist = Dx;
     out.ampdist = Dy;
-    
-    f2_warped = zeros(length(valid_index),length(result_posterior_gamma.x));
-    for ii = 1:length(valid_index)
-        f2_warped(ii,:) = warp_f_gamma(out.f2(ii,:)', gamma_mat(:,ii), result_posterior_gamma.x);
-    end
     out.f2_warped = f2_warped;
 end
+end
+
+function [nll, g, aux] = geom_aux(geom, c)
+[nll, g] = geom(c);
+aux = [];
+end
+
+function SSE = warp_sse(c, Phi, rep, q1, q2, var1)
+[~, ~, SSE] = bayes_warp_geom(c, Phi, rep, q1, q2, var1);
 end
 
 function out = statsFun(mat)
 out = quantile(mat.',[0.025,.975]);
 end
 
-function out = f_exp1(v)
-out.x = v.x;
-out.y = bcalcY(f_L2norm(v), v.y);
+% GP prior N(0, s * (corr(L) + 0.1 I)) stored through its Cholesky factor
+function gp = gp_prior(s, L, Dmat, Rcorr)
+if nargin < 4
+    Rcorr = chol(exp2corr2(L, Dmat) + 0.1*eye(size(Dmat,1)));
+end
+gp.Rcorr = Rcorr;
+gp.s = s;
+gp.logdet = 2*sum(log(diag(Rcorr))) + size(Dmat,1)*log(s);
 end
 
-% updating theta/v
-function [v_coef_curr,nll, g, SSE_curr, theta_accept] = f_updatev_pw(v_coef_curr,v_basis,sigma_curr,q1,q2,nll_cur,g_cur,SSE_curr,propose_v_coef,d_basis,cholC,h,L) %sigma_curr=variance
-v_coef_prop = propose_v_coef(v_coef_curr);
-
-%qfunc = f_basistofunction(v_basis.x,0 , v_coef_prop.prop', v_basis, false);
-q = v_coef_prop; %proposed coefficients for warping function
-D = length(q);
-rth = sqrt(h); % make the scale comparable to MALA
-g_cur = -1*g_cur; %g_cur should be current set of basis coefficients
-
-% sample velocity
-v = randn(D,1);
-v = cholC'*v;
-
-% natural gradient
-halfng = cholC*g_cur;
-ng = cholC*halfng;
-
-% accumulate the power of force
-pow = rth/2*(g_cur'*v);
-
-% calculate current energy
-E_cur = nll_cur - h/8*(halfng'*halfng);
-
-randL = ceil(rand*L);
-
-% Alternate full sth for position and velocity
-for l = 1:randL
-    % Make a half step for velocity
-    v = v + rth/2*ng;
-    
-    % Make a full step for position
-    rot = (q+1i*v).*exp(-1i*rth);
-    q = real(rot); v = imag(rot);
-    
-    % update geometry
-    qvec.y=q;
-    qvec.x = q1.x';
-    [nll, g, SSEv] = f_dlogl_pw(qvec.y,v_basis, d_basis, sigma_curr, q1, q2);
-    halfng = cholC*g;
-    ng = cholC'*halfng;
-    
-    % Make a half step for velocity
-    v = v + rth/2*ng;
-    
-    % accumulate the power of force
-    if l~=randL
-        pow = pow + rth*(g'*v);
-    end
+function out = quad_form(R, f)
+z = R.' \ f(:);
+out = z.' * z;
 end
 
-% accumulate the power of force
-pow = pow + rth/2*(g'*v);
-
-% Evaluate energy at start and end of trajectory
-E_prp = nll - h/8*(halfng'*halfng);
-
-% Accept or reject the state at end of trajectory, returning either
-% the position at the end of the trajectory or the initial position
-logRatio = - E_prp + E_cur - pow;
-
-if (isfinite(logRatio) && (log(rand) < min([0,logRatio])))
-    v_coef_curr = q;
-    theta_accept = true;
-    SSE_curr = SSEv;
-else
-    nll = nll_cur; g = g_cur;
-    theta_accept = false;
+function R = chol_jitter(K)
+jit = 0;
+n = size(K,1);
+[R, p] = chol(K);
+while p > 0
+    jit = max(2*jit, 1e-10*mean(diag(K)));
+    [R, p] = chol(K + jit*eye(n));
 end
 end
 
-%update f2
-function [f2_curr,q2_curr, f2_accept] = f_updatef2_pw(f2_curr,q2_curr,y2,q1,v_coef_curr, v_basis, SSE_curr,K_f2,K_f2prop,sigma_curr,sigma2_curr)
-time = y2.x;
-v = f_basistofunction(v_basis.x,0,v_coef_curr,v_basis,false);
-
-f2_prop = mvnrnd(f2_curr, K_f2prop);
-q2_prop.x = y2.x;
-q2_prop.y = f_to_srvf(f2_prop',time,0);
-
-SSE_prop = f_SSEv_pw(v, q1, q2_prop);
-
-postlog_curr = f_f2postlogl_pw(f2_curr,y2,SSE_curr,K_f2,sigma_curr,sigma2_curr);
-postlog_prop = f_f2postlogl_pw(f2_prop,y2,SSE_prop,K_f2,sigma_curr,sigma2_curr);
-
-ratio = min(1, exp(postlog_prop-postlog_curr));
-
-u = rand;
-if (u <= ratio)
-    f2_curr = f2_prop;
-    q2_curr = q2_prop;
-    f2_accept = true;
-else
-    f2_accept = false;
+% Metropolis update of a latent function f (f1 or f2) given the data y, its
+% GP prior and the SRVF alignment likelihood. f | y, prior is Gaussian with
+% precision K^{-1} + I/sigmaf, so the target is that density times the
+% alignment likelihood exp(-SSE/(2 sigma)).
+function [f_curr, q_curr, SSE_curr, accept] = update_f(f_curr, q_curr, SSE_curr, y, sse_fun, gp, Rprop, t01, sigma, sigmaf)
+f_prop = f_curr + randn(1, length(f_curr)) * Rprop;
+q_prop = f_to_srvf(f_prop', t01, 0);
+SSE_prop = sse_fun(q_prop);
+lp_curr = -SSE_curr/(2*sigma) - (quad_form(gp.Rcorr, f_curr)/gp.s + sum((y - f_curr).^2)/sigmaf)/2;
+lp_prop = -SSE_prop/(2*sigma) - (quad_form(gp.Rcorr, f_prop)/gp.s + sum((y - f_prop).^2)/sigmaf)/2;
+accept = log(rand) < (lp_prop - lp_curr);
+if accept
+    f_curr = f_prop;
+    q_curr = q_prop;
+    SSE_curr = SSE_prop;
 end
 end
 
-%update f1
-function [f1_curr,q1_curr, f1_accept] = f_updatef1_pw(f1_curr,q1_curr,y1,q2,v_coef_curr, v_basis, SSE_curr,K_f1,K_f1prop,sigma_curr,sigma1_curr)
-time = y1.x;
-v = f_basistofunction(v_basis.x,0,v_coef_curr,v_basis,false);
-
-f1_prop = mvnrnd(f1_curr, K_f1prop);
-q1_prop.x = y1.x;
-q1_prop.y = f_to_srvf(f1_prop',time,0);
-
-SSE_prop = f_SSEv_pw(v, q1_prop, q2);
-
-postlog_curr = f_f1postlogl_pw(f1_curr,y1,SSE_curr,K_f1,sigma_curr,sigma1_curr);
-postlog_prop = f_f1postlogl_pw(f1_prop,y1,SSE_prop,K_f1,sigma_curr,sigma1_curr);
-
-ratio = min(1, exp(postlog_prop-postlog_curr));
-
-u = rand;
-if (u <= ratio)
-    f1_curr = f1_prop;
-    q1_curr = q1_prop;
-    f1_accept = true;
-else
-    f1_accept = false;
+% Metropolis-Hastings update of a GP length scale with a truncated normal
+% random-walk proposal (flat prior on L > 0)
+function [L_curr, gp, accept] = update_length(f, gp, s, L_curr, propsd, Dmat)
+L_prop = random(truncate(makedist('Normal', L_curr, propsd), 0, inf));
+gp_prop = gp_prior(s, L_prop, Dmat);
+lp_curr = -gp.logdet/2 - quad_form(gp.Rcorr, f)/(2*s);
+lp_prop = -gp_prop.logdet/2 - quad_form(gp_prop.Rcorr, f)/(2*s);
+% Hastings correction for the truncation: q(L'|L) = phi(.)/Phi(L/propsd)
+log_hastings = log(normcdf(L_curr/propsd)) - log(normcdf(L_prop/propsd));
+accept = log(rand) < (lp_prop - lp_curr + log_hastings);
+if accept
+    L_curr = L_prop;
+    gp = gp_prop;
 end
-end
-
-%update L1, L2
-function [L1_curr, L1_accept] = f_updatephi_pw(f1_curr,K_f1,s1_curr,L1_curr, L1_propvar, Dmat)
-pd = makedist('Normal',L1_curr, L1_propvar);
-pd_trunc = truncate(pd, 0,inf);
-L1_prop = random(pd_trunc);
-
-K_f1_tmp = s1_curr * (exp2corr2(L1_prop,Dmat) +0.1 * eye(length(f1_curr)));
-
-SSEf_curr = (f1_curr * K_f1 * f1_curr.')/2;
-SSEf_prop = (f1_curr/K_f1_tmp * f1_curr.')/2;
-
-%K_f1 is inverse but K_f1_tmp is not
-postlog_prop = -log(det(K_f1_tmp))/2 - SSEf_prop - log(1-normcdf(-L1_curr/L1_propvar));
-postlog_curr = log(det(K_f1))/2 - SSEf_curr - log(1-normcdf(-L1_prop/L1_propvar));
-ratio = min(1, exp(postlog_prop-postlog_curr));
-
-u = rand;
-if (u <= ratio)
-    L1_curr = L1_prop;
-    L1_accept = true;
-else
-    L1_accept = false;
-end
-end
-
-%##########################################################################
-% For pairwise registration, evaluate the neg log likelihood of v, given q1 and
-% q2
-% v is given in the form of struct.x and struct.y
-% q1 and q2 are vectors
-% var1: model variance
-% SSEv: if not provided, than re-calculate
-% returns a numeric value which is nlogl(v|q1,q2), see Eq 10 of JCGS
-%##########################################################################
-% SSEv: sum of sq error= sum over ti of { q1(ti)-{q2, v}(ti) }^2
-
-function out = f_warp_pw(v, q1, q2)
-obs_domain = q1.x;
-exp1v_temp = f_predictfunction(f_exp1(v), obs_domain, 0);
-pt = [0; bcuL2norm2(obs_domain.', exp1v_temp.y.')];
-tmp = f_predictfunction(q2, pt, 0);
-out = tmp.y.' .* exp1v_temp.y;
-end
-
-function out = f_SSEv_pw(v, q1, q2)
-q2_gamma = f_warp_pw(v,q1,q2);
-vec = (q1.y - q2_gamma.').^2;
-out = sum(vec);
-end
-
-%Posterior Log Likelihood of v
-function [out, SSEv] = f_vpostlogl_pw(v, q1, q2, var, SSEv)
-if (SSEv == 0)
-    SSEv = f_SSEv_pw(v, q1, q2);
-end
-n = length(q1.y);
-out = - n * log(sqrt(var)) - SSEv / (2 * var);
-end
-
-%##########################################################################
-% Related Functions to posterior of f1 and f2 and respective covaraince params
-%##########################################################################
-% SSEv: sum of sq error= sum over ti of { q1(ti)-{q2, v}(ti) }^2
-
-%Posterior Log Likelihood of f1
-function out = f_f1postlogl_pw(f1,y1,SSEv,K_f1,sigma_curr,sigma1_curr)
-n = length(y1.x);
-iSig_f1 = K_f1+ eye(n) .* n/sigma1_curr;
-f1_mean = iSig_f1 \ y1.y.' .* n/sigma1_curr;
-SSEf1 = (f1-f1_mean.') * iSig_f1 * (f1.'-f1_mean);
-out = -SSEv/(2 * sigma_curr) - SSEf1/2;
-end
-
-%Posterior Log Likelihood of f2
-function out = f_f2postlogl_pw(f2,y2,SSEv,K_f2,sigma_curr,sigma2_curr)
-n = length(y2.x);
-iSig_f2 = K_f2 + eye(n) .* n/sigma2_curr;
-f2_mean = iSig_f2 \ y2.y.' .* n/sigma2_curr;
-SSEf2 = (f2-f2_mean.') * iSig_f2 * (f2.'-f2_mean);
-out = -SSEv/(2 * sigma_curr) - SSEf2/2;
-end
-
-%##########################################################################
-% Extrapolate a function given by a discrete vector
-% f: function in the form of list$x, list$y
-% at: t values for which f(t) is returned
-% deriv: can calculate derivative
-% method: smoothing method: 'linear' (default), 'cubic'
-% returns: $y==f(at), $x==at
-%##########################################################################
-function out = f_predictfunction(f, at, deriv)
-if (deriv == 0)
-    result = interp1(f.x,f.y,at,'linear','extrap');
-    out.x = at;
-    out.y = result;
-end
-
-if (deriv == 1)
-    fmod = interp1(f.x,f.y,at,'linear','extrap');
-    diffy1 = [0; diff(fmod)];
-    diffy2 = [diff(fmod); 0];
-    diffx1 = [0; diff(at)];
-    diffx2 = [diff(at); 0];
-    
-    
-    out.x = at;
-    out.y = (diffy2 + diffy1) ./ (diffx2 + diffx1);
-end
-end
-
-%##########################################################################
-% calculate L2 norm of a function, using trapezoid rule for integration
-% f:function in the form of list$x, list$y
-% returns ||f||, a numeric value
-%##########################################################################
-function out = f_L2norm(f)
-out = border_l2norm(f.x,f.y);
-end
-
-%##########################################################################
-% Different basis functions b_i()
-% f.domain: grid on which b_i() is to be returned
-% numBasis: numeric value, number of basis functions used
-% (note: #basis = #coef/2 for Fourier basis)
-% fourier.p: period of the Fourier basis used
-% returns a struct:
-%     matrix: with nrow=length(t) and ncol=numBasis (or numBasis*2 for
-%     Fourier)
-%     x: f.domain
-%##########################################################################
-function out = basis_fourier(f_domain, numBasis, fourier_p)
-result = zeros(length(f_domain), 2*numBasis);
-for i = 1:(2*numBasis)
-    j = ceil(i/2);
-    if (mod(i,2) == 1)
-        result(:,i) = sqrt(2) * sin(2*j*pi*f_domain./fourier_p);
-    end
-    if (mod(i,2) == 0)
-        result(:,i) = sqrt(2) * cos(2*j*pi*f_domain./fourier_p);
-    end
-    out.x = f_domain;
-    out.matrix = result;
-end
-end
-
-%##########################################################################
-% Legendre (non normalized) basis functions b_i()
-% f.domain: grid on which b_i() is to be returned
-% numBasis: numeric value, number of basis functions used
-% (note: #basis = #coef/2 for legendre basis)
-% fourier.p: period of the Fourier basis used
-% returns a struct:
-%     matrix: with nrow=length(t) and ncol=numBasis (or numBasis*2 for
-%     Fourier)
-%     x: f.domain
-%##########################################################################
-function out = basis_legendre(f_domain, numBasis, fourier_p)
-result = zeros(length(f_domain), 2*numBasis);
-for i = 1:2*numBasis
-    f_domain_scaled = 2*(f_domain./fourier_p) - 1;
-    tmp = legendre(i,f_domain_scaled);
-    result(:,i) = tmp(1,:);
-end
-out.x = f_domain;
-out.matrix = result;
-end
-
-%##########################################################################
-% Given the coefficients of basis functions, returns the actual function on
-% a grid
-% f.domain: numeric vector, grid of the actual function to return
-% coefconst: leading constant term
-% coef: numeric vector, coefficients of the basis functions
-%       Note: if #coef < #basis functions, only the first %coef basis
-%             functions will be used
-% basis: in the form of list$x, list$matrix
-% plotf: if true, show a plot of the function generated
-% returns the generated function in the form of struct.x=f.domain, struct.y
-%##########################################################################
-function result = f_basistofunction(f_domain, coefconst, coef, basis, plotf)
-if (size(basis.matrix,2) < length(coef))
-    error('In f_basistofunction, #coeffients exceeds #basis functions.')
-end
-result.x = basis.x;
-result.y = basis.matrix(:,(1:length(coef))) * coef + coefconst;
-
-result = f_predictfunction(result, f_domain, 0);
-if (plotf)
-    plot(result.x,result.y)
-end
-
-end
-
-%##########################################################################
-% Calculate Karcher mean/median with Alg1/Alg2 in (Kurtek,2014)
-% x: vector of length = length(domain of the psi's)
-% y: M columns, each of length = length(x)
-% e1, e2: small positive constants
-% method: 'ext' = extrinsic, 'int' = intrinsic
-% returns posterier mean/median of M psi's (of form .x, .y)
-%##########################################################################
-function out = f_psimean(x, y)
-rmy = mean(y,2);
-tmp.x = x;
-tmp.y = rmy;
-result = rmy / f_L2norm(tmp);
-out.x = x;
-out.y = result;
-end
-
-function out = f_phiinv(psi)
-f_domain = psi.x;
-result = [0; bcuL2norm2(f_domain, psi.y)];
-out.x = f_domain;
-out.y = result;
 end
 
 % Normalize gamma to [0,1]
 function gam = norm_gam(gam)
 gam = (gam-gam(1))./(gam(end)-gam(1));
-end
-
-%##########################################################################
-% For pairwise registration, evaluate the derivative loglikelihood of
-% gradient g for coefficients of basis rep of warping function, given q1 and q2
-% q1, q2 are all given in the form of struct.x and struct.y
-% g is a vector
-% var1: model variance
-% returns a numeric value which is dglogl(g|q1,q2)
-%##########################################################################
-function [nll, g_coef, SSEv] = f_dlogl_pw(v_coef, v_basis, d_basis, sigma_curr, q1, q2)
-vec = f_basistofunction(v_basis.x,0 , v_coef, v_basis, false);
-psi = f_exp1(vec);
-N = length(q1.x);
-obs_domain = linspace(0,1,N)';
-binsize = mean(diff(obs_domain));
-gamma = f_phiinv(psi);
-q2_warp = warp_q_gamma(q2.y, gamma.y,obs_domain,1)';
-q2_warp_grad = gradient(q2_warp,binsize);
-
-basismat = d_basis.matrix;
-
-g = zeros(N,1);
-for i = 1:size(basismat,2)
-    ubar = cumtrapz(obs_domain,basismat(:,i));
-    integrand = (q1.y-q2_warp).*(-2.*q2_warp_grad.*ubar-q2_warp.*basismat(:,i));
-    tmp = 1/sigma_curr * trapz(obs_domain,integrand);
-    g = g + tmp.*basismat(:,i);
-end
-
-[out, SSEv] = f_vpostlogl_pw(vec, q1, q2, sigma_curr, 0);
-
-nll = -1*out;
-g_coef = v_basis.matrix' * g;
 end

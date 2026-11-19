@@ -40,6 +40,7 @@ classdef fdawarp
     %   time_warping - align functions and find karcher mean
     %   time_warping_bayes - align functions and find karcher mean using Bayesian
     %   approach
+    %   time_warping_bayes_infHMC - Bayesian group alignment using infinite-dimensional HMC
     %   time_warping_median - align functions and find karcher median
     %   multiple_align_functions - align functions to a specified mean
     %   gauss_model - model functions using a generative gaussian model on
@@ -656,7 +657,7 @@ classdef fdawarp
                         tmp_gamma.y = norm_gam(gam0);
                         result_posterior_gamma(:,ii) = norm_gam(gam0);
                     end
-                    gamI_o = SqrtMeanInverse(result_posterior_gamma.');
+                    gamI_o = SqrtMeanInverse(result_posterior_gamma);
                     q_star_curr.y = warp_q_gamma(q_star_curr.y,gamI_o,q_star_curr.x);
                     for k = 1:N
                         result_posterior_gamma(:,k) = interp1(q_star_curr.x, result_posterior_gamma(:,k), (obj.time(end)-obj.time(1)).*gamI_o + obj.time(1));
@@ -772,6 +773,277 @@ classdef fdawarp
                 obj.mcmc.fmean_stats = quantile(obj.mcmc.fmean_mat,[.025,0.975],2);
             end
 
+        end
+
+        function obj = time_warping_bayes_infHMC(obj, mcmcopts)
+            % TIME_WARPING_BAYES_INFHMC Bayesian group-wise alignment using
+            % infinite-dimensional Hamiltonian Monte Carlo
+            % -------------------------------------------------------------------------
+            % Hierarchical Bayesian model in SRVF space. For i = 1, ..., N
+            %
+            %   q*(t_k) = (q_i o gam_i)(t_k) sqrt(gam_i'(t_k)) + e_ik,  e_ik ~ N(0, sigma^2)
+            %
+            % with template q* = B b (B-spline basis, b ~ N(0, qpriorvar I)),
+            % warping coefficients c_i ~ N(0, diag(C)), C_j = vpriorvar / j^vpriordecay,
+            % and sigma^2 ~ IG(alpha0, beta0). The warping functions use either
+            % the shooting vector (v-transform, |v| < pi) or the centered
+            % log-derivative (h-transform, unconstrained) representation.
+            %
+            % Each sweep updates every c_i by preconditioned (infinite-dimensional)
+            % HMC with the exact likelihood gradient, then draws b and sigma^2 from
+            % their conjugate full conditionals. Step sizes are adapted per curve
+            % during burn-in. The amplitude-phase split is identified only up to a
+            % common warp (a ridge that per-curve updates move along slowly), so
+            % the centering constraint is imposed by recentering the warps every
+            % ncenter iterations so that their Karcher mean is the identity (the
+            % template is warped accordingly). The chain is initialized from
+            % an elastic (DP) Karcher mean alignment unless init = "identity".
+            %
+            % Usage:  obj.time_warping_bayes_infHMC()
+            %         obj.time_warping_bayes_infHMC(Name=Value)
+            %
+            % Input (name-value):
+            % iter = 2000;          % number of iterations
+            % burnin = [];          % number of burn-in iterations (default iter/2)
+            % thin = 1;             % thinning of stored posterior draws
+            % alpha0 = 0.1;         % inverse gamma prior parameters for sigma^2
+            % beta0 = 0.1;
+            % h = 0.01;             % initial HMC step size is sqrt(h)
+            % L = 10;               % maximum number of leapfrog steps
+            % adapt = true;         % adapt step sizes during burn-in
+            % target_accept = 0.65; % target acceptance when adapting
+            % ncoef = 10;           % number of warping basis coefficients
+            % basis = 'fourier';    % 'fourier' or 'legendre' warping basis
+            % warp_rep = 'shooting';% 'shooting' (v-transform) or 'clr' (h-transform)
+            % vpriorvar = 1;        % prior variance scale for warping coefficients
+            % vpriordecay = 1;      % prior variance decays as 1/j^vpriordecay
+            % nbasis = 40;          % number of B-spline basis functions for q*
+            % qpriorvar = 1e3;      % prior variance of the template coefficients
+            % init = "dp";          % "dp" (elastic alignment) or "identity"
+            % ncenter = 20;         % recenter every ncenter iterations (0: never)
+            % center_all = true;    % recenter after burn-in too (false: burn-in only)
+            % extrainfo = true;     % return posterior draws and summaries
+            %
+            % Output:
+            % fdawarp object (fn, qn, q0, fmean, mqn, gam, psi, gamI, stats, qun)
+            % with gam the posterior Karcher-type (extrinsic) mean warp of each
+            % curve, and obj.mcmc containing
+            % mcmc.v_coef: (D,N,nsamp) posterior draws of the warping coefficients
+            % mcmc.sigma: sigma draws (all iterations)
+            % mcmc.accept: (N,iter-1) HMC acceptance indicators
+            % mcmc.epsilon: (N,iter) step sizes
+            % mcmc.logl: log-likelihood trace
+            % if extrainfo
+            % mcmc.gamma_mat: (M,nsamp,N) posterior gammas
+            % mcmc.gamma_stats: (M,2,N) pointwise 95% bands of gammas
+            % mcmc.q_star_mat: (M,nsamp) posterior templates
+            % mcmc.q_star_stats: pointwise 95% bands of the template
+            % mcmc.fmean_mat: (M,nsamp) posterior mean functions
+            % mcmc.fmean_stats: pointwise 95% bands of the mean function
+            arguments
+                obj
+                mcmcopts.iter = 2000;
+                mcmcopts.burnin = [];
+                mcmcopts.thin = 1;
+                mcmcopts.alpha0 = 0.1;
+                mcmcopts.beta0 = 0.1;
+                mcmcopts.h = 0.01;
+                mcmcopts.L = 10;
+                mcmcopts.adapt = true;
+                mcmcopts.target_accept = 0.65;
+                mcmcopts.ncoef = 10;
+                mcmcopts.basis {mustBeMember(mcmcopts.basis,{'fourier','legendre'})} = 'fourier';
+                mcmcopts.warp_rep {mustBeMember(mcmcopts.warp_rep,{'shooting','clr'})} = 'shooting';
+                mcmcopts.vpriorvar = 1;
+                mcmcopts.vpriordecay = 1;
+                mcmcopts.nbasis = 40;
+                mcmcopts.qpriorvar = 1e3;
+                mcmcopts.init {mustBeMember(mcmcopts.init,{'dp','identity'})} = 'dp';
+                mcmcopts.ncenter = 20;
+                mcmcopts.center_all = true;
+                mcmcopts.extrainfo = true;
+            end
+
+            [M, N] = size(obj.f);
+            iter = mcmcopts.iter;
+            burnin = mcmcopts.burnin;
+            if isempty(burnin)
+                burnin = floor(iter/2);
+            end
+            if burnin < 1 || burnin >= iter
+                error('burnin must be between 1 and iter-1')
+            end
+            ncoef = mcmcopts.ncoef;
+            if strcmpi(mcmcopts.basis,'fourier') && mod(ncoef,2) ~= 0
+                error('ncoef must be even for the fourier basis')
+            end
+            rep = double(strcmpi(mcmcopts.warp_rep,'clr'));
+
+            % work on a uniform grid on [0,1]
+            time0 = obj.time(:);
+            tn = (time0 - time0(1)) / (time0(end) - time0(1));
+            t01 = linspace(0,1,M).';
+            f0 = interp1(tn, obj.f, t01, 'linear');
+            q = f_to_srvf(f0, t01);
+
+            Phi = bayes_warp_basis(t01, ncoef, mcmcopts.basis);
+            C = (mcmcopts.vpriorvar ./ (ceil((1:ncoef)/2).^mcmcopts.vpriordecay)).';
+            B = create_basismatrix(t01, mcmcopts.nbasis, 4);
+            BtB = B.' * B;
+            Bpinv = B \ eye(M);
+
+            % initialization
+            if strcmpi(mcmcopts.init,'dp')
+                tmp = fdawarp(f0, t01);
+                tmp = tmp.time_warping(0, MaxItr=10);
+                c_curr = bayes_gam_to_coef(tmp.gam, Phi, rep);
+                [gam0, ~] = bayes_coef_to_gam(c_curr, Phi, rep);
+                qtil = zeros(M,N);
+                for ii = 1:N
+                    qtil(:,ii) = warp_q_gamma(q(:,ii), gam0(:,ii), t01);
+                end
+                qstar = mean(qtil,2);
+            else
+                c_curr = zeros(ncoef, N);
+                dqq = sqrt(sum((q - mean(q,2)).^2,1));
+                [~, min_ind] = min(dqq);
+                qstar = q(:,min_ind);
+            end
+            b_curr = Bpinv * qstar;
+            qstar = B * b_curr;
+            sigma2 = mean(sum((q - qstar).^2,1)) / M;
+
+            % storage
+            keep = burnin:mcmcopts.thin:iter;
+            nsamp = length(keep);
+            v_coef = zeros(ncoef, N, nsamp);
+            qstar_mat = zeros(M, nsamp);
+            sigma_tr = zeros(1, iter);
+            logl_tr = zeros(1, iter);
+            accept = zeros(N, iter);
+            eps_tr = zeros(N, iter);
+            epsilon = sqrt(mcmcopts.h) * ones(N,1);
+                        SSE = zeros(1,N);
+            qtil = zeros(M,N);
+            sigma_tr(1) = sqrt(sigma2);
+            eps_tr(:,1) = epsilon;
+            ks = 1;
+
+            barobj = ProgressBar(iter-1, 'Title', 'Running MCMC');
+            for m = 2:iter
+                % update warping coefficients, one curve at a time
+                for ii = 1:N
+                    qi = q(:,ii);
+                    geom = @(c) group_geom(c, Phi, rep, qstar, qi, sigma2);
+                    [nll, g, aux] = geom(c_curr(:,ii));
+                    [c_curr(:,ii), ~, ~, aux, accept(ii,m)] = infhmc_step( ...
+                        c_curr(:,ii), nll, g, aux, geom, C, epsilon(ii), mcmcopts.L);
+                    SSE(ii) = aux(1);
+                    qtil(:,ii) = aux(2:end);
+                end
+
+                if mcmcopts.adapt && m <= burnin
+                    gain = 1 / m^0.6;
+                    epsilon = min(exp(log(epsilon) + gain*(accept(:,m) - mcmcopts.target_accept)), pi/2);
+                end
+
+                % template: conjugate Gaussian draw
+                P = N*BtB/sigma2 + eye(mcmcopts.nbasis)/mcmcopts.qpriorvar;
+                R = chol((P + P.')/2);
+                mu = R \ (R.' \ (B.' * sum(qtil,2) / sigma2));
+                b_curr = mu + R \ randn(mcmcopts.nbasis,1);
+                qstar = B * b_curr;
+
+                % noise variance: conjugate inverse gamma draw
+                SSE = sum((qtil - qstar).^2, 1);
+                sigma2 = 1/gamrnd(N*M/2 + mcmcopts.alpha0, 1/(sum(SSE)/2 + mcmcopts.beta0));
+
+                % centering constraint (Karcher mean of warps = identity):
+                % project onto it every ncenter iterations
+                if mcmcopts.ncenter > 0 && (m < burnin || mcmcopts.center_all) && mod(m, mcmcopts.ncenter) == 0
+                    gam_c = bayes_coef_to_gam(c_curr, Phi, rep);
+                    gam_inv = SqrtMeanInverse(gam_c);
+                    for ii = 1:N
+                        gam_c(:,ii) = interp1(t01, gam_c(:,ii), gam_inv);
+                    end
+                    c_curr = bayes_gam_to_coef(gam_c, Phi, rep);
+                    qstar = warp_q_gamma(qstar, gam_inv, t01);
+                    qstar = qstar(:);
+                    b_curr = Bpinv * qstar;
+                    qstar = B * b_curr;
+                end
+
+                sigma_tr(m) = sqrt(sigma2);
+                logl_tr(m) = -sum(SSE)/(2*sigma2) - N*M/2*log(2*pi*sigma2);
+                eps_tr(:,m) = epsilon;
+                if ks <= nsamp && m == keep(ks)
+                    v_coef(:,:,ks) = c_curr;
+                    qstar_mat(:,ks) = qstar;
+                    ks = ks + 1;
+                end
+                barobj.step([], [], []);
+            end
+            barobj.release();
+
+            % posterior summaries of the warping functions
+            gamma_mat = zeros(M, nsamp, N);
+            gam_mean = zeros(M, N);
+            psi_mean = zeros(M, N);
+            for ii = 1:N
+                [gam_s, psi_s] = bayes_coef_to_gam(squeeze(v_coef(:,ii,:)), Phi, rep);
+                gamma_mat(:,:,ii) = interp1(t01, gam_s, tn);
+                pm = mean(psi_s, 2);
+                pm = pm / sqrt(trapz(t01, pm.^2));
+                g = cumtrapz(t01, pm.^2);
+                g = (g - g(1)) / (g(end) - g(1));
+                gam_mean(:,ii) = interp1(t01, g, tn);
+                psi_mean(:,ii) = interp1(t01, pm, tn);
+            end
+
+            obj.gam = gam_mean;
+            obj.psi = psi_mean;
+            obj.fn = zeros(M,N);
+            for ii = 1:N
+                obj.fn(:,ii) = warp_f_gamma(obj.f(:,ii), obj.gam(:,ii), time0);
+            end
+            obj.qn = f_to_srvf(obj.fn, time0);
+            obj.q0 = f_to_srvf(obj.f, time0);
+            % template on the original time scale (SRVF scales by 1/sqrt(T))
+            mq01 = mean(qstar_mat, 2);
+            obj.mqn = interp1(t01, mq01, tn) / sqrt(time0(end) - time0(1));
+            obj.fmean = mean(obj.f(1,:)) + cumtrapz(time0, obj.mqn.*abs(obj.mqn));
+
+            std_f0 = std(obj.f, 0, 2);
+            std_fn = std(obj.fn, 0, 2);
+            fgam = zeros(M,N);
+            for ii = 1:N
+                fgam(:,ii) = warp_f_gamma(obj.fmean, obj.gam(:,ii), time0);
+            end
+            obj.stats.orig_var = trapz(time0, std_f0.^2);
+            obj.stats.amp_var = trapz(time0, std_fn.^2);
+            obj.stats.phase_var = trapz(time0, var(fgam,[],2));
+
+            obj.qun = logl_tr(2:end);
+            obj.method = "bayesian_infHMC";
+            obj.gamI = SqrtMeanInverse(obj.gam);
+            obj.rsamps = false;
+            obj.type = 'mean';
+
+            obj.mcmc = struct();
+            obj.mcmc.v_coef = v_coef;
+            obj.mcmc.sigma = sigma_tr;
+            obj.mcmc.logl = logl_tr;
+            obj.mcmc.accept = accept(:,2:end);
+            obj.mcmc.epsilon = eps_tr;
+            obj.mcmc.warp_rep = mcmcopts.warp_rep;
+            if mcmcopts.extrainfo
+                obj.mcmc.gamma_mat = gamma_mat;
+                obj.mcmc.gamma_stats = permute(quantile(gamma_mat, [0.025, 0.975], 2), [1 2 3]);
+                obj.mcmc.q_star_mat = interp1(t01, qstar_mat, tn) / sqrt(time0(end) - time0(1));
+                obj.mcmc.q_star_stats = quantile(obj.mcmc.q_star_mat, [.025, 0.975], 2);
+                obj.mcmc.fmean_mat = srvf_to_f(obj.mcmc.q_star_mat, time0, repmat(mean(obj.f(1,:)), 1, nsamp));
+                obj.mcmc.fmean_stats = quantile(obj.mcmc.fmean_mat, [.025, 0.975], 2);
+            end
         end
 
         function obj = time_warping_median(obj,lambda,option)
@@ -1658,4 +1930,10 @@ end
 % Normalize gamma to [0,1]
 function gam = norm_gam(gam)
 gam = (gam-gam(1))./(gam(end)-gam(1));
+end
+
+% geometry of the group alignment likelihood for one curve: aux = [SSE; q_i warped]
+function [nll, g, aux] = group_geom(c, Phi, rep, qstar, qi, sigma2)
+[nll, g, SSE, ~, q2w] = bayes_warp_geom(c, Phi, rep, qstar, qi, sigma2);
+aux = [SSE; q2w];
 end
