@@ -77,6 +77,39 @@ classdef BayesHMCTest < matlab.unittest.TestCase
             end
         end
 
+        function testBatchedGeomMatchesSingle(testCase)
+            [Phi, q1, ~] = smallProblem();
+            rng(6);
+            tt = linspace(0, 1, size(Phi, 1)).';
+            Q = f_to_srvf(testCase.f(:, 1:5), tt);
+            c = 0.2 * randn(size(Phi, 2), 5);
+            for rep = 0:1
+                [n, g, s, gam, w] = bayes_warp_geom(c, Phi, rep, q1, Q, 0.1);
+                for i = 1:5
+                    [n1, g1, s1, gam1, w1] = bayes_warp_geom(c(:,i), Phi, rep, q1, Q(:,i), 0.1);
+                    testCase.verifyEqual([n(i), s(i)], [n1, s1], 'AbsTol', 1e-10);
+                    testCase.verifyEqual(g(:,i), g1, 'AbsTol', 1e-10);
+                    testCase.verifyEqual(gam(:,i), gam1, 'AbsTol', 1e-14);
+                    testCase.verifyEqual(w(:,i), w1, 'AbsTol', 1e-14);
+                end
+            end
+        end
+
+        function testBatchedHmcSamplesGaussian(testCase)
+            % nll = 0: the target is the prior N(0, diag(C)), which the
+            % rotation integrates exactly (every proposal is accepted)
+            rng(8);
+            C = [1; 0.25; 0.04];
+            geom = @zeroGeom;
+            c = zeros(3, 2000);
+            [nll, g] = geom(c);
+            for k = 1:20
+                [c, nll, g, ~, acc] = infhmc_step_batch(c, nll, g, [], geom, C, 0.7, 5);
+            end
+            testCase.verifyTrue(all(acc));
+            testCase.verifyEqual(var(c, 0, 2), C, 'RelTol', 0.1);
+        end
+
         function testPairwiseAlignment(testCase)
             rng(4);
             y1 = testCase.f(:,1).' + 0.01 * randn(1, numel(testCase.t));
@@ -110,6 +143,12 @@ classdef BayesHMCTest < matlab.unittest.TestCase
             testCase.verifyEqual(size(obj.mcmc.gamma_stats), [M, 2, N]);
         end
     end
+end
+
+function [nll, g, aux] = zeroGeom(c)
+nll = zeros(1, size(c, 2));
+g = zeros(size(c));
+aux = [];
 end
 
 function [Phi, q1, q2] = smallProblem()

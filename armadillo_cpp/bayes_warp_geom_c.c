@@ -3,6 +3,9 @@
  *
  * [nll, grad, SSE, gam, q2w] = bayes_warp_geom_c(c, Phi, rep, q1, q2, var1)
  *
+ * Batched: c (D,N), q2 (T,N) and q1 (T,1) shared or (T,N) give nll, SSE
+ * (1,N), grad (D,N), gam and q2w (T,N); each column is an independent warp.
+ *
  * Negative log-likelihood and exact gradient (w.r.t. basis coefficients c)
  * of q1 = (q2 o gam) sqrt(gam') + N(0, var1) on the uniform grid
  * linspace(0,1,T). rep = 0: shooting vector (v-transform), rep = 1: clr
@@ -13,45 +16,16 @@
 #include <math.h>
 #include <stdlib.h>
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+/* one warp; returns nll, fills grad (if non-NULL), *SSEo, gam, q2w;
+ * work must hold 8*T doubles */
+static double geom1(const double *c, const double *Phi, mwSize T, mwSize D, int rep,
+                    const double *q1, const double *q2, double var1,
+                    double *grad, double *SSEo, double *gam, double *q2w, double *work)
 {
-    if (nrhs != 6)
-        mexErrMsgTxt("usage: [nll, grad, SSE, gam, q2w] = bayes_warp_geom_c(c, Phi, rep, q1, q2, var1)");
-    for (int i = 0; i < 6; i++)
-        if (!mxIsDouble(prhs[i]) || mxIsComplex(prhs[i]))
-            mexErrMsgTxt("inputs must be real double");
-
-    const mwSize T = mxGetM(prhs[1]);
-    const mwSize D = mxGetN(prhs[1]);
-    if (mxGetNumberOfElements(prhs[0]) != D)
-        mexErrMsgTxt("length(c) must equal size(Phi,2)");
-    if (mxGetNumberOfElements(prhs[3]) != T || mxGetNumberOfElements(prhs[4]) != T)
-        mexErrMsgTxt("q1 and q2 must have size(Phi,1) elements");
-    if (T < 2)
-        mexErrMsgTxt("need at least two grid points");
-
-    const double *c = mxGetPr(prhs[0]);
-    const double *Phi = mxGetPr(prhs[1]);
-    const int rep = (int) mxGetScalar(prhs[2]);
-    const double *q1 = mxGetPr(prhs[3]);
-    const double *q2 = mxGetPr(prhs[4]);
-    const double var1 = mxGetScalar(prhs[5]);
-
-    plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
-    mxArray *grad_mx = mxCreateDoubleMatrix(D, 1, mxREAL);
-    mxArray *sse_mx = mxCreateDoubleMatrix(1, 1, mxREAL);
-    mxArray *gam_mx = mxCreateDoubleMatrix(T, 1, mxREAL);
-    mxArray *q2w_mx = mxCreateDoubleMatrix(T, 1, mxREAL);
-    double *grad = mxGetPr(grad_mx);
-    double *gam = mxGetPr(gam_mx);
-    double *q2w = mxGetPr(q2w_mx);
-
     const double dt = 1.0 / (double) (T - 1);
-    double *work = (double *) mxMalloc(8 * T * sizeof(double));
     double *v = work, *psi = work + T, *apsi = work + 2*T, *sgn = work + 3*T;
     double *q2g = work + 4*T, *q2dg = work + 5*T, *res = work + 6*T, *beta = work + 7*T;
 
-    /* v = Phi * c */
     for (mwSize k = 0; k < T; k++) v[k] = 0.0;
     for (mwSize j = 0; j < D; j++) {
         const double cj = c[j];
@@ -67,15 +41,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         r = sqrt(r);
         if (r >= M_PI) {
-            *mxGetPr(plhs[0]) = mxGetInf();
-            *mxGetPr(sse_mx) = mxGetInf();
             for (mwSize k = 0; k < T; k++) { gam[k] = k*dt; q2w[k] = q2[k]; }
-            mxFree(work);
-            if (nlhs > 1) plhs[1] = grad_mx; else mxDestroyArray(grad_mx);
-            if (nlhs > 2) plhs[2] = sse_mx; else mxDestroyArray(sse_mx);
-            if (nlhs > 3) plhs[3] = gam_mx; else mxDestroyArray(gam_mx);
-            if (nlhs > 4) plhs[4] = q2w_mx; else mxDestroyArray(q2w_mx);
-            return;
+            if (grad) for (mwSize j = 0; j < D; j++) grad[j] = 0.0;
+            *SSEo = mxGetInf();
+            return mxGetInf();
         }
         double cr = 1.0;
         if (r >= 1e-10) {
@@ -99,7 +68,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
     }
 
-    /* gam = cumtrapz(psi^2) / total */
     gam[0] = 0.0;
     for (mwSize k = 1; k < T; k++)
         gam[k] = gam[k-1] + dt/2 * (psi[k-1]*psi[k-1] + psi[k]*psi[k]);
@@ -107,7 +75,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     for (mwSize k = 0; k < T; k++) gam[k] /= GT;
     gam[T-1] = 1.0;
 
-    /* interpolate q2 at gam; slope of the linear interpolant */
     const double a = 1.0 / sqrt(GT);
     double SSE = 0.0, rq = 0.0;
     for (mwSize k = 0; k < T; k++) {
@@ -124,22 +91,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         SSE += res[k]*res[k];
         rq += res[k]*q2w[k];
     }
-    *mxGetPr(plhs[0]) = SSE / (2*var1) + 0.5 * (double) T * log(var1);
-    *mxGetPr(sse_mx) = SSE;
+    *SSEo = SSE;
 
-    if (nlhs > 1) {
+    if (grad) {
         const double kappa = rq / (2*GT);
         double Agam = 0.0;
         for (mwSize k = 0; k < T; k++) {
             double A = res[k]*a * q2dg[k] * apsi[k];
             Agam += A * gam[k];
-            q2dg[k] = A;               /* reuse: q2dg now holds A */
+            q2dg[k] = A;
         }
-        /* suffix sums of A, then weights on d(psi^2) */
-        double Ssuf = 0.0;               /* S_{k+1} while scanning backward */
+        double Ssuf = 0.0;
         for (mwSize kk = T; kk-- > 0; ) {
-            double Sk1 = Ssuf;             /* S_{k+1} (0 for k = T-1) */
-            Ssuf += q2dg[kk];              /* S_k */
+            double Sk1 = Ssuf;
+            Ssuf += q2dg[kk];
             double coefP = 0.0;
             if (kk < T - 1) coefP += dt/2 * Sk1;
             if (kk > 0) coefP += dt/2 * Ssuf;
@@ -171,8 +136,56 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
         }
     }
+    return SSE / (2*var1) + 0.5 * (double) T * log(var1);
+}
 
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+    if (nrhs != 6)
+        mexErrMsgTxt("usage: [nll, grad, SSE, gam, q2w] = bayes_warp_geom_c(c, Phi, rep, q1, q2, var1)");
+    for (int i = 0; i < 6; i++)
+        if (!mxIsDouble(prhs[i]) || mxIsComplex(prhs[i]))
+            mexErrMsgTxt("inputs must be real double");
+
+    const mwSize T = mxGetM(prhs[1]);
+    const mwSize D = mxGetN(prhs[1]);
+    if (T < 2)
+        mexErrMsgTxt("need at least two grid points");
+    if (mxGetM(prhs[0]) != D && !(mxGetNumberOfElements(prhs[0]) == D))
+        mexErrMsgTxt("size(c,1) must equal size(Phi,2)");
+    const mwSize N = mxGetNumberOfElements(prhs[0]) / D;
+    if (N * D != mxGetNumberOfElements(prhs[0]))
+        mexErrMsgTxt("size(c,1) must equal size(Phi,2)");
+    if (mxGetNumberOfElements(prhs[4]) != T*N)
+        mexErrMsgTxt("q2 must be (size(Phi,1), size(c,2))");
+    const mwSize n1 = mxGetNumberOfElements(prhs[3]);
+    if (n1 != T && n1 != T*N)
+        mexErrMsgTxt("q1 must be (size(Phi,1),1) or the size of q2");
+    const int q1_shared = (n1 == T);
+
+    const double *c = mxGetPr(prhs[0]);
+    const double *Phi = mxGetPr(prhs[1]);
+    const int rep = (int) mxGetScalar(prhs[2]);
+    const double *q1 = mxGetPr(prhs[3]);
+    const double *q2 = mxGetPr(prhs[4]);
+    const double var1 = mxGetScalar(prhs[5]);
+
+    mxArray *nll_mx = mxCreateDoubleMatrix(1, N, mxREAL);
+    mxArray *grad_mx = mxCreateDoubleMatrix(D, N, mxREAL);
+    mxArray *sse_mx = mxCreateDoubleMatrix(1, N, mxREAL);
+    mxArray *gam_mx = mxCreateDoubleMatrix(T, N, mxREAL);
+    mxArray *q2w_mx = mxCreateDoubleMatrix(T, N, mxREAL);
+    double *nll = mxGetPr(nll_mx), *grad = mxGetPr(grad_mx), *sse = mxGetPr(sse_mx);
+    double *gam = mxGetPr(gam_mx), *q2w = mxGetPr(q2w_mx);
+    double *work = (double *) mxMalloc(8 * T * sizeof(double));
+
+    for (mwSize i = 0; i < N; i++) {
+        nll[i] = geom1(c + i*D, Phi, T, D, rep, q1_shared ? q1 : q1 + i*T, q2 + i*T, var1,
+                       nlhs > 1 ? grad + i*D : NULL, sse + i, gam + i*T, q2w + i*T, work);
+    }
     mxFree(work);
+
+    plhs[0] = nll_mx;
     if (nlhs > 1) plhs[1] = grad_mx; else mxDestroyArray(grad_mx);
     if (nlhs > 2) plhs[2] = sse_mx; else mxDestroyArray(sse_mx);
     if (nlhs > 3) plhs[3] = gam_mx; else mxDestroyArray(gam_mx);

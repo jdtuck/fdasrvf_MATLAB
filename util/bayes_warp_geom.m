@@ -21,6 +21,9 @@ function [nll, grad, SSE, gam, q2w] = bayes_warp_geom(c, Phi, rep, q1, q2, var1)
 % q2: (T,1) SRVF to be warped
 % var1: noise variance
 %
+% Batched use: c (D,N), q2 (T,N) and q1 (T,1) shared or (T,N) evaluate N
+% independent warps; nll and SSE are (1,N), grad (D,N), gam and q2w (T,N).
+%
 % Output:
 % nll: negative log-likelihood SSE/(2 var1) + T/2 log(var1)
 % grad: (D,1) gradient of nll with respect to c
@@ -37,6 +40,20 @@ if isempty(has_mex)
 end
 if has_mex
     [nll, grad, SSE, gam, q2w] = bayes_warp_geom_c(c, Phi, double(rep), q1, q2, var1);
+    return
+end
+
+if size(c, 2) > 1
+    % batched: one independent warp per column
+    N = size(c, 2);
+    T = size(Phi, 1);
+    nll = zeros(1, N); grad = zeros(size(c)); SSE = zeros(1, N);
+    gam = zeros(T, N); q2w = zeros(T, N);
+    for i = 1:N
+        q1i = q1(:, min(i, size(q1, 2)));
+        [nll(i), grad(:,i), SSE(i), gam(:,i), q2w(:,i)] = ...
+            bayes_warp_geom(c(:,i), Phi, rep, q1i, q2(:,i), var1);
+    end
     return
 end
 

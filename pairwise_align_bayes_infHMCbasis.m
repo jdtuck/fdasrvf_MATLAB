@@ -351,6 +351,12 @@ L = mcmcopts.L;
 
 % f1, f2 GP priors, initialized from a GP fit
 Dmat = squareform(pdist(time'));
+
+% SRVF operator: the derivative of the interpolating cubic spline used by
+% f_to_srvf is linear in f, so build its (T,T) matrix once; to_srvf(f) is
+% identical to f_to_srvf(f, t01) without fitting a spline every iteration
+Dspl = spline_deriv_matrix(t01);
+to_srvf = @(f) srvf_from_deriv(Dspl * f(:));
 model1 = fitrgp(time(1:mcmcopts.sampfreq:end)', y1(1:mcmcopts.sampfreq:end)');
 model2 = fitrgp(time(1:mcmcopts.sampfreq:end)', y2(1:mcmcopts.sampfreq:end)');
 
@@ -358,8 +364,9 @@ s1_curr = model1.KernelInformation.KernelParameters(2)^2;
 s2_curr = model2.KernelInformation.KernelParameters(2)^2;
 L1_curr = model1.KernelInformation.KernelParameters(1);
 L2_curr = model2.KernelInformation.KernelParameters(1);
-gp1 = gp_prior(s1_curr, L1_curr, Dmat);
-gp2 = gp_prior(s2_curr, L2_curr, Dmat);
+Dsq = Dmat.^2;
+gp1 = gp_prior(s1_curr, L1_curr, Dsq);
+gp2 = gp_prior(s2_curr, L2_curr, Dsq);
 
 % random-walk proposals for f1, f2 (fixed covariance, factor once)
 R_f1prop = chol_jitter(exp2corr(mcmcopts.f1propvar, L1_curr, Dmat));
@@ -392,8 +399,8 @@ sigma1_curr = 0.01;
 sigma2_curr = 0.01;
 f1_curr = predict(model1,time').';
 f2_curr = predict(model2,time').';
-q1_curr = f_to_srvf(f1_curr.',t01,0);
-q2_curr = f_to_srvf(f2_curr.',t01,0);
+q1_curr = to_srvf(f1_curr);
+q2_curr = to_srvf(f2_curr);
 
 [nll, ~, SSE_curr] = bayes_warp_geom(v_coef_curr, Phi, rep, q1_curr, q2_curr, sigma_curr);
 if ~isfinite(nll)
@@ -425,12 +432,12 @@ for m = 2:iter
     % update f1 | v, f2
     [f1_curr, q1_curr, SSE_curr, f1_accept] = update_f(f1_curr, q1_curr, SSE_curr, y1, ...
         @(q) warp_sse(v_coef_curr, Phi, rep, q, q2_curr, sigma_curr), ...
-        gp1, R_f1prop, t01, sigma_curr, sigma1_curr);
+        gp1, R_f1prop, to_srvf, sigma_curr, sigma1_curr);
 
     % update f2 | v, f1
     [f2_curr, q2_curr, ~, f2_accept] = update_f(f2_curr, q2_curr, SSE_curr, y2, ...
         @(q) warp_sse(v_coef_curr, Phi, rep, q1_curr, q, sigma_curr), ...
-        gp2, R_f2prop, t01, sigma_curr, sigma2_curr);
+        gp2, R_f2prop, to_srvf, sigma_curr, sigma2_curr);
 
     % update v by infinite-dimensional HMC; geometry evaluated at the
     % current f1, f2 and sigma
@@ -459,12 +466,12 @@ for m = 2:iter
     % update GP variances s1^2, s2^2
     s1_curr = 1/gamrnd(newshape,1/(quad_form(gp1.Rcorr, f1_curr)/2 + mcmcopts.beta0));
     s2_curr = 1/gamrnd(newshape,1/(quad_form(gp2.Rcorr, f2_curr)/2 + mcmcopts.beta0));
-    gp1 = gp_prior(s1_curr, L1_curr, Dmat, gp1.Rcorr);
-    gp2 = gp_prior(s2_curr, L2_curr, Dmat, gp2.Rcorr);
+    gp1 = gp_prior(s1_curr, L1_curr, Dsq, gp1.Rcorr);
+    gp2 = gp_prior(s2_curr, L2_curr, Dsq, gp2.Rcorr);
 
     % update GP length scales L1, L2
-    [L1_curr, gp1, L1_accept] = update_length(f1_curr, gp1, s1_curr, L1_curr, mcmcopts.L1propvar, Dmat);
-    [L2_curr, gp2, L2_accept] = update_length(f2_curr, gp2, s2_curr, L2_curr, mcmcopts.L2propvar, Dmat);
+    [L1_curr, gp1, L1_accept] = update_length(f1_curr, gp1, s1_curr, L1_curr, mcmcopts.L1propvar, Dsq);
+    [L2_curr, gp2, L2_accept] = update_length(f2_curr, gp2, s2_curr, L2_curr, mcmcopts.L2propvar, Dsq);
 
     % save update to results
     result.v_coef(m,:) = v_coef_curr;
@@ -525,8 +532,8 @@ if (mcmcopts.extrainfo)
     Dy = zeros(1,nv);
     f2_warped = zeros(nv,T);
     for ii = 1:nv
-        q1s = f_to_srvf(out.f1(ii,:).', t01, 0);
-        q2s = f_to_srvf(out.f2(ii,:).', t01, 0);
+        q1s = to_srvf(out.f1(ii,:));
+        q2s = to_srvf(out.f2(ii,:));
         q2warp = warp_q_gamma(q2s, gamma_mat(:,ii), t01);
         Dy(ii) = sqrt(trapz(t01,(q1s(:)-q2warp(:)).^2));
         f2_warped(ii,:) = warp_f_gamma(out.f2(ii,:)', gamma_mat(:,ii), t01);
@@ -560,13 +567,17 @@ out = quantile(mat.',[0.025,.975]);
 end
 
 % GP prior N(0, s * (corr(L) + 0.1 I)) stored through its Cholesky factor
-function gp = gp_prior(s, L, Dmat, Rcorr)
+% (Dsq: squared pairwise distances of the time points)
+function gp = gp_prior(s, L, Dsq, Rcorr)
+n = size(Dsq,1);
 if nargin < 4
-    Rcorr = chol(exp2corr2(L, Dmat) + 0.1*eye(size(Dmat,1)));
+    K = exp(-Dsq/(2*L^2));
+    K(1:n+1:end) = K(1:n+1:end) + 0.1;
+    Rcorr = chol(K);
 end
 gp.Rcorr = Rcorr;
 gp.s = s;
-gp.logdet = 2*sum(log(diag(Rcorr))) + size(Dmat,1)*log(s);
+gp.logdet = 2*sum(log(diag(Rcorr))) + n*log(s);
 end
 
 function out = quad_form(R, f)
@@ -588,9 +599,9 @@ end
 % GP prior and the SRVF alignment likelihood. f | y, prior is Gaussian with
 % precision K^{-1} + I/sigmaf, so the target is that density times the
 % alignment likelihood exp(-SSE/(2 sigma)).
-function [f_curr, q_curr, SSE_curr, accept] = update_f(f_curr, q_curr, SSE_curr, y, sse_fun, gp, Rprop, t01, sigma, sigmaf)
+function [f_curr, q_curr, SSE_curr, accept] = update_f(f_curr, q_curr, SSE_curr, y, sse_fun, gp, Rprop, to_srvf, sigma, sigmaf)
 f_prop = f_curr + randn(1, length(f_curr)) * Rprop;
-q_prop = f_to_srvf(f_prop', t01, 0);
+q_prop = to_srvf(f_prop);
 SSE_prop = sse_fun(q_prop);
 lp_curr = -SSE_curr/(2*sigma) - (quad_form(gp.Rcorr, f_curr)/gp.s + sum((y - f_curr).^2)/sigmaf)/2;
 lp_prop = -SSE_prop/(2*sigma) - (quad_form(gp.Rcorr, f_prop)/gp.s + sum((y - f_prop).^2)/sigmaf)/2;
@@ -604,18 +615,38 @@ end
 
 % Metropolis-Hastings update of a GP length scale with a truncated normal
 % random-walk proposal (flat prior on L > 0)
-function [L_curr, gp, accept] = update_length(f, gp, s, L_curr, propsd, Dmat)
-L_prop = random(truncate(makedist('Normal', L_curr, propsd), 0, inf));
-gp_prop = gp_prior(s, L_prop, Dmat);
+function [L_curr, gp, accept] = update_length(f, gp, s, L_curr, propsd, Dsq)
+% truncated normal N(L_curr, propsd^2) on (0, inf) by rejection (exact)
+L_prop = L_curr + propsd*randn;
+while L_prop <= 0
+    L_prop = L_curr + propsd*randn;
+end
+gp_prop = gp_prior(s, L_prop, Dsq);
 lp_curr = -gp.logdet/2 - quad_form(gp.Rcorr, f)/(2*s);
 lp_prop = -gp_prop.logdet/2 - quad_form(gp_prop.Rcorr, f)/(2*s);
 % Hastings correction for the truncation: q(L'|L) = phi(.)/Phi(L/propsd)
-log_hastings = log(normcdf(L_curr/propsd)) - log(normcdf(L_prop/propsd));
+log_hastings = log(erfc(-L_curr/(propsd*sqrt(2)))) - log(erfc(-L_prop/(propsd*sqrt(2))));
 accept = log(rand) < (lp_prop - lp_curr + log_hastings);
 if accept
     L_curr = L_prop;
     gp = gp_prop;
 end
+end
+
+% (T,T) matrix mapping f to the derivative, at the grid, of its
+% interpolating (not-a-knot) cubic spline, as computed in f_to_srvf
+function Dspl = spline_deriv_matrix(t)
+t = t(:);
+T = length(t);
+E = eye(T);
+Dspl = zeros(T);
+for k = 1:T
+    Dspl(:,k) = fnval(fnder(csapi(t, E(:,k))), t);
+end
+end
+
+function q = srvf_from_deriv(fy)
+q = fy./sqrt(abs(fy)+eps);
 end
 
 % Normalize gamma to [0,1]

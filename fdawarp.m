@@ -923,24 +923,18 @@ classdef fdawarp
             accept = zeros(N, iter);
             eps_tr = zeros(N, iter);
             epsilon = sqrt(mcmcopts.h) * ones(N,1);
-                        SSE = zeros(1,N);
-            qtil = zeros(M,N);
             sigma_tr(1) = sqrt(sigma2);
             eps_tr(:,1) = epsilon;
             ks = 1;
 
             barobj = ProgressBar(iter-1, 'Title', 'Running MCMC');
             for m = 2:iter
-                % update warping coefficients, one curve at a time
-                for ii = 1:N
-                    qi = q(:,ii);
-                    geom = @(c) group_geom(c, Phi, rep, qstar, qi, sigma2);
-                    [nll, g, aux] = geom(c_curr(:,ii));
-                    [c_curr(:,ii), ~, ~, aux, accept(ii,m)] = infhmc_step( ...
-                        c_curr(:,ii), nll, g, aux, geom, C, epsilon(ii), mcmcopts.L);
-                    SSE(ii) = aux(1);
-                    qtil(:,ii) = aux(2:end);
-                end
+                % update warping coefficients: the curves are conditionally
+                % independent given q* and sigma^2, so all are updated in
+                % one batched HMC step (one MEX call per leapfrog step)
+                [c_curr, aux, accept(:,m)] = group_hmc_update(c_curr, Phi, rep, ...
+                    qstar, q, sigma2, C, epsilon, mcmcopts.L);
+                qtil = aux(2:end,:);
 
                 if mcmcopts.adapt && m <= burnin
                     gain = 1 / m^0.6;
@@ -962,7 +956,7 @@ classdef fdawarp
                 % project onto it every ncenter iterations
                 if mcmcopts.ncenter > 0 && (m < burnin || mcmcopts.center_all) && mod(m, mcmcopts.ncenter) == 0
                     gam_c = bayes_coef_to_gam(c_curr, Phi, rep);
-                    gam_inv = SqrtMeanInverse(gam_c);
+                    gam_inv = karcher_mean_inverse(gam_c, t01);
                     for ii = 1:N
                         gam_c(:,ii) = interp1(t01, gam_c(:,ii), gam_inv);
                     end
@@ -1932,8 +1926,50 @@ function gam = norm_gam(gam)
 gam = (gam-gam(1))./(gam(end)-gam(1));
 end
 
-% geometry of the group alignment likelihood for one curve: aux = [SSE; q_i warped]
-function [nll, g, aux] = group_geom(c, Phi, rep, qstar, qi, sigma2)
-[nll, g, SSE, ~, q2w] = bayes_warp_geom(c, Phi, rep, qstar, qi, sigma2);
+% geometry of the group alignment likelihood for a batch of curves (one per
+% column): aux = [SSE; q_i warped]
+function [nll, g, aux] = group_geom(c, Phi, rep, qstar, Q, sigma2)
+[nll, g, SSE, ~, q2w] = bayes_warp_geom(c, Phi, rep, qstar, Q, sigma2);
 aux = [SSE; q2w];
+end
+
+% one batched infinite-dimensional HMC update of the warps of curves Q
+function [c, aux, accept] = group_hmc_update(c, Phi, rep, qstar, Q, sigma2, C, epsilon, L)
+geom = @(x) group_geom(x, Phi, rep, qstar, Q, sigma2);
+[nll, g, aux] = geom(c);
+[c, ~, ~, aux, accept] = infhmc_step_batch(c, nll, g, aux, geom, C, epsilon, L);
+end
+
+% Inverse of the Karcher mean of warping functions gam (T,N) on the uniform
+% grid t; same estimate as SqrtMeanInverse, vectorized over the curves and
+% started from the extrinsic mean (the warps are near identity after the
+% first centering step, so a few full gradient steps converge)
+function gamI = karcher_mean_inverse(gam, t)
+[T, N] = size(gam);
+dt = t(2) - t(1);
+w = dt * ones(T, 1);
+w([1, T]) = dt / 2;
+[~, gd] = gradient(gam, 1, dt); % derivative along each column
+psi = sqrt(max(gd, 0));
+psi = psi ./ sqrt(w.' * psi.^2);
+mu = mean(psi, 2);
+mu = mu / sqrt(w.' * mu.^2);
+for it = 1:100
+    ip = min(max(w.' * (psi .* mu), -1), 1);
+    th = acos(ip);
+    fac = ones(1, N);
+    nz = th > 1e-10;
+    fac(nz) = th(nz) ./ sin(th(nz));
+    vbar = mean((psi - mu .* ip) .* fac, 2);
+    nv = sqrt(w.' * vbar.^2);
+    if nv < 1e-8
+        break
+    end
+    mu = cos(nv) * mu + sin(nv) / nv * vbar;
+    mu = mu / sqrt(w.' * mu.^2);
+end
+gam_mu = cumtrapz(t, mu.^2);
+gam_mu = (gam_mu - gam_mu(1)) / (gam_mu(end) - gam_mu(1));
+gamI = invertGamma(gam_mu);
+gamI = gamI(:);
 end
