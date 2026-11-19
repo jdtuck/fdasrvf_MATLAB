@@ -895,7 +895,7 @@ classdef fdawarp
             % initialization
             if strcmpi(mcmcopts.init,'dp')
                 tmp = fdawarp(f0, t01);
-                tmp = tmp.time_warping(0, MaxItr=10);
+                tmp = tmp.time_warping(0, MaxItr=1);
                 c_curr = bayes_gam_to_coef(tmp.gam, Phi, rep);
                 [gam0, ~] = bayes_coef_to_gam(c_curr, Phi, rep);
                 qtil = zeros(M,N);
