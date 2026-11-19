@@ -15,7 +15,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Check if input is real.
   if ( (mxIsComplex(prhs[0])) || (mxIsComplex(prhs[1])) )
     mexErrMsgTxt("Input must be real.");
-  std::cout << "Hello World" << std::endl; 
   // Create matrices X and Y from the first and second argument.
   double area = mxGetScalar(prhs[0]);
   vec y = armaGetPr(prhs[1]);
