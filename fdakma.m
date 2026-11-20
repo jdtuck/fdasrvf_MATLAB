@@ -17,7 +17,7 @@ classdef fdakma
     %   fn - aligned functions in cell of clusters
     %   qn - aligned srvfs in cell of clusters
     %   gam - warping functions in cell of clusters
-    %   gamI - inverse gamma
+    %   gamI - inverse Karcher mean warp of each cluster (cell)
     %   q0 - original srvfs
     %   labels - cluster labels
     %   templates - cluster centers
@@ -41,7 +41,7 @@ classdef fdakma
         fn           % aligned functions in cell of clusters
         qn           % aligned srvfs in cell of clusters
         gam          % warping functions in cell of clusters
-        gamI         % inverse gamma
+        gamI         % inverse Karcher mean warp of each cluster (cell)
         q0           % original srvfs
         labels       % cluster labels
         templates    % cluster centers
@@ -132,17 +132,18 @@ classdef fdakma
             else
                 template_ind = seeds;
             end
+            if option.smooth == 1
+                obj.f = smooth_data(obj.f, option.sparam);
+            end
+
             obj.templates = zeros(M,K);
             for i=1:K
                 obj.templates(:,i) = obj.f(:,template_ind(i));
             end
             cluster_id = zeros(1,N);
-            obj.qun = zeros(0, option.MaxItr);
-            
-            if option.smooth == 1
-                obj.f = smooth_data(obj.f, option.sparam);
-            end
-            
+            obj.qun = zeros(1, option.MaxItr);
+            obj.gamI = cell(1,K);
+
             
             %% Compute the q-function of the plot
             q = f_to_srvf(obj.f,obj.time);
@@ -203,24 +204,31 @@ classdef fdakma
                 %% Normalization
                 for i=1:K
                     id = cluster_id == i;
+                    if ~any(id)
+                        % empty cluster: nothing to normalize
+                        obj.gamI{i} = linspace(0,1,M);
+                        continue
+                    end
                     ftmp = fn1{i}(:,id);
                     gamtmp = gam1{i}(id,:);
-                    obj.gamI = SqrtMeanInverse(gamtmp);
+                    % SqrtMeanInverse expects warps as columns (samples x functions)
+                    gamIc = SqrtMeanInverse(gamtmp.');
+                    obj.gamI{i} = gamIc;
                     N1 = size(ftmp,2);
                     f_temp1 = zeros(M,N1);
                     q_temp1 = zeros(M,N1);
                     gam2 = zeros(N1,M);
                     if option.parallel == 1
                         parfor k = 1:N1
-                            f_temp1(:,k) = warp_f_gamma(ftmp(:,k),obj.gamI,obj.time);
+                            f_temp1(:,k) = warp_f_gamma(ftmp(:,k),gamIc,obj.time);
                             q_temp1(:,k) = f_to_srvf(f_temp1(:,k),obj.time);
-                            gam2(k,:) = warp_f_gamma(gamtmp(k,:),obj.gamI,obj.time);
+                            gam2(k,:) = warp_f_gamma(gamtmp(k,:),gamIc,obj.time);
                         end
                     else
                         for k = 1:N1
-                            f_temp1(:,k) = warp_f_gamma(ftmp(:,k),obj.gamI,obj.time);
+                            f_temp1(:,k) = warp_f_gamma(ftmp(:,k),gamIc,obj.time);
                             q_temp1(:,k) = f_to_srvf(f_temp1(:,k),obj.time);
-                            gam2(k,:) = warp_f_gamma(gamtmp(k,:),obj.gamI,obj.time);
+                            gam2(k,:) = warp_f_gamma(gamtmp(k,:),gamIc,obj.time);
                         end
                     end
                     gam1{i}(id,:) = gam2;
@@ -232,10 +240,16 @@ classdef fdakma
                 qun_t = zeros(1,K);
                 for i = 1:K
                     id = cluster_id == i;
-                    old_templates_q = obj.templates_q;
+                    if ~any(id)
+                        % empty cluster: keep the previous template
+                        continue
+                    end
+                    old_template_q = obj.templates_q(:,i);
                     obj.templates_q(:,i) = mean(qn1{i}(:,id),2);
-                    obj.templates(:,i) = mean(fn1{i}(:,id),2);
-                    qun_t(i) = norm(obj.templates_q(:,i)-old_templates_q(:,i))/norm(old_templates_q(:,i));
+                    % keep the f-template consistent with the SRVF template
+                    obj.templates(:,i) = srvf_to_f(obj.templates_q(:,i),obj.time, ...
+                        mean(fn1{i}(1,id)));
+                    qun_t(i) = norm(obj.templates_q(:,i)-old_template_q)/norm(old_template_q);
                 end
                 obj.qun(r) = mean(qun_t);
                 
@@ -263,6 +277,7 @@ classdef fdakma
             
             obj.fn = ftmp;
             obj.qn = qtmp;
+            obj.gam = gamtmp;
             obj.labels = cluster_id;
             obj.method = option.method;
             obj.qun = obj.qun(1:r);
