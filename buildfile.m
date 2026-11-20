@@ -24,6 +24,7 @@ plan("mex:bcalcY") = MexTask("armadillo_cpp/bcalcY.cpp","mex");
 plan("mex:bcuL2norm2") = MexTask("armadillo_cpp/bcuL2norm2.cpp","mex");
 plan("mex:trapzCpp") = MexTask("armadillo_cpp/trapzCpp.cpp","mex");
 plan("mex:border_l2norm") = MexTask("armadillo_cpp/border_l2norm.cpp","mex");
+plan("mex:bayes_warp_geom") = MexTask("armadillo_cpp/bayes_warp_geom_c.c","mex");
 plan("mex:mlogit_warp") = MexTask(["mlogit_warp/mlogit_warp.c","mlogit_warp/mlogit_warp_grad.c", "mlogit_warp/misc_funcs.c"],"mex");
 if ispc
     libDir = fullfile(matlabroot,"/extern/lib/win64/microsoft");
