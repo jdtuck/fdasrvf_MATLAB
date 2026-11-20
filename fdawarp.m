@@ -47,6 +47,7 @@ classdef fdawarp
     %       fPCA space
     %   align_new - align new functions to the fitted template
     %   plot - plot results and functions in object
+    %   plot_mcmc - plot MCMC diagnostics after time_warping_bayes
     %
     %
     % Author :  J. D. Tucker (JDT) <jdtuck AT sandia.gov>
@@ -433,6 +434,7 @@ classdef fdawarp
             obj.penalty = option.penalty;
             obj.gamI = gamI_o;
             obj.rsamps = false;
+            obj.mcmc = [];
             obj.type = 'mean';
         end
 
@@ -759,8 +761,13 @@ classdef fdawarp
             obj.rsamps = false;
             obj.type = 'mean';
 
+            obj.mcmc = struct();
             obj.mcmc.g_coef = result.g_coef;
             obj.mcmc.sigma1 = result.sigma1;
+            obj.mcmc.logl = result.logl;
+            obj.mcmc.burnin = pw_sim_global_burnin;
+            obj.mcmc.iter = iter;
+            obj.mcmc.extrainfo = mcmcopts.extrainfo;
 
             if (mcmcopts.extrainfo)
                 obj.mcmc.accept = result.accept(2:end);
@@ -771,6 +778,7 @@ classdef fdawarp
                 obj.mcmc.q_star_stats = quantile(obj.mcmc.q_star_mat,[.025,0.975],2);
                 obj.mcmc.fmean_mat = srvf_to_f(obj.mcmc.q_star_mat,q_basis.x,repelem(mean(obj.f(1,:)),length(valid_index)));
                 obj.mcmc.fmean_stats = quantile(obj.mcmc.fmean_mat,[.025,0.975],2);
+                obj.mcmc.zpcn = zpcn;
             end
 
         end
@@ -1035,6 +1043,8 @@ classdef fdawarp
             obj.mcmc.accept = accept(:,2:end);
             obj.mcmc.epsilon = eps_tr;
             obj.mcmc.warp_rep = mcmcopts.warp_rep;
+            obj.mcmc.burnin = burnin;
+            obj.mcmc.iter = iter;
             if mcmcopts.extrainfo
                 obj.mcmc.gamma_mat = gamma_mat;
                 obj.mcmc.gamma_stats = permute(quantile(gamma_mat, [0.025, 0.975], 2), [1 2 3]);
@@ -1276,6 +1286,7 @@ classdef fdawarp
             obj.penalty = option.penalty;
             obj.gamI = gamI_o;
             obj.rsamps = false;
+            obj.mcmc = [];
             obj.type = 'median';
         end
 
@@ -1418,6 +1429,7 @@ classdef fdawarp
             obj.method = option.method;
             obj.penalty = option.penalty;
             obj.rsamps = false;
+            obj.mcmc = [];
         end
 
         function obj = gauss_model(obj, n, sort_samples)
@@ -1638,10 +1650,244 @@ classdef fdawarp
                     title(['f_{mean}, \lambda = ' num2str(obj.lambda)], 'fontsize', 16);
                 end
             end
+
+            % MCMC diagnostics when the Bayesian alignment was used
+            if (~isempty(obj.mcmc) && isstruct(obj.mcmc) && ...
+                    (isfield(obj.mcmc, 'sigma1') || isfield(obj.mcmc, 'sigma')))
+                obj.plot_mcmc();
+            end
+        end
+
+        function plot_mcmc(obj)
+            % PLOT_MCMC plot diagnostics of the Bayesian alignment MCMC chain
+            % -------------------------------------------------------------------------
+            % Plots trace, posterior and mixing diagnostics of the chain
+            % stored in obj.mcmc by time_warping_bayes (pCN) or
+            % time_warping_bayes_infHMC. Plots that need
+            % the extra information (mcmcopts.extrainfo = true) are only
+            % drawn when it is available.
+            %
+            % Usage: obj.plot_mcmc()
+            %
+            % Figures:
+            %   7 - chain diagnostics: sigma trace, log-likelihood trace,
+            %       posterior of sigma, autocorrelation of sigma, running
+            %       acceptance rate and pCN step usage (pCN) or HMC
+            %       step sizes per function (infHMC)
+            %   8 - warping coefficient norm trace for each function
+            %   9 - posterior template with 95% credible band
+            %  10 - posterior warping functions with 95% credible bands
+
+            if (isempty(obj.mcmc) || ~isstruct(obj.mcmc) || ...
+                    ~(isfield(obj.mcmc, 'sigma1') || isfield(obj.mcmc, 'sigma')))
+                error('fdawarp:noMCMC', ...
+                    'No MCMC output available, run time_warping_bayes or time_warping_bayes_infHMC first');
+            end
+            mc = obj.mcmc;
+            is_hmc = isfield(mc, 'epsilon');
+
+            if (isfield(mc, 'sigma1'))
+                sigma1 = mc.sigma1(:);
+            else
+                sigma1 = mc.sigma(:);
+            end
+            niter = length(sigma1);
+            if (isfield(mc, 'burnin'))
+                burnin = mc.burnin;
+            elseif (isfield(mc, 'q_star_mat'))
+                burnin = niter - size(mc.q_star_mat, 2) + 1;
+            else
+                burnin = floor(niter/2);
+            end
+            burnin = min(max(burnin, 1), niter);
+            if (isfield(mc, 'logl'))
+                logl = mc.logl(:);
+            else
+                logl = obj.qun(:);
+            end
+            has_extra = isfield(mc, 'accept') && ~isempty(mc.accept);
+            post = burnin:niter;
+            col = [0.4 0.76 0.65];
+
+            %% chain diagnostics
+            figure(7); clf;
+            tl = tiledlayout(2, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+            title(tl, 'MCMC diagnostics', 'fontsize', 16);
+
+            nexttile;
+            plot(1:niter, sigma1, 'Color', col, 'linewidth', 1);
+            xline(burnin, 'k--', 'burn-in');
+            xlabel('iteration'); ylabel('\sigma');
+            title('Trace of \sigma');
+
+            nexttile;
+            if (length(logl) == niter)
+                plot(1:niter, logl, 'Color', col, 'linewidth', 1);
+                xline(burnin, 'k--', 'burn-in');
+                xlabel('iteration'); ylabel('log-likelihood');
+            else
+                axis off;
+                text(0.5, 0.5, {'log-likelihood not stored', '(set mcmcopts.extrainfo = true)'}, ...
+                    'HorizontalAlignment', 'center');
+            end
+            title('Trace of log-likelihood');
+
+            nexttile;
+            histogram(sigma1(post), 'Normalization', 'pdf', ...
+                'FaceColor', col, 'EdgeColor', 'none');
+            xline(mean(sigma1(post)), 'k-', 'linewidth', 1.5);
+            xline(quantile(sigma1(post), [.025 .975]), 'k--');
+            xlabel('\sigma'); ylabel('density');
+            title('Posterior of \sigma (95% CI)');
+
+            nexttile;
+            maxlag = min(50, length(post)-1);
+            rho = acf_vec(sigma1(post), maxlag);
+            stem(0:maxlag, rho, 'filled', 'Color', col, 'MarkerSize', 3);
+            hold on;
+            yline(1.96/sqrt(length(post)) * [-1 1], 'k--');
+            hold off;
+            xlabel('lag'); ylabel('ACF');
+            ess = length(post) / max(1 + 2*sum(rho(2:end)), 1);
+            title(sprintf('ACF of \\sigma (ESS \\approx %.0f)', ess));
+
+            nexttile;
+            if (has_extra)
+                % HMC stores (N,iter-1) indicators: average over functions
+                acc = double(mc.accept);
+                if (is_hmc)
+                    acc = mean(acc, 1);
+                    lab = 'warps';
+                else
+                    lab = 'q^*';
+                end
+                acc = acc(:);
+                it = (1:length(acc)).' + 1;
+                plot(it, cumsum(acc)./(1:length(acc)).', 'Color', col, 'linewidth', 1);
+                xline(burnin, 'k--', 'burn-in');
+                ylim([0 1]);
+                xlabel('iteration'); ylabel('rate');
+                title(sprintf('Running acceptance of %s (%.2f)', lab, mean(acc)));
+            else
+                axis off;
+                text(0.5, 0.5, {'acceptance not stored', '(set mcmcopts.extrainfo = true)'}, ...
+                    'HorizontalAlignment', 'center');
+                title('Running acceptance of q^*');
+            end
+
+            nexttile;
+            if (is_hmc)
+                eps_tr = mc.epsilon;
+                semilogy(1:size(eps_tr, 2), eps_tr.', 'linewidth', 1);
+                xline(burnin, 'k--', 'burn-in');
+                xlabel('iteration'); ylabel('\epsilon');
+                title('HMC step size per function');
+            elseif (has_extra && isfield(mc, 'betas_ind'))
+                bind = mc.betas_ind(:);
+                acc = logical(mc.accept(:));
+                if (isfield(mc, 'zpcn'))
+                    nb = length(mc.zpcn.betas);
+                else
+                    nb = max(bind);
+                end
+                nprop = accumarray(bind(bind>0), 1, [nb 1]);
+                nacc = accumarray(bind(bind>0 & acc), 1, [nb 1]);
+                bar(1:nb, [nprop - nacc, nacc], 'stacked', 'EdgeColor', 'none');
+                if (isfield(mc, 'zpcn'))
+                    xticklabels(compose('%g', mc.zpcn.betas));
+                    xlabel('pCN \beta');
+                else
+                    xlabel('pCN step index');
+                end
+                ylabel('proposals');
+                legend({'rejected', 'accepted'}, 'Location', 'best');
+                rate = nacc ./ max(nprop, 1);
+                text(1:nb, nprop, compose('%.2f', rate), 'HorizontalAlignment', 'center', ...
+                    'VerticalAlignment', 'bottom');
+                ylim([0 1.15*max([nprop; 1])]);
+                title('q^* proposals by pCN step (acc. rate)');
+            else
+                axis off;
+                text(0.5, 0.5, {'pCN step usage not stored', '(set mcmcopts.extrainfo = true)'}, ...
+                    'HorizontalAlignment', 'center');
+                title('pCN step usage');
+            end
+
+            %% warping coefficient traces
+            if (isfield(mc, 'g_coef') && ~isempty(mc.g_coef))
+                figure(8); clf;
+                gnorm = squeeze(sqrt(sum(mc.g_coef.^2, 2)));
+                if (isvector(gnorm))
+                    gnorm = gnorm(:);
+                end
+                plot(1:size(gnorm, 1), gnorm, 'linewidth', 1);
+                xline(burnin, 'k--', 'burn-in');
+                xlabel('iteration'); ylabel('norm of warping coefficients');
+                title('Trace of warping coefficient norm per function', 'fontsize', 16);
+            elseif (isfield(mc, 'v_coef') && ~isempty(mc.v_coef))
+                % infHMC stores (D,N,nsamp) post burn-in draws only
+                figure(8); clf;
+                vnorm = reshape(sqrt(sum(mc.v_coef.^2, 1)), size(mc.v_coef, 2), []).';
+                plot(1:size(vnorm, 1), vnorm, 'linewidth', 1);
+                xlabel('posterior draw (after burn-in)'); ylabel('norm of warping coefficients');
+                title('Trace of warping coefficient norm per function', 'fontsize', 16);
+            end
+
+            if (~isfield(mc, 'fmean_mat') || ~isfield(mc, 'gamma_mat'))
+                return
+            end
+
+            %% posterior template
+            figure(9); clf;
+            ts = linspace(obj.time(1), obj.time(end), size(mc.fmean_mat, 1)).';
+            ndraw = size(mc.fmean_mat, 2);
+            idx = unique(round(linspace(1, ndraw, min(ndraw, 100))));
+            plot(ts, mc.fmean_mat(:, idx), 'Color', [0.7 0.7 0.7 0.3], 'linewidth', 0.5);
+            hold on;
+            fill([ts; flipud(ts)], [mc.fmean_stats(:,1); flipud(mc.fmean_stats(:,2))], ...
+                col, 'FaceAlpha', 0.35, 'EdgeColor', 'none');
+            h = plot(obj.time, obj.fmean, 'k-', 'linewidth', 2);
+            hold off;
+            legend(h, 'posterior mean', 'Location', 'best');
+            title('Posterior template with 95% credible band', 'fontsize', 16);
+
+            %% posterior warping functions
+            figure(10); clf;
+            N = size(mc.gamma_mat, 3);
+            tg = linspace(0, 1, size(mc.gamma_mat, 1)).';
+            colors = lines(N);
+            hold on;
+            for jj = 1:N
+                band = quantile(mc.gamma_mat(:,:,jj), [.025 .975], 2);
+                fill([tg; flipud(tg)], [band(:,1); flipud(band(:,2))], colors(jj,:), ...
+                    'FaceAlpha', 0.2, 'EdgeColor', 'none');
+            end
+            for jj = 1:N
+                plot(tg, obj.gam(:,jj), 'Color', colors(jj,:), 'linewidth', 1);
+            end
+            plot([0 1], [0 1], 'k:');
+            hold off;
+            axis square; box on;
+            title('Posterior warping functions with 95% credible bands', 'fontsize', 16);
         end
 
     end
 
+end
+
+function rho = acf_vec(x, maxlag)
+% sample autocorrelation of x for lags 0:maxlag
+x = x(:) - mean(x);
+n = length(x);
+c0 = sum(x.^2);
+rho = zeros(maxlag+1, 1);
+if (c0 == 0)
+    rho(1) = 1;
+    return
+end
+for k = 0:maxlag
+    rho(k+1) = sum(x(1:n-k).*x(1+k:n)) / c0;
+end
 end
 
 function out = statsFun(vec)
