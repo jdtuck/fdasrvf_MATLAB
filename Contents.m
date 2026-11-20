@@ -25,6 +25,7 @@
 %   fdahpns                          - A class to provide horizontal fPNS
 %   fdajpca                          - A class to provide joint fPCA
 %   fdakma                           - A class to provide a kmeans clustering and alignment
+%   fdaspc                           - A class to provide elastic functional statistical process control
 %   fdavpca                          - A class to provide vertical fPCA
 %   fdawarp                          - A class to provide alignment of functional data using SRVF
 %   gam_to_h                         - Convert warping function to h space
